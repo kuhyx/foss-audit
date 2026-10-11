@@ -11,6 +11,9 @@
 #   ./run.sh --install-launcher  add foss-audit to dmenu/rofi, then exit
 #
 # Both servers bind 127.0.0.1 only; Ctrl-C (or closing the terminal) stops both.
+# If foss-audit is already running and newer than its sources, run.sh just opens
+# it; if the code changed since it started, it is restarted. Foreign processes
+# on the ports are never touched.
 # ============================================================================
 
 set -euo pipefail
@@ -24,6 +27,8 @@ readonly LAUNCHER_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/applications"
 
 # shellcheck source=scripts/lib/toolchain.sh
 . "${SCRIPT_DIR}/scripts/lib/toolchain.sh"
+# shellcheck source=scripts/lib/running.sh
+. "${SCRIPT_DIR}/scripts/lib/running.sh"
 
 PORT=5190
 API_PORT=5191
@@ -69,7 +74,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 usage() {
-    sed -n '4,13p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '4,16p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -190,6 +195,11 @@ EOF
 
 main() {
     cd "$SCRIPT_DIR"
+    # A fresh instance is reused; a stale or half-running one is stopped first.
+    if reconcile_running; then
+        open_browser "http://127.0.0.1:${PORT}/"
+        exit 0
+    fi
     check_node
     setup_pnpm
     install_dependencies
