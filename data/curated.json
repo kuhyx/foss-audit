@@ -428,21 +428,21 @@
     },
     "discord": {
       "names": [
-        "Stoat (ex-Revolt)",
-        "Matrix/Element",
-        "Mumble",
-        "Vesktop (still Discord network)"
+        "Vesktop",
+        "Dorion",
+        "Abaddon"
       ],
       "candidates": [
-        "element-desktop",
-        "mumble",
         "vesktop",
-        "vesktop-bin"
+        "vesktop-bin",
+        "dorion",
+        "dorion-bin",
+        "abaddon"
       ],
-      "fit": "none",
-      "effort": "XL",
-      "effortReason": "The value is the network of people, not the client",
-      "lockIn": "Network service; third-party clients break Discord ToS"
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Same account and servers; only the client changes",
+      "lockIn": "FOSS shell around Discord's proprietary service (Vesktop/Dorion load Discord's own web JS); third-party clients break Discord ToS"
     },
     "steam*": {
       "names": [
