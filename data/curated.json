@@ -65,6 +65,16 @@
       "nonfree",
       "Proprietary Electron app"
     ],
+    "dufs": [
+      "foss",
+      "sigoden/dufs release binary; Cargo.toml: MIT OR Apache-2.0",
+      "MIT OR Apache-2.0"
+    ],
+    "pacman-static": [
+      "foss",
+      "statically linked pacman 6.0.1 (pacman: GPL-2.0-or-later)",
+      "GPL-2.0-or-later"
+    ],
     "flashplayer-standalone-debug": [
       "nonfree",
       "Adobe Flash EULA; discontinued"

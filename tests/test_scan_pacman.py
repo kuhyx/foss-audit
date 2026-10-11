@@ -74,3 +74,10 @@ def test_owned_by_pacman(monkeypatch: pytest.MonkeyPatch) -> None:
         fake_run({"pacman -Qqo": (1, "cuda\n", "error: No package owns /opt/x\n")}),
     )
     assert owned_by_pacman(["/opt/cuda", "/opt/x"]) == {"/opt/cuda"}
+
+
+def test_owned_by_pacman_matches_whole_error_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unowned `pacman.orig` must not make its owned neighbour `pacman` look unowned."""
+    err = "error: No package owns /usr/bin/pacman.orig\nwarning: unrelated\n"
+    monkeypatch.setattr(subprocess, "run", fake_run({"pacman -Qqo": (1, "pacman\n", err)}))
+    assert owned_by_pacman(["/usr/bin/pacman", "/usr/bin/pacman.orig"]) == {"/usr/bin/pacman"}

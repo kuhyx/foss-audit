@@ -21,6 +21,8 @@ Source = Literal[
     "steam",
     "wine",
     "waydroid",
+    "unowned",
+    "app-home",
 ]
 Verdict = Literal["foss", "foss-partial", "nonfree"]
 # Verdicts that get a curated FOSS alternative attached (not the "free" headline).

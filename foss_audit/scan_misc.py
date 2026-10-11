@@ -51,8 +51,18 @@ def scan_npm_global() -> list[Item]:
     root = Path(
         subprocess.run([npm, "root", "-g"], capture_output=True, text=True, check=True).stdout.strip()
     )
+    return npm_items(npm_manifests(root))
+
+
+def npm_manifests(root: Path) -> list[Path]:
+    """package.json of every top-level and @scoped package under a node_modules root."""
+    return sorted([*root.glob("*/package.json"), *root.glob("@*/*/package.json")])
+
+
+def npm_items(manifests: list[Path], remove: str = "npm uninstall -g", where: str = "") -> list[Item]:
+    """One Item per global npm package; `where` prefixes the reason."""
     items: list[Item] = []
-    for pkg_json in sorted([*root.glob("*/package.json"), *root.glob("@*/*/package.json")]):
+    for pkg_json in manifests:
         pkg = pkg_json.parent
         if pkg.is_symlink():
             # `npm link` of a local project: kuhy's own tutorial/tool code.
@@ -69,9 +79,9 @@ def scan_npm_global() -> list[Item]:
                 source="npm-global",
                 verdict=verdict,
                 license=str(lic),
-                reason=reason,
+                reason="; ".join(r for r in (where, reason) if r),
                 url=data.get("homepage"),
-                removeCommand=f"npm uninstall -g {data.get('name', pkg.name)}",
+                removeCommand=f"{remove} {data.get('name', pkg.name)}",
             ),
         )
     return items

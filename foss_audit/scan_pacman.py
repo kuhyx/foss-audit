@@ -78,6 +78,8 @@ def owned_by_pacman(paths: list[str]) -> set[str]:
         return set()
     proc = subprocess.run(["pacman", "-Qqo", *paths], capture_output=True, text=True, check=False)
     # pacman reports unowned paths on stderr and still owns-lists the rest in order;
-    # map back via the error lines instead of trusting stdout order.
-    unowned = {p for p in paths if f"No package owns {p}" in proc.stderr}
+    # map back via the error lines instead of trusting stdout order. Match whole
+    # lines: "No package owns /usr/bin/pacman.orig" must not unown /usr/bin/pacman.
+    prefix = "error: No package owns "
+    unowned = {line.removeprefix(prefix) for line in proc.stderr.splitlines() if line.startswith(prefix)}
     return set(paths) - unowned

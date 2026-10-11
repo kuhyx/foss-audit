@@ -24,6 +24,8 @@ export const SOURCES = [
   "steam",
   "wine",
   "waydroid",
+  "unowned",
+  "app-home",
 ] as const;
 
 /**

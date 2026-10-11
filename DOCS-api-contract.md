@@ -38,7 +38,7 @@ rescan (a full scan takes a few seconds). Response body:
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
 | `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
 
-`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid"`
+`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home"`
 
 `Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
@@ -55,7 +55,8 @@ anyone else's remote is not own. Own code is licensed by its checkout: a LICENSE
 are mapped from their `github.com/kuhyx/<repo>` URL to the local checkout by git
 remote; loose `~/.local/bin` copies and built binaries (symlink targets outside any
 checkout) by a same-named tracked file in a kuhyx repo, ignoring `_`/`-` and the
-extension (`book_guard_desktop` ← `book_guard_desktop.dart`). Outside a checkout,
+extension (`book_guard_desktop` ← `book_guard_desktop.dart`), else by the name of the
+directory a tracked file sits in, entry point first (`imageviewer` ← `C/imageViewer/main.c`). Outside a checkout,
 only a named package root (package.json / pyproject.toml with a name) can supply a
 license, so a stray `~/.local/share/COPYING` licenses nothing. No license is
 ever hand-assigned for kuhy's code in `data/curated.json`.
@@ -66,6 +67,23 @@ pnpm global shims in `~/.local/bin` (a non-ELF `sh` file whose `exec` line runs
 
 Native `~/.local/bin` binaries that name their own terms (claude: "Anthropic's
 Commercial Terms") get that as a `LicenseRef-*` license, reason `-> <target>; binary cites …`.
+
+Software no package manager tracks (`scan_unowned.py`):
+
+- `unowned`: real executables (not symlinks, 0-byte stubs, `*.so*`, `*.debug`, …) in
+  `/usr/bin` and `/usr/local/bin` that `pacman -Qqo` does not own. Own copies are traced
+  to the tracked file they came from like `~/.local/bin` (`built from` / `copy of`);
+  hand-placed scripts are `own`, native binaries are not; all are `loose`.
+  `removeCommand` is `sudo rm <path>`.
+- Backups `<x>.orig`, `<x>.bak[-N]`, `<x>.broken-<tag>.bak` are skipped while `<x>` still
+  exists in either root. Once it is gone the backup is reported under the base name
+  `<x>`, and the real location stays visible in the reason tail through `Item.note`
+  (`<path>: backup left after <x> was removed`), which survives a curated reason.
+- `npm-global` also covers `sudo npm -g` packages in `/usr/lib/node_modules` that
+  pacman does not own (reason `… (system npm)`, `sudo npm uninstall -g <pkg>`).
+- `app-home`: self-updating installs that keep themselves in
+  `~/.config/<name>/app-<version>/` (Discord's Squirrel updater); the highest version
+  wins; `removeCommand` is `rm -rf ~/.config/<name>`.
 
 Steam apps (offline; the store site is blocked) are licensed
 `LicenseRef-Steam-Subscriber-Agreement`, plus `LicenseRef-EULA-<appid>` when Steam's

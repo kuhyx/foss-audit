@@ -24,6 +24,7 @@ REPO_ROOTS = (HOME / "src",)
 EXTRA_REPOS = (HOME / ".claude",)
 OWN_MARKER = "github.com/kuhyx/"
 REPO_SLUG = re.compile(r"github\.com[/:]kuhyx/([\w.-]+?)(?:\.git)?(?=[/#?\s]|$)", re.MULTILINE)
+SOURCE_EXT = re.compile(r"\.(sh|bash|py|dart|go|rs|c|cc|cpp|js|ts)$")
 LICENSE_FILE = re.compile(r"(?i)^(licen[cs]e|copying)([.-].*)?$")
 # Distinctive phrase of each common license text. The phrase that appears
 # EARLIEST wins: a file's own license comes first, the licenses of bundled parts
@@ -157,20 +158,31 @@ def script_key(name: str) -> str:
     is installed as keepass-consolidate; book_guard_desktop is compiled from
     book_guard_desktop.dart), so match on that normal form."""
     key = name.lower().replace("_", "-")
-    return re.sub(r"\.(sh|bash|py|dart|go|rs|c|cc|cpp|js|ts)$", "", key)
+    return SOURCE_EXT.sub("", key)
 
 
 @cache
 def tracked_by_name() -> dict[str, tuple[Path, ...]]:
-    """script_key -> tracked paths across kuhy's repos (one `git ls-files` each)."""
+    """script_key -> tracked paths across kuhy's repos (one `git ls-files` each).
+
+    A file's own name wins; its directory's name is the fallback, because a C
+    program is often built from `<name>/main.c` (imageviewer <- C/imageViewer/main.c).
+    """
     index: dict[str, list[Path]] = {}
+    by_dir: dict[str, list[Path]] = {}
     for repo in kuhy_repos():
         out = subprocess.run(
             ["git", "-C", str(repo), "ls-files", "-z"], capture_output=True, text=True, check=False
         ).stdout
         for rel in filter(None, out.split("\0")):
-            index.setdefault(script_key(Path(rel).name), []).append(repo / rel)
-    return {k: tuple(v) for k, v in index.items()}
+            path = Path(rel)
+            index.setdefault(script_key(path.name), []).append(repo / rel)
+            if path.parent.name:
+                by_dir.setdefault(script_key(path.parent.name), []).append(repo / rel)
+    # Within a directory, name the entry point first: main.c over .clang-format.
+    for paths in by_dir.values():
+        paths.sort(key=lambda p: (p.stem.lower() != "main", not SOURCE_EXT.search(p.name)))
+    return {k: tuple(v) for k, v in (by_dir | index).items()}
 
 
 def _digest(path: Path) -> str:
