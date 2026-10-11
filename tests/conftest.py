@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -27,6 +28,10 @@ def make_repo(
 
 @pytest.fixture(autouse=True)
 def fake_repo_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+    # pre-commit exports GIT_DIR/GIT_INDEX_FILE; left in place, the tests' git
+    # calls hit the real repo (in a worktree this once set core.bare=true).
+    for var in [v for v in os.environ if v.startswith("GIT_")]:
+        monkeypatch.delenv(var)
     monkeypatch.setattr(own_license, "HOME", tmp_path)
     monkeypatch.setattr(own_license, "REPO_ROOTS", (tmp_path / "src",))
     monkeypatch.setattr(own_license, "EXTRA_REPOS", (tmp_path / ".claude",))
