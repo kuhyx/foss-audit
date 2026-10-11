@@ -30,6 +30,7 @@ rescan (a full scan takes a few seconds). Response body:
 | `orphan` | boolean | pacman dependency nothing requires any more |
 | `own` | boolean | kuhy's own code: his AUR packages, pip installs of his repos, scripts in `~/.local/bin` (verdict comes from his LICENSE files) |
 | `loose` | boolean | a `~/.local/bin` file no package, pip distribution, symlink target or kuhyx repo accounts for |
+| `dangling` | boolean | `desktop` only: a `.desktop` launcher whose `Exec` target no longer exists (default `false`; the UI schema tolerates its absence) |
 | `license` | string | raw license string from metadata, `""` when absent |
 | `verdict` | `Verdict` | |
 | `reason` | string | one-line evidence, may be `""` |
@@ -38,7 +39,7 @@ rescan (a full scan takes a few seconds). Response body:
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
 | `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
 
-`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain"`
+`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop"`
 
 `Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
@@ -101,6 +102,19 @@ install root's LICENSE/COPYING files (Proton: `BSD OFL-1.1`). The reason ends wi
 `EULA: <name> <url>` and `bundled components: <id>: a, b; …` from a `licenses/` folder;
 that tail survives a curated reason. A curated verdict entry may carry a third element,
 a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`).
+
+`.desktop` launchers (`scan_desktop.py`, source `desktop`): the `Exec` target of every
+launcher in `~/.local/share/applications`, `/usr/share/applications`,
+`/usr/local/share/applications` and the Flatpak export dirs (an earlier directory shadows a
+later file of the same name). `env`/`exec`/`VAR=x`, `sh -c '…'` and interpreter prefixes
+(`python3 /opt/x/main.py`) are skipped to reach the program. Targets another scanner already
+lists are dropped: pacman-owned files, `/usr/bin`, `/usr/local/bin`, `/opt`,
+`~/.local/bin`, `~/.local/share/*`, AppImages up to three levels below `$HOME`, Steam,
+Flatpak, Wine and Waydroid launchers, URL handlers, and kuhy's own checkouts. What is left is
+named by `Name=` (Discord's `Game <id>` stubs by the target's file name), licensed by a LICENSE
+beside or above the target, else unknown (curated). A launcher whose target does not exist
+is `dangling: true`, reason `launcher without target: <exec path>`, `removeCommand`
+`rm '<desktop file>'`; dead launchers owned by a pacman package are left to the pacman item.
 
 ### `Alternative`
 

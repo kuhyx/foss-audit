@@ -40,6 +40,13 @@ describe("parseScan", () => {
     expect(() => parseScan({ ...scan, items: [item] })).toThrow(/at "items\.0\.loose"/u);
   });
 
+  it("defaults a missing dangling flag to false", () => {
+    const scan = makeScan();
+    const item: Partial<(typeof scan.items)[number]> = { ...scan.items[0] };
+    delete item.dangling;
+    expect(parseScan({ ...scan, items: [item] }).items[0]?.dangling).toBe(false);
+  });
+
   it("rejects a missing top-level field", () => {
     const scan: Partial<ReturnType<typeof makeScan>> = makeScan();
     delete scan.host;

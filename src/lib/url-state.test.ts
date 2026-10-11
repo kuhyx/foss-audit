@@ -12,6 +12,7 @@ describe("URL state", () => {
     const state: UrlState = {
       filter: {
         altInstalled: "yes",
+        dangling: "yes",
         hasAlt: "no",
         kind: "dependency",
         loose: "no",
@@ -52,6 +53,7 @@ describe("URL state", () => {
     expect(decodeState("?v=blob,nonfree,own").filter.verdicts).toEqual(["nonfree"]);
     expect(decodeState("?own=maybe").filter.own).toBe("any");
     expect(decodeState("?loose=maybe").filter.loose).toBe("any");
+    expect(decodeState("?dangling=maybe").filter.dangling).toBe("any");
   });
 
   it("treats an empty sort as no sort", () => {

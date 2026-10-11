@@ -2,6 +2,7 @@ import type { FilterState } from "./filter.ts";
 
 import {
   CHROME,
+  DEAD_LAUNCHER,
   ITEMS,
   makeAlternative,
   makeItem,
@@ -75,6 +76,14 @@ describe("passesFilter / applyFilter", () => {
     expect(names({ loose: "no" })).not.toContain("mystery");
   });
 
+  it("filters dead launchers", () => {
+    const all = [...ITEMS, DEAD_LAUNCHER];
+    const pick = (dangling: "no" | "yes"): string[] =>
+      applyFilter(all, { ...DEFAULT_FILTER, dangling }).map((item) => item.name);
+    expect(pick("yes")).toEqual(["rpcs3"]);
+    expect(pick("no")).not.toContain("rpcs3");
+  });
+
   it("filters own code", () => {
     expect(names({ own: "yes" })).toEqual(["backup.sh"]);
     expect(names({ own: "no" })).not.toContain("backup.sh");
@@ -109,6 +118,7 @@ describe("isFilterActive", () => {
       { orphan: "yes" },
       { own: "yes" },
       { loose: "yes" },
+      { dangling: "yes" },
       { hasAlt: "no" },
       { altInstalled: "yes" },
     ];

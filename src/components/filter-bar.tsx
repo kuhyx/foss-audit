@@ -149,6 +149,14 @@ export function FilterBar({ filter, items, onChange, shown }: FilterBarProps): R
           value={filter.loose}
         />
         <Segmented
+          label="Dead launcher"
+          onChange={(dangling): void => {
+            onChange({ ...filter, dangling });
+          }}
+          options={TRI_OPTIONS}
+          value={filter.dangling}
+        />
+        <Segmented
           label="Has alternative"
           onChange={(hasAlt): void => {
             onChange({ ...filter, hasAlt });

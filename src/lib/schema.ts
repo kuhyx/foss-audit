@@ -27,6 +27,7 @@ export const SOURCES = [
   "unowned",
   "app-home",
   "toolchain",
+  "desktop",
 ] as const;
 
 /**
@@ -60,6 +61,7 @@ export const alternativeSchema = z.object({
 
 export const itemSchema = z.object({
   alternative: alternativeSchema.nullable(),
+  dangling: z.boolean().default(false),
   explicit: z.boolean(),
   id: z.string(),
   license: z.string(),

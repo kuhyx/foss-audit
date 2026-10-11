@@ -24,6 +24,7 @@ Source = Literal[
     "unowned",
     "app-home",
     "toolchain",
+    "desktop",
 ]
 Verdict = Literal["foss", "foss-partial", "nonfree"]
 # Verdicts that get a curated FOSS alternative attached (not the "free" headline).
@@ -60,6 +61,8 @@ class Item:
     own: bool = False
     # A ~/.local/bin file no package, pip dist, symlink or repo accounts for.
     loose: bool = False
+    # A .desktop launcher whose Exec target no longer exists.
+    dangling: bool = False
     requiredBy: list[str] = field(default_factory=list)
     alternative: Alternative | None = None
     removeCommand: str | None = None

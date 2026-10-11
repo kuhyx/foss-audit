@@ -375,6 +375,41 @@
     "depotdownloader": [
       "foss",
       "SteamRE DepotDownloader, GPL-2.0 (manually verified custom license)"
+    ],
+    "rpcs3": [
+      "foss",
+      "RPCS3 PlayStation 3 emulator: GPL-2.0 (GitHub RPCS3/rpcs3)",
+      "GPL-2.0"
+    ],
+    "osu!*": [
+      "foss-partial",
+      "Code MIT; osu-resources (skins, samples, fonts) CC-BY-NC-4.0",
+      "MIT"
+    ],
+    "Gale": [
+      "foss",
+      "Gale mod manager (Kesomannen/gale): GPL-3.0",
+      "GPL-3.0"
+    ],
+    "Firefox": [
+      "foss",
+      "Mozilla Firefox: MPL-2.0 (trademarked branding)",
+      "MPL-2.0"
+    ],
+    "java": [
+      "foss",
+      "OpenJDK java launcher: GPL-2.0 with Classpath exception",
+      "GPL-2.0-with-classpath-exception"
+    ],
+    "Cloudflare Zero Trust CLI": [
+      "nonfree",
+      "Cloudflare WARP client (warp-cli): proprietary, Cloudflare terms of service",
+      "proprietary"
+    ],
+    "Unity Hub URL Handler": [
+      "nonfree",
+      "Unity Hub: proprietary, Unity EULA",
+      "proprietary"
     ]
   },
   "alternatives": {

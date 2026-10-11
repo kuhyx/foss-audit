@@ -62,6 +62,8 @@ describe("FilterBar", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ own: "yes" }));
     await pick("Untracked file", "Yes");
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ loose: "yes" }));
+    await pick("Dead launcher", "Yes");
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ dangling: "yes" }));
     await pick("Has alternative", "No");
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ hasAlt: "no" }));
     await pick("Alternative installed", "Yes");

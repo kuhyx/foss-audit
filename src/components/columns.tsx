@@ -78,6 +78,12 @@ export const columns = helper.columns([
               <span className="badge badge-own" title="in ~/.local/bin, no repo or package tracks it">loose</span>
             </>
           )}
+          {info.row.original.dangling && (
+            <>
+              {" "}
+              <span className="badge badge-own" title="a .desktop launcher whose Exec target no longer exists">dead</span>
+            </>
+          )}
         </>
       );
     },

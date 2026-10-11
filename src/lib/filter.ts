@@ -18,6 +18,7 @@ export type Kind = "any" | "dependency" | "explicit";
 
 export interface FilterState {
   readonly altInstalled: Tri;
+  readonly dangling: Tri;
   readonly hasAlt: Tri;
   readonly kind: Kind;
   readonly loose: Tri;
@@ -30,6 +31,7 @@ export interface FilterState {
 
 export const DEFAULT_FILTER: FilterState = {
   altInstalled: "any",
+  dangling: "any",
   hasAlt: "any",
   kind: "any",
   loose: "any",
@@ -80,6 +82,7 @@ export function passesFilter(item: Item, filter: FilterState): boolean {
     passesTri(filter.orphan, item.orphan) &&
     passesTri(filter.own, item.own) &&
     passesTri(filter.loose, item.loose) &&
+    passesTri(filter.dangling, item.dangling) &&
     passesTri(filter.hasAlt, hasAlt) &&
     passesTri(filter.altInstalled, (alt?.installed.length ?? 0) > 0) &&
     matchesQuery(item, filter.query)
@@ -102,6 +105,7 @@ export function isFilterActive(filter: FilterState): boolean {
     filter.orphan !== "any" ||
     filter.own !== "any" ||
     filter.loose !== "any" ||
+    filter.dangling !== "any" ||
     filter.hasAlt !== "any" ||
     filter.altInstalled !== "any"
   );

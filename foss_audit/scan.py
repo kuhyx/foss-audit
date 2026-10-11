@@ -14,7 +14,15 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from foss_audit import scan_misc, scan_pacman, scan_python, scan_steam, scan_toolchain, scan_unowned
+from foss_audit import (
+    scan_desktop,
+    scan_misc,
+    scan_pacman,
+    scan_python,
+    scan_steam,
+    scan_toolchain,
+    scan_unowned,
+)
 from foss_audit.curated import Curated, apply
 from foss_audit.model import Item, ScanError
 
@@ -37,6 +45,7 @@ SCANNERS: dict[str, Callable[[], list[Item]]] = {
     "npm-system": scan_unowned.scan_system_npm,
     "app-home": scan_unowned.scan_app_home,
     "toolchain": scan_toolchain.scan_toolchains,
+    "desktop": scan_desktop.scan_desktop,
 }
 
 

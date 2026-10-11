@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { CHROME, makeAlternative, MYSTERY, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
+import { CHROME, DEAD_LAUNCHER, makeAlternative, MYSTERY, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
 import { DetailPanel } from "./detail-panel.tsx";
 
 describe("DetailPanel", () => {
@@ -55,6 +55,11 @@ describe("DetailPanel", () => {
   it("flags untracked files", () => {
     render(<DetailPanel item={MYSTERY} onClose={vi.fn()} />);
     expect(screen.getByText(/yes — in ~\/\.local\/bin/u)).toBeInTheDocument();
+  });
+
+  it("flags dead launchers", () => {
+    render(<DetailPanel item={DEAD_LAUNCHER} onClose={vi.fn()} />);
+    expect(screen.getByText(/yes — the \.desktop file's Exec target no longer exists/u)).toBeInTheDocument();
   });
 
   it("explains an alternative with no names and nothing installed", () => {

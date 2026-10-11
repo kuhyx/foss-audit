@@ -8,7 +8,7 @@
  *   view=table|wins     which tab (summary when absent)
  *   q=...               search
  *   v=nonfree,foss      verdicts        src=aur,steam   sources
- *   kind=explicit|dependency           orphan / own / loose / alt / altinst = yes|no
+ *   kind=explicit|dependency           orphan / own / loose / dangling / alt / altinst = yes|no
  *   sort=name | sort=-name             column id, `-` for descending
  *   sel=<item id>       the row whose detail panel is open
  */
@@ -68,6 +68,7 @@ export function decodeState(search: string): UrlState {
   return {
     filter: {
       altInstalled: oneOf(parameters.get("altinst"), TRIS, "any"),
+      dangling: oneOf(parameters.get("dangling"), TRIS, "any"),
       hasAlt: oneOf(parameters.get("alt"), TRIS, "any"),
       kind: oneOf(parameters.get("kind"), KINDS, "any"),
       loose: oneOf(parameters.get("loose"), TRIS, "any"),
@@ -94,6 +95,7 @@ export function encodeState(state: UrlState): string {
   if (filter.orphan !== "any") parameters.set("orphan", filter.orphan);
   if (filter.own !== "any") parameters.set("own", filter.own);
   if (filter.loose !== "any") parameters.set("loose", filter.loose);
+  if (filter.dangling !== "any") parameters.set("dangling", filter.dangling);
   if (filter.hasAlt !== "any") parameters.set("alt", filter.hasAlt);
   if (filter.altInstalled !== "any") parameters.set("altinst", filter.altInstalled);
   if (state.sort !== null) {

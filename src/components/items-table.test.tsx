@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { Item } from "../lib/schema.ts";
 import type { SortState } from "../lib/url-state.ts";
 
-import { ITEMS, makeItem } from "../test/fixtures.ts";
+import { DEAD_LAUNCHER, ITEMS, makeItem } from "../test/fixtures.ts";
 import { ItemsTable } from "./items-table.tsx";
 
 function setup(props: { items?: readonly Item[]; selected?: null | string; sort?: null | SortState } = {}) {
@@ -48,6 +48,11 @@ describe("ItemsTable", () => {
     expect(within(unrar).getAllByRole("cell")[7]).toHaveTextContent("1");
     expect(screen.getAllByText("orphan")).toHaveLength(1);
     expect(screen.getAllByText("loose")).toHaveLength(1);
+  });
+
+  it("badges a dead launcher", () => {
+    setup({ items: [DEAD_LAUNCHER] });
+    expect(screen.getAllByText("dead")).toHaveLength(1);
   });
 
   it("sorts by name ascending and descending", () => {

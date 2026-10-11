@@ -79,6 +79,9 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
           <Field label="Untracked file">
             {item.loose ? "yes — in ~/.local/bin, no repo or package tracks it" : "no"}
           </Field>
+          <Field label="Dead launcher">
+            {item.dangling ? "yes — the .desktop file's Exec target no longer exists" : "no"}
+          </Field>
           <Field label="Evidence">{orDash(item.reason)}</Field>
           <Field label="Licence">{orDash(item.license)}</Field>
           <Field label="Version">{orDash(item.version)}</Field>

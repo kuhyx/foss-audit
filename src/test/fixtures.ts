@@ -21,6 +21,7 @@ export function makeItem(overrides: Partial<Item> = {}): Item {
   const source = overrides.source ?? "pacman";
   return {
     alternative: null,
+    dangling: false,
     explicit: true,
     id: `${source}:${name}`,
     license: "GPL-3.0-or-later",
@@ -83,6 +84,15 @@ export const OWN_SCRIPT = makeItem({ name: "backup.sh", own: true, removeCommand
 export const ORPHAN_LIB = makeItem({ explicit: false, name: "libfoo", orphan: true });
 export const PARTIAL = makeItem({ name: "unar", verdict: "foss-partial" });
 export const MYSTERY = makeItem({ license: "", loose: true, name: "mystery", reason: "no license found", source: "opt", verdict: "nonfree" });
+export const DEAD_LAUNCHER = makeItem({
+  dangling: true,
+  license: "",
+  name: "rpcs3",
+  reason: "launcher without target: /opt/rpcs3/usr/bin/rpcs3",
+  removeCommand: "rm '/home/kuhy/.local/share/applications/rpcs3.desktop'",
+  source: "desktop",
+  verdict: "nonfree",
+});
 
 export const ITEMS: readonly Item[] = [
   makeItem(),
