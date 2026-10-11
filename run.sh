@@ -39,7 +39,7 @@ COREPACK_SHIM_DIR=""
 #
 # Called only from cleanup, which runs from the traps below; shellcheck cannot
 # follow a trap string, hence the SC2329 ("never invoked") opt-outs.
-# shellcheck disable=SC2329
+# shellcheck disable=SC2317,SC2329
 stop_group() {
     local pid="$1"
     if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
@@ -48,7 +48,7 @@ stop_group() {
     fi
 }
 
-# shellcheck disable=SC2329
+# shellcheck disable=SC2317,SC2329
 cleanup() {
     if [[ -n "${UI_PID}${API_PID}" ]]; then
         echo ""

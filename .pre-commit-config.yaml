@@ -46,8 +46,11 @@ repos:
 
       - id: shellcheck
         name: shellcheck
-        entry: shellcheck
+        # Same file set as CI: run.sh sources scripts/lib/*, so shellcheck
+        # must see them together or it reports SC2034/SC1091.
+        entry: bash -c 'shellcheck -x run.sh scripts/*.sh scripts/lib/*.sh'
         language: system
+        pass_filenames: false
         types: [shell]
 
       - id: file-length-cap
