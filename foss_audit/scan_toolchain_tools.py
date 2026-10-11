@@ -1,6 +1,7 @@
 """Global third-party tools of the language toolchains (source "toolchain").
 
-One item per .NET global tool, Dart `pub global` package and user-level gem;
+One item per .NET global tool, Dart `pub global` package, user-level gem and
+`go install`ed module;
 scan_toolchain.py passes in the home directory. The license comes from what the
 install records (LICENSE, nuspec, gemspec); without one the tool is "nonfree".
 """
@@ -8,6 +9,8 @@ install records (LICENSE, nuspec, gemspec); without one the tool is "nonfree".
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 from pathlib import Path
 from typing import Final
 
@@ -23,6 +26,10 @@ PUB_HEADER = re.compile(r"^# (Package|Version): (\S+)", re.MULTILINE)
 GEM_BIN_OWNER = re.compile(r"Gem\.activate_bin_path\(\s*'([^']+)'")
 GEMSPEC_LICENSES = re.compile(r"\bs\.licenses = \[([^\]]*)\]")
 QUOTED = re.compile(r'"([^"]+)"')
+# `go version -m <dir>`: a "<binary>: go1.x" header, then a tab-indented "mod" line.
+GO_BIN_HEADER = re.compile(r"^(\S.*): go\S*$")
+GO_MOD_LINE = re.compile(r"^\tmod\t(\S+)\t(\S+)")
+GOPATHS: Final = ("sdk/go", "go")
 
 
 def natural_key(text: str) -> list[object]:
@@ -137,4 +144,43 @@ def scan_gems(home: Path) -> list[Item]:
                 "~/.local/share/gem" if ".local" in ruby.parts else "~/.gem",
             )
         )
+    return items
+
+
+def go_module_dir(gopath: Path, module: str, version: str) -> Path:
+    """The module cache dir; Go escapes upper-case letters as "!" plus lower-case."""
+    escaped = re.sub(r"[A-Z]", lambda m: "!" + m.group(0).lower(), module)
+    return gopath / "pkg/mod" / f"{escaped}@{version}"
+
+
+def go_bin_modules(go: str, bindir: Path) -> dict[tuple[str, str], list[str]]:
+    """(module, version) -> binary names, from one `go version -m` over the bin dir."""
+    out = subprocess.run(
+        [go, "version", "-m", str(bindir)], capture_output=True, text=True, check=False, timeout=30
+    ).stdout
+    modules: dict[tuple[str, str], list[str]] = {}
+    binary = ""
+    for line in out.splitlines():
+        if header := GO_BIN_HEADER.match(line):
+            binary = Path(header.group(1)).name
+        elif binary and (mod := GO_MOD_LINE.match(line)):
+            modules.setdefault((mod.group(1), mod.group(2)), []).append(binary)
+            binary = ""
+    return modules
+
+
+def scan_go_bins(home: Path) -> list[Item]:
+    """`go install`ed tools in a GOPATH bin; one item per module, not per binary."""
+    go = shutil.which("go")
+    items = []
+    for gopath in (home / sub for sub in GOPATHS):
+        bindir = gopath / "bin"
+        if not go or not bindir.is_dir() or (bindir / "go").exists():
+            continue
+        for (module, version), bins in go_bin_modules(go, bindir).items():
+            files = sorted(go_module_dir(gopath, module, version).glob("LICENSE*"))
+            remove = "rm " + " ".join(str(bindir / b) for b in bins)
+            items.append(
+                tool_item(module, version, license_of(files), remove, f"~/{gopath.relative_to(home)}/bin")
+            )
     return items

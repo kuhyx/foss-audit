@@ -23,6 +23,7 @@ from foss_audit.scan_toolchain_tools import (
     natural_key,
     scan_dotnet_tools,
     scan_gems,
+    scan_go_bins,
     scan_pub_global,
     subdirs,
 )
@@ -140,4 +141,5 @@ def scan_toolchains() -> list[Item]:
         *scan_dotnet_tools(HOME),
         *scan_pub_global(HOME),
         *scan_gems(HOME),
+        *scan_go_bins(HOME),
     ]

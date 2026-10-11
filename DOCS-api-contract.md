@@ -102,7 +102,8 @@ Software no package manager tracks (`scan_unowned.py`):
   the license is the family constant, judged against the LICENSE file the toolchain ships
   when there is one; no `removeCommand`. Global tools are one item each: `.dotnet/tools`
   (LICENSE or nuspec in `.store`), `~/.pub-cache/bin` (LICENSE of the hosted package),
-  user gems (`s.licenses` of the gemspec); anything without a license is `nonfree`.
+  user gems (`s.licenses` of the gemspec), and `go install`ed tools in ~/sdk/go/bin or
+  ~/go/bin, one item per module (`go version -m`, LICENSE from the module cache); anything without a license is `nonfree`.
 `docker` (`scan_docker.py`): local Docker images, one item per repository (tags merged
 into `version`, `docker rmi <repo>:<tag> ...`). The license is the
 `org.opencontainers.image.licenses` label (read with ONE batched `docker image inspect`),

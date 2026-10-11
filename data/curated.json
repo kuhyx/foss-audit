@@ -396,11 +396,6 @@
       "Mozilla Firefox: MPL-2.0 (trademarked branding)",
       "MPL-2.0"
     ],
-    "java": [
-      "foss",
-      "OpenJDK java launcher: GPL-2.0 with Classpath exception",
-      "GPL-2.0-with-classpath-exception"
-    ],
     "Cloudflare Zero Trust CLI": [
       "nonfree",
       "Cloudflare WARP client (warp-cli): proprietary, Cloudflare terms of service",
