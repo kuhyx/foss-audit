@@ -23,6 +23,7 @@ Source = Literal[
     "waydroid",
     "unowned",
     "app-home",
+    "toolchain",
 ]
 Verdict = Literal["foss", "foss-partial", "nonfree"]
 # Verdicts that get a curated FOSS alternative attached (not the "free" headline).

@@ -26,6 +26,7 @@ export const SOURCES = [
   "waydroid",
   "unowned",
   "app-home",
+  "toolchain",
 ] as const;
 
 /**

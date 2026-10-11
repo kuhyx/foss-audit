@@ -38,7 +38,7 @@ rescan (a full scan takes a few seconds). Response body:
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
 | `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
 
-`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home"`
+`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain"`
 
 `Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
@@ -84,6 +84,15 @@ Software no package manager tracks (`scan_unowned.py`):
 - `app-home`: self-updating installs that keep themselves in
   `~/.config/<name>/app-<version>/` (Discord's Squirrel updater); the highest version
   wins; `removeCommand` is `rm -rf ~/.config/<name>`.
+
+- `toolchain` (`scan_toolchain.py`): one item per toolchain family with every installed
+  version in `version` (`~/.rustup/toolchains` -> `rust (rustup)`, `~/.pyenv/versions` ->
+  `python (pyenv)` minus virtualenvs, `~/.nvm/versions/node` -> `node (nvm)`,
+  `~/sdk/fvm/versions` -> `flutter (fvm)`, `~/sdk/go` -> `go` only when `bin/go` exists);
+  the license is the family constant, judged against the LICENSE file the toolchain ships
+  when there is one; no `removeCommand`. Global tools are one item each: `.dotnet/tools`
+  (LICENSE or nuspec in `.store`), `~/.pub-cache/bin` (LICENSE of the hosted package),
+  user gems (`s.licenses` of the gemspec); anything without a license is `nonfree`.
 
 Steam apps (offline; the store site is blocked) are licensed
 `LicenseRef-Steam-Subscriber-Agreement`, plus `LicenseRef-EULA-<appid>` when Steam's
