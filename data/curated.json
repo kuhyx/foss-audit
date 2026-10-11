@@ -470,6 +470,45 @@
       "foss",
       "AGPL-3.0 (LICENSE file on Codeberg); no license label",
       "AGPL-3.0"
+    ],
+    "GitKrakenCLI": [
+      "nonfree",
+      "GitKraken CLI (gk): closed-source proprietary binary under the GitKraken EULA",
+      "LicenseRef-GitKraken-EULA"
+    ],
+    "Blender Launcher": [
+      "foss",
+      "Blender Launcher V2, GPL-3.0 upstream (Victor-IX/Blender-Launcher-V2); the PyInstaller bundle ships no license file",
+      "GPL-3.0"
+    ],
+    "Tachidesk": [
+      "foss",
+      "Suwayomi Tachidesk-Server, MPL-2.0; bundled KCEF is Apache-2.0 and wraps CEF/Chromium (BSD-3-Clause)",
+      "MPL-2.0 Apache-2.0 BSD-3-Clause"
+    ],
+    "gh-copilot": [
+      "nonfree",
+      "GitHub Copilot CLI: closed-source binary, no license grant (all rights reserved); service under GitHub's Copilot terms",
+      "LicenseRef-GitHub-Copilot-Terms"
+    ],
+    "android-sdk": [
+      "nonfree",
+      "Android SDK License (proprietary Google terms, accepted via licenses/android-sdk-license)"
+    ],
+    "GE-Proton*": [
+      "foss",
+      "BSD-3-Clause Proton glue + Wine (LGPL), DXVK (zlib), vkd3d-proton (LGPL); bundled fonts OFL-1.1, AV1 patent grant (PATENTS.AV1)",
+      "LGPL-2.1 Zlib OFL-1.1"
+    ],
+    "godot export templates": [
+      "foss",
+      "MIT: Godot Engine export templates, built from the engine source; the folder ships no license file",
+      "MIT"
+    ],
+    "github actions-runner": [
+      "foss",
+      "MIT: actions/runner (upstream LICENSE); the installed runner folder ships no license file",
+      "MIT"
     ]
   },
   "alternatives": {
@@ -972,6 +1011,56 @@
       "effortReason": "Same OpenAI/Ollama back ends; chats and settings do not migrate",
       "lockIn": "Stored chat history and RAG collections stay in Open WebUI's database",
       "onlySource": "docker"
+    },
+    "GitKrakenCLI": {
+      "names": [
+        "lazygit",
+        "gitui",
+        "tig"
+      ],
+      "candidates": [
+        "lazygit",
+        "gitui",
+        "tig",
+        "git-cola",
+        "gitg"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Terminal Git UIs cover commits, branches and diffs; gk workspaces and Launchpad have no equivalent",
+      "lockIn": "Cloud workspaces and Launchpad data live in GitKraken's service"
+    },
+    "gh-copilot": {
+      "names": [
+        "opencode",
+        "aider",
+        "Goose",
+        "qwen-code"
+      ],
+      "candidates": [
+        "opencode",
+        "aider",
+        "goose",
+        "qwen-code"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "The CLI is a thin client for command suggest/explain; any LLM CLI does the same",
+      "lockIn": "Copilot model access is the lock-in, not the binary"
+    },
+    "android-sdk": {
+      "names": [
+        "android-tools (adb, fastboot: Apache-2.0)",
+        "Debian/F-Droid rebuilt Android SDK packages"
+      ],
+      "candidates": [
+        "android-tools",
+        "android-udev"
+      ],
+      "fit": "partial",
+      "effort": "XL",
+      "effortReason": "Gradle/Flutter builds need Google's build-tools and platforms; free rebuilds lag the releases",
+      "lockIn": "Play Store targetSdk rules track Google's SDK releases"
     },
     "*": {
       "names": [

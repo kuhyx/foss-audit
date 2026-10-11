@@ -23,6 +23,7 @@ from foss_audit import (
     scan_steam,
     scan_toolchain,
     scan_unowned,
+    scan_userapp,
 )
 from foss_audit.curated import Curated, apply
 from foss_audit.model import Item, ScanError
@@ -48,6 +49,7 @@ SCANNERS: dict[str, Callable[[], list[Item]]] = {
     "toolchain": scan_toolchain.scan_toolchains,
     "desktop": scan_desktop.scan_desktop,
     "docker": scan_docker.scan_docker,
+    "user-app": scan_userapp.scan_user_apps,
 }
 
 

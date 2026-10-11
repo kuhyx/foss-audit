@@ -39,7 +39,7 @@ rescan (a full scan takes a few seconds). Response body:
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
 | `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
 
-`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker"`
+`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker" | "user-app"`
 
 `Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
@@ -85,6 +85,15 @@ Software no package manager tracks (`scan_unowned.py`):
 - `app-home`: self-updating installs that keep themselves in
   `~/.config/<name>/app-<version>/` (Discord's Squirrel updater); the highest version
   wins; `removeCommand` is `rm -rf ~/.config/<name>`.
+- `user-app` (`scan_userapp.py`): one item per `~/.local/share/<app>/` that holds an executable ELF
+  (not `.so`) within three levels; node_modules/.git/cache trees are pruned and only the
+  4-byte magic is read. The license is the directory's LICENSE/COPYING file, else `nonfree`
+  until `curated.json` says otherwise. Skipped: Steam, flatpak, pipx, uv, Wine/lutris
+  prefixes, apps a `~/.local/bin` symlink points into, and kuhy's own code. Special items:
+  `gh-copilot`, `android-sdk` (`~/sdk/Android/Sdk`, nonfree "Android SDK License"),
+  `PrismLauncher java runtimes` (foss when OpenJDK), one item per
+  `Steam/compatibilitytools.d/*` (GE-Proton), `godot export templates`,
+  `github actions-runner` and `llama.cpp (llama-server)` (mangatl's vendored copy).
 
 - `toolchain` (`scan_toolchain.py`): one item per toolchain family with every installed
   version in `version` (`~/.rustup/toolchains` -> `rust (rustup)`, `~/.pyenv/versions` ->
