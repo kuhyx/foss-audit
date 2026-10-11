@@ -410,6 +410,66 @@
       "nonfree",
       "Unity Hub: proprietary, Unity EULA",
       "proprietary"
+    ],
+    "mongo": [
+      "nonfree",
+      "SSPL-1.0: source-available, rejected by the OSI; the image has no license label",
+      "SSPL-1.0"
+    ],
+    "confluentinc/cp-*": [
+      "foss",
+      "Confluent's image reference lists the confluent-kafka package (cp-kafka) under Apache 2.0, not the Confluent Community License; cp-zookeeper installs the same package (not verified separately); no license label",
+      "Apache-2.0"
+    ],
+    "gitlab/gitlab-ce": [
+      "foss",
+      "GitLab Community Edition is MIT (gitlab-foss); the omnibus image also bundles other free components; no license label",
+      "MIT"
+    ],
+    "joplin/server": [
+      "nonfree",
+      "Joplin Server is under the Joplin Server Personal Use License (packages/server/LICENSE.md, v.1 2021), not AGPL like the Joplin apps",
+      "LicenseRef-Joplin-Server-Personal-Use"
+    ],
+    "ghcr.io/open-webui/open-webui": [
+      "nonfree",
+      "Open WebUI License: BSD-3-Clause plus a clause forbidding removal of the Open WebUI branding beyond 50 users per 30 days; not OSI-approved (label says NOASSERTION)",
+      "LicenseRef-Open-WebUI"
+    ],
+    "bbernhard/signal-cli-rest-api": [
+      "foss",
+      "REST wrapper is MIT (repository license); it bundles signal-cli, GPL-3.0 (from memory, not verified); no license label",
+      "MIT AND GPL-3.0"
+    ],
+    "provectuslabs/kafka-ui": [
+      "foss",
+      "Apache-2.0 per the repository license; no license label",
+      "Apache-2.0"
+    ],
+    "koalaman/shellcheck": [
+      "foss",
+      "ShellCheck is GPL-3.0 per the repository license; no license label",
+      "GPL-3.0"
+    ],
+    "barichello/godot-ci": [
+      "foss",
+      "Image recipe is MIT (abarichello/godot-ci LICENSE); bundles Godot (MIT) and its export templates; no license label",
+      "MIT"
+    ],
+    "valkey/valkey": [
+      "foss",
+      "BSD-3-Clause per the repository license; no license label",
+      "BSD-3-Clause"
+    ],
+    "roundcube/roundcubemail": [
+      "foss",
+      "GPL-3.0 per the repository license; no license label",
+      "GPL-3.0"
+    ],
+    "codeberg.org/endurain-project/endurain": [
+      "foss",
+      "AGPL-3.0 (LICENSE file on Codeberg); no license label",
+      "AGPL-3.0"
     ]
   },
   "alternatives": {
@@ -867,6 +927,51 @@
       "effort": null,
       "effortReason": "",
       "lockIn": "Pulled in by gst-plugins-bad and pipewire-audio"
+    },
+    "mongo": {
+      "names": [
+        "FerretDB (Apache-2.0, MongoDB wire protocol on PostgreSQL)",
+        "PostgreSQL with JSONB"
+      ],
+      "candidates": [
+        "ferretdb",
+        "postgresql"
+      ],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "FerretDB speaks the Mongo protocol, but unsupported commands and the dump/restore need testing per app",
+      "lockIn": "Data must be exported and re-imported; the Mongo aggregation pipeline is only partly emulated",
+      "onlySource": "docker"
+    },
+    "joplin/server": {
+      "names": [
+        "Nextcloud (AGPL-3.0) or any WebDAV server as the Joplin sync target",
+        "Syncthing"
+      ],
+      "candidates": [
+        "nextcloud",
+        "syncthing"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "The Joplin apps sync to WebDAV/Nextcloud natively; switch the sync target and re-sync",
+      "lockIn": "Joplin Server-only features (sharing, publishing notes) are lost; notes stay portable",
+      "onlySource": "docker"
+    },
+    "ghcr.io/open-webui/open-webui": {
+      "names": [
+        "LibreChat (MIT)",
+        "Ollama's own CLI/API with a FOSS front end"
+      ],
+      "candidates": [
+        "librechat",
+        "ollama"
+      ],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Same OpenAI/Ollama back ends; chats and settings do not migrate",
+      "lockIn": "Stored chat history and RAG collections stay in Open WebUI's database",
+      "onlySource": "docker"
     },
     "*": {
       "names": [

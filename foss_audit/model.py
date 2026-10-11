@@ -25,6 +25,7 @@ Source = Literal[
     "app-home",
     "toolchain",
     "desktop",
+    "docker",
 ]
 Verdict = Literal["foss", "foss-partial", "nonfree"]
 # Verdicts that get a curated FOSS alternative attached (not the "free" headline).

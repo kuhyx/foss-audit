@@ -16,6 +16,7 @@ from typing import Any
 
 from foss_audit import (
     scan_desktop,
+    scan_docker,
     scan_misc,
     scan_pacman,
     scan_python,
@@ -46,6 +47,7 @@ SCANNERS: dict[str, Callable[[], list[Item]]] = {
     "app-home": scan_unowned.scan_app_home,
     "toolchain": scan_toolchain.scan_toolchains,
     "desktop": scan_desktop.scan_desktop,
+    "docker": scan_docker.scan_docker,
 }
 
 

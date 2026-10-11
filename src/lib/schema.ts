@@ -28,6 +28,7 @@ export const SOURCES = [
   "app-home",
   "toolchain",
   "desktop",
+  "docker",
 ] as const;
 
 /**

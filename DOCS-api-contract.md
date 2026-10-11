@@ -39,7 +39,7 @@ rescan (a full scan takes a few seconds). Response body:
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
 | `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
 
-`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop"`
+`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker"`
 
 `Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
@@ -94,6 +94,13 @@ Software no package manager tracks (`scan_unowned.py`):
   when there is one; no `removeCommand`. Global tools are one item each: `.dotnet/tools`
   (LICENSE or nuspec in `.store`), `~/.pub-cache/bin` (LICENSE of the hosted package),
   user gems (`s.licenses` of the gemspec); anything without a license is `nonfree`.
+`docker` (`scan_docker.py`): local Docker images, one item per repository (tags merged
+into `version`, `docker rmi <repo>:<tag> ...`). The license is the
+`org.opencontainers.image.licenses` label (read with ONE batched `docker image inspect`),
+else a built-in table for Docker Hub official images, else `curated.json`. Skipped: tag
+`local`, repositories ending `-mcp`, `kuhyx/` namespaces, `<none>`, and bare names that are
+neither official images nor carry a source/url label pointing outside kuhyx. No docker or
+unreachable daemon gives no items.
 
 Steam apps (offline; the store site is blocked) are licensed
 `LicenseRef-Steam-Subscriber-Agreement`, plus `LicenseRef-EULA-<appid>` when Steam's
