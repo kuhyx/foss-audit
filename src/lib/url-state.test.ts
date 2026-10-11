@@ -14,17 +14,19 @@ describe("URL state", () => {
         altInstalled: "yes",
         hasAlt: "no",
         kind: "dependency",
+        loose: "no",
         orphan: "yes",
+        own: "yes",
         query: "chrome & co",
         sources: ["aur", "steam"],
-        verdicts: ["nonfree", "blob"],
+        verdicts: ["foss", "nonfree"],
       },
       selected: "aur:google-chrome",
       sort: { desc: true, id: "name" },
       view: "table",
     };
     const query = encodeState(state);
-    expect(query).toContain("v=nonfree,blob");
+    expect(query).toContain("v=foss,nonfree");
     expect(query).toContain("sort=-name");
     expect(decodeState(`?${query}`)).toEqual(state);
   });
@@ -45,11 +47,18 @@ describe("URL state", () => {
     expect(state.sort).toBeNull();
   });
 
+  it("ignores verdict values removed from the vocabulary (old links)", () => {
+    expect(decodeState("?v=own,blob,unknown").filter.verdicts).toEqual([]);
+    expect(decodeState("?v=blob,nonfree,own").filter.verdicts).toEqual(["nonfree"]);
+    expect(decodeState("?own=maybe").filter.own).toBe("any");
+    expect(decodeState("?loose=maybe").filter.loose).toBe("any");
+  });
+
   it("treats an empty sort as no sort", () => {
     expect(decodeState("?sort=").sort).toBeNull();
   });
 
   it("keeps multi-select members in vocabulary order", () => {
-    expect(decodeState("?v=unknown,foss").filter.verdicts).toEqual(["foss", "unknown"]);
+    expect(decodeState("?v=nonfree,foss").filter.verdicts).toEqual(["foss", "nonfree"]);
   });
 });

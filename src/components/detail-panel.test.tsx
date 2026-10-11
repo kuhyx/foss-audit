@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { CHROME, makeAlternative, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
+import { CHROME, makeAlternative, MYSTERY, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
 import { DetailPanel } from "./detail-panel.tsx";
 
 describe("DetailPanel", () => {
@@ -45,6 +45,16 @@ describe("DetailPanel", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText(/yes — nothing requires it/u)).toBeInTheDocument();
     expect(screen.getByText("No remove command")).toBeInTheDocument();
+  });
+
+  it("flags own code", () => {
+    render(<DetailPanel item={OWN_SCRIPT} onClose={vi.fn()} />);
+    expect(screen.getByText("yes — kuhy's own")).toBeInTheDocument();
+  });
+
+  it("flags untracked files", () => {
+    render(<DetailPanel item={MYSTERY} onClose={vi.fn()} />);
+    expect(screen.getByText(/yes — in ~\/\.local\/bin/u)).toBeInTheDocument();
   });
 
   it("explains an alternative with no names and nothing installed", () => {

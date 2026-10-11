@@ -20,7 +20,9 @@ export interface FilterState {
   readonly altInstalled: Tri;
   readonly hasAlt: Tri;
   readonly kind: Kind;
+  readonly loose: Tri;
   readonly orphan: Tri;
+  readonly own: Tri;
   readonly query: string;
   readonly sources: readonly Source[];
   readonly verdicts: readonly Verdict[];
@@ -30,7 +32,9 @@ export const DEFAULT_FILTER: FilterState = {
   altInstalled: "any",
   hasAlt: "any",
   kind: "any",
+  loose: "any",
   orphan: "any",
+  own: "any",
   query: "",
   sources: [],
   verdicts: [],
@@ -74,6 +78,8 @@ export function passesFilter(item: Item, filter: FilterState): boolean {
     (filter.sources.length === 0 || filter.sources.includes(item.source)) &&
     passesKind(filter.kind, item.explicit) &&
     passesTri(filter.orphan, item.orphan) &&
+    passesTri(filter.own, item.own) &&
+    passesTri(filter.loose, item.loose) &&
     passesTri(filter.hasAlt, hasAlt) &&
     passesTri(filter.altInstalled, (alt?.installed.length ?? 0) > 0) &&
     matchesQuery(item, filter.query)
@@ -94,6 +100,8 @@ export function isFilterActive(filter: FilterState): boolean {
     filter.sources.length > 0 ||
     filter.kind !== "any" ||
     filter.orphan !== "any" ||
+    filter.own !== "any" ||
+    filter.loose !== "any" ||
     filter.hasAlt !== "any" ||
     filter.altInstalled !== "any"
   );

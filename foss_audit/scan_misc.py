@@ -1,8 +1,9 @@
 """Scan the non-package-manager sources: npm, cargo, flatpak, AppImages, /opt,
 ~/.local/bin, Steam, Wine and Waydroid.
 
-Most of these carry no license metadata, so they default to "unknown" and
-data/curated.json supplies the verdict.
+Most of these carry no license metadata, so they default to "nonfree" (no
+license grant) and data/curated.json supplies the real verdict. Scripts are
+traced to their pip distribution or their checkout's LICENSE instead.
 """
 
 from __future__ import annotations
@@ -14,8 +15,11 @@ import subprocess
 from pathlib import Path
 
 from foss_audit.licenses import classify_text
-from foss_audit.model import Item
+from foss_audit.model import NO_LICENSE, Item
+from foss_audit.own_license import license_for_path, origin_of, repo_root
+from foss_audit.pnpm_shim import pnpm_item
 from foss_audit.scan_pacman import owned_by_pacman
+from foss_audit.scan_python import dist_license, script_owners
 
 HOME = Path.home()
 STEAM_APPS = HOME / ".local/share/Steam/steamapps"
@@ -36,9 +40,9 @@ ACF_FIELD = re.compile(r'^\s*"(name|appid|buildid)"\s+"([^"]*)"', re.MULTILINE)
 
 
 def unknown(name: str, source: str, **kw: object) -> Item:
-    """An Item with no license evidence yet (curated.json may settle it)."""
-    kw.setdefault("reason", "no license metadata")
-    return Item(name=name, source=source, verdict="unknown", **kw)  # type: ignore[arg-type]
+    """An Item with no license evidence: nonfree until curated.json says otherwise."""
+    kw.setdefault("reason", NO_LICENSE)
+    return Item(name=name, source=source, verdict="nonfree", **kw)  # type: ignore[arg-type]
 
 
 def scan_npm_global() -> list[Item]:
@@ -54,17 +58,11 @@ def scan_npm_global() -> list[Item]:
         pkg = pkg_json.parent
         if pkg.is_symlink():
             # `npm link` of a local project: kuhy's own tutorial/tool code.
-            items.append(
-                Item(
-                    name=pkg.name,
-                    source="npm-global",
-                    verdict="own",
-                    reason="npm link to a local checkout",
-                )
-            )
+            items.append(from_checkout(pkg.name, "npm-global", pkg_json.resolve(), "npm link"))
             continue
         data = json.loads(pkg_json.read_text())
-        lic = data.get("license") or ""
+        # Some packages (qwen-code) ship only a LICENSE file, no manifest field.
+        lic = data.get("license") or license_for_path(pkg_json)[0]
         verdict, reason = classify_text(lic if isinstance(lic, str) else json.dumps(lic))
         items.append(
             Item(
@@ -139,17 +137,63 @@ def _is_elf(path: Path) -> bool:
         return fh.read(4) == b"\x7fELF"
 
 
-def classify_local_bin(path: Path) -> Item | None:
-    """One ~/.local/bin entry; None when it belongs to another scanned source."""
+def from_checkout(name: str, source: str, path: Path, how: str) -> Item:
+    """An Item licensed by the checkout or package directory holding `path`."""
+    lic, own = license_for_path(path)
+    verdict, reason = classify_text(lic)
+    return Item(
+        name=name,
+        source=source,  # type: ignore[arg-type]
+        verdict=verdict,
+        license=lic,
+        reason=f"{how}; {reason}" if reason else how,
+        own=own,
+    )
+
+
+def classify_local_bin(path: Path, owners: dict[str, Path]) -> Item | None:
+    """One ~/.local/bin entry; None when it belongs to another scanned source.
+
+    Order: pip entry point (its distribution's license), symlink into a
+    checkout, loose copy of a file tracked in one of kuhy's repos, else nothing
+    grants a license.
+    """
     target = path.resolve()
     if any(target.is_relative_to(r) for r in TOOL_ROOTS):
         return None
-    where = f"-> {target}" if path.is_symlink() else "in ~/.local/bin"
-    # Scripts here (direct or symlinked from ~/src, ~/.claude, wrappers) are
-    # kuhy's own; native binaries are third-party and need a curated verdict.
-    if target.is_file() and not _is_elf(target):
-        return Item(name=path.name, source="local-bin", verdict="own", reason=f"script {where}")
-    return unknown(path.name, "local-bin", reason=f"binary {where}")
+    meta = owners.get(str(path))
+    if meta is not None:
+        dist, _, lic, url, own = dist_license(meta)
+        verdict, reason = classify_text(lic)
+        how = f"entry point of {dist}"
+        return Item(
+            name=path.name,
+            source="local-bin",
+            verdict=verdict,
+            license=lic,
+            reason=f"{how}; {reason}" if reason else how,
+            url=url or None,
+            own=own,
+        )
+    link = f"-> {target}"
+    # A symlink into a checkout or a licensed package dir (npm) speaks for itself.
+    if path.is_symlink() and (repo_root(target.parent) or license_for_path(target)[0]):
+        return from_checkout(path.name, "local-bin", target, link)
+    # Otherwise trace it to the tracked file it was copied or compiled from:
+    # ~/.local/share/book-guard-desktop/.../book_guard_desktop <- book_guard_desktop.dart.
+    origin = origin_of(target)
+    if origin is not None:
+        how = f"{link}, built from {origin}" if path.is_symlink() else f"copy of {origin}"
+        return from_checkout(path.name, "local-bin", origin, how)
+    if path.is_symlink():
+        return from_checkout(path.name, "local-bin", target, link)
+    # A hand-placed script is kuhy's own; a native binary is someone else's.
+    # A pnpm-generated shim is licensed by the package it execs.
+    script = target.is_file() and not _is_elf(target)
+    kind = "script" if script else "binary"
+    return (pnpm_item(path, target) if script else None) or unknown(
+        path.name, "local-bin", reason=f"{kind} in ~/.local/bin; {NO_LICENSE}", own=script, loose=True
+    )
 
 
 def scan_local_bin() -> list[Item]:
@@ -157,7 +201,8 @@ def scan_local_bin() -> list[Item]:
     root = HOME / ".local/bin"
     if not root.is_dir():
         return []
-    items = [classify_local_bin(p) for p in sorted(root.iterdir()) if p.exists()]
+    owners = script_owners()
+    items = [classify_local_bin(p, owners) for p in sorted(root.iterdir()) if p.exists()]
     return [i for i in items if i is not None]
 
 

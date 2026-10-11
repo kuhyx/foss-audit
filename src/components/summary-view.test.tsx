@@ -32,10 +32,9 @@ describe("SummaryView", () => {
     expect(screen.getByText("44.4% free")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "4 free" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "5 not free" })).toBeInTheDocument();
-    expect(screen.getByTestId("count-nonfree")).toHaveTextContent("3");
-    expect(screen.getByTestId("count-foss")).toHaveTextContent("2");
-    expect(screen.getByTestId("count-unknown")).toHaveTextContent("1");
-    const sum = ["foss", "own", "foss-partial", "nonfree", "blob", "unknown"]
+    expect(screen.getByTestId("count-nonfree")).toHaveTextContent("5");
+    expect(screen.getByTestId("count-foss")).toHaveTextContent("3");
+    const sum = ["foss", "foss-partial", "nonfree"]
       .map((v) => Number(screen.getByTestId(`count-${v}`).textContent))
       .reduce((a, b) => a + b, 0);
     expect(sum).toBe(ITEMS.length);
@@ -45,12 +44,12 @@ describe("SummaryView", () => {
     const user = userEvent.setup();
     const onDrill = vi.fn();
     render(<SummaryView items={ITEMS} onDrill={onDrill} />);
-    await user.click(screen.getByRole("button", { name: /^Blob/u }));
-    expect(onDrill).toHaveBeenLastCalledWith(["blob"], []);
+    await user.click(screen.getByRole("button", { name: /^Non-free/u }));
+    expect(onDrill).toHaveBeenLastCalledWith(["nonfree"], []);
     await user.click(screen.getByRole("button", { name: "5 not free" }));
-    expect(onDrill).toHaveBeenLastCalledWith(["nonfree", "blob", "unknown"], []);
+    expect(onDrill).toHaveBeenLastCalledWith(["nonfree"], []);
     await user.click(screen.getByRole("button", { name: "4 free" }));
-    expect(onDrill).toHaveBeenLastCalledWith(expect.arrayContaining(["foss", "own", "foss-partial"]), []);
+    expect(onDrill).toHaveBeenLastCalledWith(["foss", "foss-partial"], []);
   });
 
   it("drills from a source label, a segment click and a segment Enter/Space", async () => {
@@ -60,9 +59,9 @@ describe("SummaryView", () => {
     await user.click(screen.getByRole("button", { name: "steam" }));
     expect(onDrill).toHaveBeenLastCalledWith([], ["steam"]);
 
-    const segment = screen.getByRole("button", { name: /^pacman, Blob: 1 of 5/u });
+    const segment = screen.getByRole("button", { name: /^pacman, Non-free: 2 of 5/u });
     await user.click(segment);
-    expect(onDrill).toHaveBeenLastCalledWith(["blob"], ["pacman"]);
+    expect(onDrill).toHaveBeenLastCalledWith(["nonfree"], ["pacman"]);
 
     onDrill.mockClear();
     fireEvent.keyDown(segment, { key: "x" });
@@ -87,7 +86,7 @@ describe("SummaryView", () => {
 
   it("draws a legend entry per verdict and rounds only each bar's last segment", () => {
     render(<SummaryView items={ITEMS} onDrill={vi.fn()} />);
-    expect(screen.getByRole("list", { name: "Legend" }).children).toHaveLength(6);
+    expect(screen.getByRole("list", { name: "Legend" }).children).toHaveLength(3);
     const pacman = screen.getByRole("group", { name: "pacman by verdict" });
     const paths = [...pacman.querySelectorAll("path")].map((p) => p.getAttribute("d") ?? "");
     expect(paths.at(-1)).toContain("Q");

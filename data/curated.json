@@ -42,24 +42,24 @@
       "oneAPI Unified Memory Framework is open source"
     ],
     "xone-dongle-firmware": [
-      "blob",
-      "Xbox wireless dongle firmware extracted from Microsoft's driver"
+      "nonfree",
+      "firmware blob: Xbox wireless dongle firmware extracted from Microsoft's driver"
     ],
     "lib32-nvidia-utils": [
-      "blob",
-      "NVIDIA proprietary userspace driver (32-bit)"
+      "nonfree",
+      "firmware blob: NVIDIA proprietary userspace driver (32-bit)"
     ],
     "aic94xx-firmware": [
-      "blob",
-      "Adaptec SAS firmware"
+      "nonfree",
+      "firmware blob: Adaptec SAS firmware"
     ],
     "ast-firmware": [
-      "blob",
-      "ASPEED firmware"
+      "nonfree",
+      "firmware blob: ASPEED firmware"
     ],
     "wd719x-firmware": [
-      "blob",
-      "Western Digital SCSI firmware"
+      "nonfree",
+      "firmware blob: Western Digital SCSI firmware"
     ],
     "discord": [
       "nonfree",
@@ -86,8 +86,8 @@
       "Flavio Tordini, proprietary paid app ('All Rights Reserved')"
     ],
     "krita-plugin-pythonplugindevelopertools-git": [
-      "unknown",
-      "Upstream repo has no LICENSE file"
+      "nonfree",
+      "no license (all rights reserved): upstream repo has no LICENSE file"
     ],
     "0ad-data*": [
       "foss",
@@ -364,10 +364,6 @@
     "depotdownloader": [
       "foss",
       "SteamRE DepotDownloader, GPL-2.0 (manually verified custom license)"
-    ],
-    "book-guard-desktop": [
-      "own",
-      "kuhy's own Flutter desktop app"
     ]
   },
   "alternatives": {

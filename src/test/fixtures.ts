@@ -24,8 +24,10 @@ export function makeItem(overrides: Partial<Item> = {}): Item {
     explicit: true,
     id: `${source}:${name}`,
     license: "GPL-3.0-or-later",
+    loose: false,
     name,
     orphan: false,
+    own: false,
     reason: "GPL-3.0-or-later",
     removeCommand: `sudo pacman -Rns ${name}`,
     requiredBy: [],
@@ -76,11 +78,11 @@ export const STEAM_GAME = makeItem({
   version: null,
 });
 
-export const FIRMWARE = makeItem({ name: "linux-firmware", verdict: "blob" });
-export const OWN_SCRIPT = makeItem({ name: "backup.sh", removeCommand: null, source: "local-bin", verdict: "own" });
+export const FIRMWARE = makeItem({ name: "linux-firmware", reason: "firmware blob", verdict: "nonfree" });
+export const OWN_SCRIPT = makeItem({ name: "backup.sh", own: true, removeCommand: null, source: "local-bin" });
 export const ORPHAN_LIB = makeItem({ explicit: false, name: "libfoo", orphan: true });
 export const PARTIAL = makeItem({ name: "unar", verdict: "foss-partial" });
-export const MYSTERY = makeItem({ license: "", name: "mystery", source: "opt", verdict: "unknown" });
+export const MYSTERY = makeItem({ license: "", loose: true, name: "mystery", reason: "no license found", source: "opt", verdict: "nonfree" });
 
 export const ITEMS: readonly Item[] = [
   makeItem(),

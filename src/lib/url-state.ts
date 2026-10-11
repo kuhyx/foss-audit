@@ -7,8 +7,8 @@
  *
  *   view=table|wins     which tab (summary when absent)
  *   q=...               search
- *   v=nonfree,blob      verdicts        src=aur,steam   sources
- *   kind=explicit|dependency           orphan / alt / altinst = yes|no
+ *   v=nonfree,foss      verdicts        src=aur,steam   sources
+ *   kind=explicit|dependency           orphan / own / loose / alt / altinst = yes|no
  *   sort=name | sort=-name             column id, `-` for descending
  *   sel=<item id>       the row whose detail panel is open
  */
@@ -70,7 +70,9 @@ export function decodeState(search: string): UrlState {
       altInstalled: oneOf(parameters.get("altinst"), TRIS, "any"),
       hasAlt: oneOf(parameters.get("alt"), TRIS, "any"),
       kind: oneOf(parameters.get("kind"), KINDS, "any"),
+      loose: oneOf(parameters.get("loose"), TRIS, "any"),
       orphan: oneOf(parameters.get("orphan"), TRIS, "any"),
+      own: oneOf(parameters.get("own"), TRIS, "any"),
       query: parameters.get("q") ?? "",
       sources: listOf(parameters.get("src"), SOURCES),
       verdicts: listOf(parameters.get("v"), VERDICTS),
@@ -90,6 +92,8 @@ export function encodeState(state: UrlState): string {
   if (filter.sources.length > 0) parameters.set("src", filter.sources.join(","));
   if (filter.kind !== "any") parameters.set("kind", filter.kind);
   if (filter.orphan !== "any") parameters.set("orphan", filter.orphan);
+  if (filter.own !== "any") parameters.set("own", filter.own);
+  if (filter.loose !== "any") parameters.set("loose", filter.loose);
   if (filter.hasAlt !== "any") parameters.set("alt", filter.hasAlt);
   if (filter.altInstalled !== "any") parameters.set("altinst", filter.altInstalled);
   if (state.sort !== null) {
@@ -97,6 +101,6 @@ export function encodeState(state: UrlState): string {
   }
   if (state.selected !== null) parameters.set("sel", state.selected);
   // Commas are this format's separator and never occur inside a member, so
-  // they stay literal: `v=nonfree,blob` reads better than `v=nonfree%2Cblob`.
+  // they stay literal: `v=nonfree,foss` reads better than `v=nonfree%2Cfoss`.
   return parameters.toString().replaceAll("%2C", ",");
 }

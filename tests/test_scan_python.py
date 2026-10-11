@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import make_repo
 
 from foss_audit import scan_python
 
@@ -36,14 +37,22 @@ def test_pip_user_license_sources_and_own(home: Path) -> None:
     dist(site, "freetext", "License: Proprietary\n second line")
     dist(site, "bare", "")
     dist(site, "mine", "", {"url": "https://github.com/kuhyx/utils"})
-    dist(site, "local", "", {"url": "file:///home/k/src/x"})
+    local = make_repo(home / "src/x")
+    dist(site, "local", "", {"url": f"file://{local}"})
+    dist(site, "vendored", "Home-page: https://github.com/someone/v", {"url": f"file://{local}"})
+    utils = make_repo(home / "src/utils", remote="git@github.com:kuhyx/utils.git")
+    (utils / "sub").mkdir()
+    dist(site, "sub", "", {"url": "https://github.com/kuhyx/utils", "subdirectory": "sub"})
     dist(site, "remote", "License: MIT", {"url": "https://github.com/other/x"})
     by = {i.name: i for i in scan_python.scan_pip_user()}
     assert (by["expr"].verdict, by["expr"].url) == ("foss", "https://e.x")
     assert (by["trove"].license, by["trove"].url) == ("BSD License", "https://t.x")
     assert by["freetext"].verdict == "nonfree"
-    assert by["bare"].verdict == "unknown"
-    assert by["mine"].verdict == by["local"].verdict == "own"
+    assert (by["bare"].verdict, by["bare"].own) == ("nonfree", False)
+    assert by["mine"].own and by["local"].own and by["sub"].own
+    assert (by["local"].verdict, by["local"].license) == ("foss", "MIT")
+    assert (by["sub"].verdict, by["sub"].license) == ("foss", "MIT")
+    assert not by["vendored"].own
     assert by["remote"].verdict == "foss"
     assert by["expr"].removeCommand == "pip uninstall --user expr"
 
@@ -71,4 +80,13 @@ def test_conda_base_and_envs(home: Path) -> None:
     )
     (env / "meta.json").write_text(json.dumps({"license": None}))
     items = scan_python.scan_conda()
-    assert [(i.name, i.verdict) for i in items] == [("python [base]", "foss"), ("meta [copo]", "unknown")]
+    assert [(i.name, i.verdict) for i in items] == [("python [base]", "foss"), ("meta [copo]", "nonfree")]
+
+
+def test_script_owners_from_record(home: Path) -> None:
+    site = home / ".local/lib/python3.14/site-packages"
+    dist(site, "bandit", "License: Apache")
+    record = site / "bandit-1.0.dist-info/RECORD"
+    record.write_text("bandit/__init__.py,sha256=x,1\n../../../bin/bandit,sha256=y,2\n")
+    owners = scan_python.script_owners()
+    assert owners == {str(home / ".local/bin/bandit"): record.parent / "METADATA"}

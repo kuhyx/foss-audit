@@ -52,7 +52,7 @@ export function SummaryView({ items, onDrill }: SummaryViewProps): React.JSX.Ele
           >
             {numberFormat.format(free)} free
           </button>{" "}
-          <span className="muted">(FOSS, own code and partly-FOSS)</span> versus{" "}
+          <span className="muted">(FOSS and partly-FOSS)</span> versus{" "}
           <button
             className="link"
             onClick={(): void => {
@@ -62,7 +62,7 @@ export function SummaryView({ items, onDrill }: SummaryViewProps): React.JSX.Ele
           >
             {numberFormat.format(notFree)} not free
           </button>{" "}
-          <span className="muted">(non-free, blob, unknown)</span>, out of{" "}
+          <span className="muted">(non-free, incl. firmware blobs and unlicensed)</span>, out of{" "}
           {numberFormat.format(total)} installed items.
         </p>
       </section>

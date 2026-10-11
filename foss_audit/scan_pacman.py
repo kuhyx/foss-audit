@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import subprocess
 
-from foss_audit.licenses import classify_spdx
-from foss_audit.model import Item
+from foss_audit.licenses import classify_spdx, classify_text
+from foss_audit.model import Item, Verdict
+from foss_audit.own_license import checkout_for_url, declared_license
 
 # expac prints one line per package; fields are tab-separated and the
 # multi-valued ones (%L licenses, %N required-by) are joined with the -l delimiter.
@@ -22,6 +23,16 @@ def _lines(cmd: list[str]) -> list[str]:
     return [ln for ln in proc.stdout.splitlines() if ln]
 
 
+def own_repo_verdict(url: str, verdict: Verdict, reason: str) -> tuple[Verdict, str]:
+    """Re-classify one of kuhy's packages from its local checkout's LICENSE."""
+    repo = checkout_for_url(url)
+    lic = declared_license(repo, repo) if repo else ""
+    if not lic:
+        return verdict, reason
+    new_verdict, new_reason = classify_text(lic)
+    return new_verdict, new_reason or f"{lic} (LICENSE in {repo})"
+
+
 def parse_expac(lines: list[str], explicit: set[str], foreign: set[str], orphans: set[str]) -> list[Item]:
     """Build Items from expac output lines."""
     items: list[Item] = []
@@ -29,8 +40,10 @@ def parse_expac(lines: list[str], explicit: set[str], foreign: set[str], orphans
         name, version, lic, url, required = (line.split("\t") + [""] * 5)[:5]
         license_expr = lic.replace(LIST_DELIM, " ")
         verdict, reason = classify_spdx(name, license_expr)
-        if "github.com/kuhyx/" in url:
-            verdict, reason = "own", "kuhy's own package"
+        own = "github.com/kuhyx/" in url
+        if own and verdict != "foss":
+            # kuhy's PKGBUILDs often just say "custom"; his checkout's LICENSE is the truth.
+            verdict, reason = own_repo_verdict(url, verdict, reason)
         items.append(
             Item(
                 name=name,
@@ -42,6 +55,7 @@ def parse_expac(lines: list[str], explicit: set[str], foreign: set[str], orphans
                 url=url or None,
                 explicit=name in explicit,
                 orphan=name in orphans,
+                own=own,
                 requiredBy=[r for r in required.split(LIST_DELIM) if r],
                 removeCommand=f"sudo pacman -Rns {name}",
             ),

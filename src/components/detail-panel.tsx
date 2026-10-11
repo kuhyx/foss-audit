@@ -75,6 +75,10 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
           <Field label="Verdict">
             <VerdictBadge verdict={item.verdict} />
           </Field>
+          <Field label="Own code">{item.own ? "yes — kuhy's own" : "no"}</Field>
+          <Field label="Untracked file">
+            {item.loose ? "yes — in ~/.local/bin, no repo or package tracks it" : "no"}
+          </Field>
           <Field label="Evidence">{orDash(item.reason)}</Field>
           <Field label="Licence">{orDash(item.license)}</Field>
           <Field label="Version">{orDash(item.version)}</Field>

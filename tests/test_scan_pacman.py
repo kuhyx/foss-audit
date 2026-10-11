@@ -36,7 +36,8 @@ def test_parse_expac_sets_source_flags_and_own() -> None:
     assert not by["zlib"].explicit
     assert by["zlib"].orphan
     assert by["zlib"].requiredBy == ["vim", "yay"]
-    assert by["todo-flutter"].verdict == "own"
+    assert (by["todo-flutter"].verdict, by["todo-flutter"].own) == ("nonfree", True)
+    assert not by["yay"].own
     assert by["vim"].removeCommand == "sudo pacman -Rns vim"
     assert by["lonely"].version is None
     assert by["lonely"].url is None

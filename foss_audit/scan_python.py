@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 from email.parser import HeaderParser
 from pathlib import Path
+from urllib.parse import unquote
 
 from foss_audit.licenses import classify_text
 from foss_audit.model import Item, Source
+from foss_audit.own_license import OWN_MARKER, checkout_for_url, declared_license, is_kuhy_repo, repo_root
 
 HOME = Path.home()
 PIPX_VENVS = HOME / ".local/share/pipx/venvs"
@@ -43,41 +46,83 @@ def read_metadata(meta: Path) -> tuple[str, str, str, str]:
     return msg.get("Name", meta.parent.name), msg.get("Version", ""), lic, url
 
 
-OWN_URL_MARKERS = ("file://", "github.com/kuhyx/")
-
-
-def is_own_install(dist_info: Path) -> bool:
-    """True when pip installed from a local checkout or one of kuhy's repos."""
+def _direct_url(dist_info: Path) -> dict[str, str]:
     direct = dist_info / "direct_url.json"
-    if not direct.is_file():
-        return False
-    data = json.loads(direct.read_text())
+    return json.loads(direct.read_text()) if direct.is_file() else {}
+
+
+def checkout_of(dist_info: Path) -> Path | None:
+    """The local source dir pip installed from: a file:// URL, or the local
+    checkout of a github.com/kuhyx VCS URL (plus its subdirectory)."""
+    data = _direct_url(dist_info)
     url = str(data.get("url", ""))
-    return any(m in url for m in OWN_URL_MARKERS)
+    if url.startswith("file://"):
+        return Path(unquote(url.removeprefix("file://")))
+    repo = checkout_for_url(url)
+    return repo / str(data.get("subdirectory", "")) if repo else None
+
+
+def is_own_install(dist_info: Path, homepage: str) -> bool:
+    """True when pip installed one of kuhy's repos (by URL or from his checkout).
+
+    A kuhyx checkout can vendor someone else's project (mcp-servers holds
+    blender-mcp), so a homepage on another GitHub account wins over the checkout.
+    """
+    if OWN_MARKER in str(_direct_url(dist_info).get("url", "")):
+        return True
+    if "github.com/" in homepage and OWN_MARKER not in homepage:
+        return False
+    checkout = checkout_of(dist_info)
+    root = repo_root(checkout) if checkout else None
+    return root is not None and is_kuhy_repo(root)
+
+
+def dist_license(meta: Path) -> tuple[str, str, str, str, bool]:
+    """(name, version, license, homepage, own); local installs fall back to the checkout's LICENSE."""
+    name, version, lic, url = read_metadata(meta)
+    checkout = checkout_of(meta.parent)
+    if not lic and checkout and checkout.is_dir():
+        lic = declared_license(checkout, repo_root(checkout) or checkout)
+    return name, version, lic, url, is_own_install(meta.parent, url)
 
 
 def _dist_item(meta: Path, source: Source, remove: str) -> Item:
-    name, version, lic, url = read_metadata(meta)
-    if is_own_install(meta.parent):
-        verdict, reason = "own", "installed from kuhy's own repo/checkout"
-    else:
-        verdict, reason = classify_text(lic)
+    name, version, lic, url, own = dist_license(meta)
+    verdict, reason = classify_text(lic)
     return Item(
         name=name,
         version=version or None,
         source=source,
-        verdict=verdict,  # type: ignore[arg-type]
+        verdict=verdict,
         license=lic,
         reason=reason,
         url=url or None,
+        own=own,
         removeCommand=remove.format(name=name),
     )
+
+
+def user_sites() -> list[Path]:
+    """Every pip --user site-packages dir."""
+    return sorted(HOME.glob(".local/lib/python3*/site-packages"))
+
+
+def script_owners() -> dict[str, Path]:
+    """~/.local/bin/<script> path -> METADATA of the pip --user dist whose RECORD lists it."""
+    owners: dict[str, Path] = {}
+    for site in user_sites():
+        for record in site.glob("*.dist-info/RECORD"):
+            for line in record.read_text(errors="replace").splitlines():
+                rel = line.split(",", 1)[0]
+                if "/bin/" in rel:
+                    owners[os.path.normpath(site / rel)] = record.parent / "METADATA"
+    return owners
 
 
 def scan_pip_user() -> list[Item]:
     """Distributions in ~/.local/lib/python3*/site-packages."""
     items: list[Item] = []
-    for site in sorted(HOME.glob(".local/lib/python3*/site-packages")):
+    for site in user_sites():
         items += [
             _dist_item(m, "pip-user", "pip uninstall --user {name}")
             for m in sorted(site.glob("*.dist-info/METADATA"))

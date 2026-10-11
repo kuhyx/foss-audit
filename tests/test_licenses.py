@@ -19,14 +19,15 @@ from foss_audit.licenses import classify_spdx, classify_text, tokens
         ("clinfo", "custom:Public Domain", "foss"),
         ("google-chrome", "custom:chrome", "nonfree"),
         ("steam", "LicenseRef-steam-subscriber-agreement", "nonfree"),
-        ("nvidia-utils", "LicenseRef-NVIDIA-Driver-License-Agreement", "blob"),
-        ("linux-firmware-amd", "LicenseRef-WHENCE LicenseRef-amd", "blob"),
+        ("nvidia-utils", "LicenseRef-NVIDIA-Driver-License-Agreement", "nonfree"),
+        ("linux-firmware-amd", "LicenseRef-WHENCE LicenseRef-amd", "nonfree"),
         ("intel-oneapi-mkl", "LicenseRef-Intel-Simplified", "nonfree"),
         ("pop-icon-theme", "CCPL", "foss"),
         ("dual", "GPL-3.0-only OR LicenseRef-commercial", "foss"),
-        ("sudo", "custom", "unknown"),
-        ("libklvanc", "", "unknown"),
-        ("odd", "LicenseRef-Mystery", "unknown"),
+        ("blender-bin", "MIT LicenseRef-Arev-Fonts LicenseRef-ICS LicenseRef-TOST-1.0", "foss"),
+        ("sudo", "custom", "nonfree"),
+        ("libklvanc", "", "nonfree"),
+        ("odd", "LicenseRef-Mystery", "nonfree"),
     ],
 )
 def test_classify_spdx(name: str, expr: str, verdict: str) -> None:
@@ -58,11 +59,16 @@ def test_tokens_drop_operators_and_filler() -> None:
         ("Proprietary", "nonfree"),
         ("Copyright 2013 Someone. All rights reserved.", "nonfree"),
         ("Dual: MIT or commercial", "foss"),
-        ("", "unknown"),
-        ("UNKNOWN", "unknown"),
-        ("None", "unknown"),
-        ("Some bespoke text", "unknown"),
+        ("", "nonfree"),
+        ("UNKNOWN", "nonfree"),
+        ("None", "nonfree"),
+        ("Some bespoke text", "nonfree"),
     ],
 )
 def test_classify_text(text: str, verdict: str) -> None:
     assert classify_text(text)[0] == verdict
+
+
+def test_blob_and_missing_reasons() -> None:
+    assert classify_spdx("linux-firmware-amd", "LicenseRef-amd")[1] == "firmware blob: LicenseRef-amd"
+    assert classify_text("")[1] == "no license (all rights reserved)"

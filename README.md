@@ -1,7 +1,8 @@
 # foss-audit
 
 Scans every program installed on this PC and sorts each one into FOSS / partly
-FOSS / non-free / firmware blob / own code / unknown. It covers pacman and AUR,
+FOSS / non-free (anything with no license grant, firmware blobs included); kuhy's
+own code and untracked `~/.local/bin` files are flagged separately. It covers pacman and AUR,
 pip, pipx, uv tools, conda, npm, cargo, flatpak, AppImages, `/opt`,
 `~/.local/bin`, Steam, Wine and Waydroid. Non-free items get a curated FOSS
 alternative, a fit rating, and the effort it would take to build one ourselves.

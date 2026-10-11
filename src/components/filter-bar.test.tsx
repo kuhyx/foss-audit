@@ -17,7 +17,8 @@ describe("FilterBar", () => {
   it("shows whole-scan counts on chips, only present sources, and the result count", () => {
     setup();
     const verdicts = screen.getByRole("group", { name: "Verdict" });
-    expect(within(verdicts).getByRole("button", { name: /Non-free/u })).toHaveTextContent("3");
+    expect(within(verdicts).getAllByRole("button")).toHaveLength(3);
+    expect(within(verdicts).getByRole("button", { name: /Non-free/u })).toHaveTextContent("5");
     const sources = screen.getByRole("group", { name: "Source" });
     expect(within(sources).getAllByRole("button").map((b) => b.textContent)).toEqual([
       "pacman5",
@@ -33,7 +34,7 @@ describe("FilterBar", () => {
   it("shows 0 for a verdict the scan does not contain", () => {
     const onChange = vi.fn();
     render(<FilterBar filter={DEFAULT_FILTER} items={ITEMS.slice(0, 2)} onChange={onChange} shown={2} />);
-    expect(screen.getByRole("button", { name: /^Own code/u })).toHaveTextContent("0");
+    expect(screen.getByRole("button", { name: /^FOSS \(partial\)/u })).toHaveTextContent("0");
   });
 
   it("toggles verdict and source chips on and off", async () => {
@@ -42,8 +43,8 @@ describe("FilterBar", () => {
     expect(nonfree).toHaveAttribute("aria-pressed", "true");
     await user.click(nonfree);
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ verdicts: [] }));
-    await user.click(screen.getByRole("button", { name: /^blob/iu }));
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ verdicts: ["nonfree", "blob"] }));
+    await user.click(screen.getByRole("button", { name: /^FOSS \(partial\)/u }));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ verdicts: ["foss-partial", "nonfree"] }));
     await user.click(screen.getByRole("button", { name: /^steam/u }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ sources: ["aur", "steam"] }));
   });
@@ -57,6 +58,10 @@ describe("FilterBar", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "dependency" }));
     await pick("Orphan", "Yes");
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ orphan: "yes" }));
+    await pick("Own code", "Yes");
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ own: "yes" }));
+    await pick("Untracked file", "Yes");
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ loose: "yes" }));
     await pick("Has alternative", "No");
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ hasAlt: "no" }));
     await pick("Alternative installed", "Yes");

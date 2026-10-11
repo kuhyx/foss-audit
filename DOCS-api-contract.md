@@ -28,6 +28,8 @@ rescan (a full scan takes a few seconds). Response body:
 | `source` | `Source` | where it was found (see below) |
 | `explicit` | boolean | pacman: installed explicitly (not as a dep). Other sources: `true` |
 | `orphan` | boolean | pacman dependency nothing requires any more |
+| `own` | boolean | kuhy's own code: his AUR packages, pip installs of his repos, scripts in `~/.local/bin` (verdict comes from his LICENSE files) |
+| `loose` | boolean | a `~/.local/bin` file no package, pip distribution, symlink target or kuhyx repo accounts for |
 | `license` | string | raw license string from metadata, `""` when absent |
 | `verdict` | `Verdict` | |
 | `reason` | string | one-line evidence, may be `""` |
@@ -38,14 +40,29 @@ rescan (a full scan takes a few seconds). Response body:
 
 `Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid"`
 
-`Verdict` = `"foss" | "foss-partial" | "nonfree" | "blob" | "own" | "unknown"`
+`Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
 - `foss` — OSI/FSF license on the shipped thing
 - `foss-partial` — free code with a non-free part (assets, weights, unRAR code)
-- `nonfree` — proprietary, freeware, EULA, or source-available (BSL, NPSL, no grant)
-- `blob` — firmware / driver / microcode with no alternative on this hardware
-- `own` — kuhy's own code (scripts in `~/.local/bin`, own pip packages)
-- `unknown` — no license found anywhere
+- `nonfree` — proprietary, freeware, EULA, source-available (BSL, NPSL), firmware
+  blobs (reason starts `firmware blob:`), and anything with no license grant at all
+  (reason `no license (all rights reserved)` or `unrecognised license: …`)
+
+A checkout counts as kuhy's when its remote is under `github.com/kuhyx/`, or when it
+has no remote at all and sits directly under `~/src` (local-only repos); a repo with
+anyone else's remote is not own. Own code is licensed by its checkout: a LICENSE/COPYING file, else the
+`pyproject.toml` / `package.json` license field. AUR packages and VCS pip installs
+are mapped from their `github.com/kuhyx/<repo>` URL to the local checkout by git
+remote; loose `~/.local/bin` copies and built binaries (symlink targets outside any
+checkout) by a same-named tracked file in a kuhyx repo, ignoring `_`/`-` and the
+extension (`book_guard_desktop` ← `book_guard_desktop.dart`). Outside a checkout,
+only a named package root (package.json / pyproject.toml with a name) can supply a
+license, so a stray `~/.local/share/COPYING` licenses nothing. No license is
+ever hand-assigned for kuhy's code in `data/curated.json`.
+
+pnpm global shims in `~/.local/bin` (a non-ELF `sh` file whose `exec` line runs
+`"$basedir…/…/node_modules/<pkg>/…"`) are traced to that package and licensed by its
+`package.json` / LICENSE: `own=false`, `loose=false`, reason `pnpm shim -> <package dir>`.
 
 ### `Alternative`
 

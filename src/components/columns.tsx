@@ -60,7 +60,30 @@ export const COLUMN_TRACKS = [
 ].join(" ");
 
 export const columns = helper.columns([
-  helper.accessor((item) => item.name, { ...text, header: "Name", id: "name" }),
+  helper.accessor((item) => item.name, {
+    ...text,
+    cell: (info) => {
+      return (
+        <>
+          {info.getValue()}
+          {info.row.original.own && (
+            <>
+              {" "}
+              <span className="badge badge-own" title="kuhy's own code">own</span>
+            </>
+          )}
+          {info.row.original.loose && (
+            <>
+              {" "}
+              <span className="badge badge-own" title="in ~/.local/bin, no repo or package tracks it">loose</span>
+            </>
+          )}
+        </>
+      );
+    },
+    header: "Name",
+    id: "name",
+  }),
   helper.accessor((item) => orUndefined(item.version), {
     ...text,
     cell: (info) => info.getValue() ?? "—",

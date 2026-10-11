@@ -133,6 +133,22 @@ export function FilterBar({ filter, items, onChange, shown }: FilterBarProps): R
           value={filter.orphan}
         />
         <Segmented
+          label="Own code"
+          onChange={(own): void => {
+            onChange({ ...filter, own });
+          }}
+          options={TRI_OPTIONS}
+          value={filter.own}
+        />
+        <Segmented
+          label="Untracked file"
+          onChange={(loose): void => {
+            onChange({ ...filter, loose });
+          }}
+          options={TRI_OPTIONS}
+          value={filter.loose}
+        />
+        <Segmented
           label="Has alternative"
           onChange={(hasAlt): void => {
             onChange({ ...filter, hasAlt });

@@ -1,14 +1,15 @@
 """Turn a raw license string into a verdict.
 
-Conservative on purpose: anything not clearly free or clearly non-free is
-"unknown", and data/curated.json settles it by hand.
+Conservative on purpose: anything not clearly free is "nonfree" with the
+reason saying why (no license, unrecognised text), and data/curated.json
+settles the false alarms by hand.
 """
 
 from __future__ import annotations
 
 import re
 
-from foss_audit.model import Verdict
+from foss_audit.model import NO_LICENSE, Verdict
 
 # Tokens that make a package non-free unless they are just one OR-alternative.
 NONFREE_PAT = re.compile(
@@ -18,7 +19,7 @@ NONFREE_PAT = re.compile(
     r"|netronome|liquidio|WHENCE|LicenseRef-ti$|LicenseRef-intel$|LicenseRef-amd$"
     r"|Nmap-Public-Source|Java|Unsplash|Intel-Simplified",
 )
-# Firmware / microcode / driver blobs: non-free but unavoidable on this hardware.
+# Firmware / microcode / driver blobs: non-free, flagged as such in the reason.
 BLOB_NAME = re.compile(r"^(linux-firmware|amd-ucode|intel-ucode|sof-firmware|nvidia-utils)")
 
 FREE_PAT = re.compile(
@@ -35,7 +36,7 @@ FREE_PAT = re.compile(
     r"|Unicode|icu|glew|lib32-glew|GC|docbook|Ispell|SCOWL|soxr|qhull|pooch|libmng|libavif"
     r"|libcdr|JasPer|Info-ZIP|leancrypto|Less|LGPL-exception|GPL-|zlib|OFL|AOMPL|Google-Patent"
     r"|PathScale|cfitsio|XSD2|RNG2|Batch|OCB1|MPICH|Adobe-Display-PostScript|DEC-3-Clause"
-    r"|HPND|xkeyboard-config))",
+    r"|HPND|xkeyboard-config|Arev-Fonts|ICS|LLVM-exception|TOST-1\.0))",
 )
 OPERATORS = frozenset({"OR", "AND", "WITH"})
 # Free-form words packagers put in the field ("GPL3 or any later version",
@@ -71,7 +72,7 @@ def classify_spdx(name: str, expr: str) -> tuple[Verdict, str]:
     if not toks:
         if expr.strip():
             return "foss", "free-form CC/public-domain wording"
-        return "unknown", "no license metadata"
+        return "nonfree", NO_LICENSE
     nonfree = [t for t in toks if NONFREE_PAT.search(t)]
     free = [t for t in toks if FREE_PAT.match(t) and t not in nonfree]
     other = [t for t in toks if t not in nonfree and t not in free]
@@ -81,20 +82,20 @@ def classify_spdx(name: str, expr: str) -> tuple[Verdict, str]:
         # "GPL OR Commercial"-style dual licensing still leaves a free option.
         if " OR " in expr and free and not other:
             return "foss", "dual-licensed, free option taken"
-        verdict: Verdict = "blob" if BLOB_NAME.match(name) else "nonfree"
-        return verdict, " ".join(nonfree)
+        blob = "firmware blob: " if BLOB_NAME.match(name) else ""
+        return "nonfree", blob + " ".join(nonfree)
     if other:
-        return "unknown", "unrecognised license: " + " ".join(other)
+        return "nonfree", "unrecognised license: " + " ".join(other)
     return "foss", ""
 
 
 def classify_text(text: str) -> tuple[Verdict, str]:
     """Classify a free-text license (PyPI/npm/conda); returns (verdict, reason)."""
     if not text or text.strip() in {"?", "UNKNOWN", "None"}:
-        return "unknown", "no license metadata"
+        return "nonfree", NO_LICENSE
     if NONFREE_TEXT.search(text) and not FREE_TEXT.search(text):
         return "nonfree", text[:80]
     if FREE_TEXT.search(text):
         return "foss", ""
-    # Copyright-only lines (mitmproxy's BSD header) are not a verdict either way.
-    return "unknown", "unrecognised license: " + text[:80]
+    # Copyright-only lines (mitmproxy's BSD header) grant nothing by themselves.
+    return "nonfree", "unrecognised license: " + text[:80]

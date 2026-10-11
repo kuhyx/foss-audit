@@ -20,6 +20,26 @@ describe("parseScan", () => {
     expect(() => parseScan(body)).toThrow(/at "items\.0\.source"/u);
   });
 
+  it.each(["own", "blob", "unknown"])("rejects the removed verdict %s", (verdict) => {
+    const scan = makeScan();
+    const body = { ...scan, items: [{ ...scan.items[0], verdict }] };
+    expect(() => parseScan(body)).toThrow(/at "items\.0\.verdict"/u);
+  });
+
+  it("requires the boolean own flag", () => {
+    const scan = makeScan();
+    const item: Partial<(typeof scan.items)[number]> = { ...scan.items[0] };
+    delete item.own;
+    expect(() => parseScan({ ...scan, items: [item] })).toThrow(/at "items\.0\.own"/u);
+  });
+
+  it("requires the boolean loose flag", () => {
+    const scan = makeScan();
+    const item: Partial<(typeof scan.items)[number]> = { ...scan.items[0] };
+    delete item.loose;
+    expect(() => parseScan({ ...scan, items: [item] })).toThrow(/at "items\.0\.loose"/u);
+  });
+
   it("rejects a missing top-level field", () => {
     const scan: Partial<ReturnType<typeof makeScan>> = makeScan();
     delete scan.host;

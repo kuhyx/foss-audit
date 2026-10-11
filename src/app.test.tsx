@@ -47,8 +47,8 @@ describe("App", () => {
     const user = await renderApp();
     await user.click(screen.getByRole("button", { name: /^Non-free/u }));
     expect(globalThis.location.search).toBe("?view=table&v=nonfree");
-    expect(screen.getByText(/of 9 items/u).parentElement).toHaveTextContent("3 of 9 items");
-    expect(screen.getByRole("button", { name: /All items/u })).toHaveTextContent("3");
+    expect(screen.getByText(/of 9 items/u).parentElement).toHaveTextContent("5 of 9 items");
+    expect(screen.getByRole("button", { name: /All items/u })).toHaveTextContent("5");
   });
 
   it("switches views from the nav and shows the easy wins", async () => {

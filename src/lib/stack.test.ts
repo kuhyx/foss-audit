@@ -32,11 +32,11 @@ describe("layoutSegments", () => {
   it("raises slivers to the minimum width and keeps the total", () => {
     const items = [
       ...Array.from({ length: 999 }, (_, index) => makeItem({ name: `f${index}` })),
-      makeItem({ name: "b", verdict: "blob" }),
+      makeItem({ name: "b", verdict: "foss-partial" }),
     ];
     const segments = layoutSegments(sourceRows(items)[0]!, 500);
-    const blob = segments.find((s) => s.verdict === "blob");
-    expect(blob?.width).toBe(MIN_SEGMENT);
+    const sliver = segments.find((s) => s.verdict === "foss-partial");
+    expect(sliver?.width).toBe(MIN_SEGMENT);
     expect(segments.reduce((sum, s) => sum + s.width, 0)).toBeCloseTo(500);
   });
 

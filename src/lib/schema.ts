@@ -27,17 +27,11 @@ export const SOURCES = [
 ] as const;
 
 /**
- * Display and chart order: the three "free" verdicts first, then the three
- * that are not, so a stacked bar reads as one free run followed by the rest.
+ * Display and chart order: the two "free" verdicts first, then non-free, so a
+ * stacked bar reads as one free run followed by the rest. Whether the code is
+ * kuhy's own is a separate flag (`Item.own`), not a verdict.
  */
-export const VERDICTS = [
-  "foss",
-  "own",
-  "foss-partial",
-  "nonfree",
-  "blob",
-  "unknown",
-] as const;
+export const VERDICTS = ["foss", "foss-partial", "nonfree"] as const;
 
 /**
  * Best fit first; this order is also the sort order of the Fit column.
@@ -66,8 +60,10 @@ export const itemSchema = z.object({
   explicit: z.boolean(),
   id: z.string(),
   license: z.string(),
+  loose: z.boolean(),
   name: z.string(),
   orphan: z.boolean(),
+  own: z.boolean(),
   reason: z.string(),
   removeCommand: z.string().nullable(),
   requiredBy: z.array(z.string()),

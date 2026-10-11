@@ -56,10 +56,11 @@ def apply(items: list[Item], curated: Curated) -> list[Item]:
     present = installed_names(items)
     for item in items:
         hit = curated.verdict_for(item.name)
-        # Never let a curated glob downgrade kuhy's own code.
-        if hit and item.verdict != "own":
+        # Never let a curated glob override kuhy's own code: its verdict comes
+        # from his LICENSE files.
+        if hit and not item.own:
             item.verdict, item.reason = hit[0], hit[1]  # type: ignore[assignment]
-        if item.verdict not in NEEDS_ALTERNATIVE:
+        if item.own or item.verdict not in NEEDS_ALTERNATIVE:
             continue
         alt = curated.alternative_for(item)
         if alt is None:

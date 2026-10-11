@@ -47,11 +47,12 @@ describe("ItemsTable", () => {
     expect(unrar).toHaveTextContent("dependency");
     expect(within(unrar).getAllByRole("cell")[7]).toHaveTextContent("1");
     expect(screen.getAllByText("orphan")).toHaveLength(1);
+    expect(screen.getAllByText("loose")).toHaveLength(1);
   });
 
   it("sorts by name ascending and descending", () => {
     setup({ sort: { desc: false, id: "name" } });
-    expect(column(NAME)[0]).toBe("backup.sh");
+    expect(column(NAME)[0]).toBe("backup.sh own");
     expect(screen.getByRole("columnheader", { name: /Name/u })).toHaveAttribute("aria-sort", "ascending");
   });
 

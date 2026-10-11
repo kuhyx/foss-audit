@@ -32,7 +32,7 @@ describe("isEasyWin", () => {
     expect(isEasyWin({ ...CHROME, alternative: null })).toBe(false);
   });
 
-  it.each(["foss", "blob", "own", "unknown"] as const)("excludes verdict %s", (verdict) => {
+  it.each(["foss"] as const)("excludes verdict %s", (verdict) => {
     expect(isEasyWin({ ...CHROME, verdict })).toBe(false);
   });
 });
@@ -49,18 +49,15 @@ describe("summary math", () => {
   it("counts by key", () => {
     const counts = countBy(ITEMS, (item) => item.verdict);
     expect(Object.fromEntries(counts)).toEqual({
-      blob: 1,
-      foss: 2,
+      foss: 3,
       "foss-partial": 1,
-      nonfree: 3,
-      own: 1,
-      unknown: 1,
+      nonfree: 5,
     });
     const total = counts.values().reduce((sum, n) => sum + n, 0);
     expect(total).toBe(ITEMS.length);
   });
 
-  it("splits free (foss, own, foss-partial) from the rest", () => {
+  it("splits free (foss, foss-partial) from the rest", () => {
     const free = ITEMS.filter((item) => FREE_VERDICTS.has(item.verdict));
     expect(free).toHaveLength(4);
     expect(FREE_VERDICTS.has("nonfree")).toBe(false);

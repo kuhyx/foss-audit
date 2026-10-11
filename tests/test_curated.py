@@ -14,7 +14,10 @@ ALT |= {"effortReason": "", "lockIn": ""}
 
 def make_curated() -> Curated:
     return Curated(
-        verdicts={"sudo": ["foss", "ISC"], "own-thing": ["nonfree", "should not apply"]},
+        verdicts={
+            "sudo": ["foss", "ISC"],
+            "own-thing": ["nonfree", "should not apply"],
+        },
         alternatives={
             "google-chrome": ALT,
             "Proton*": None,
@@ -25,12 +28,12 @@ def make_curated() -> Curated:
 
 def test_verdict_override_and_own_is_protected() -> None:
     items = [
-        Item(name="sudo", source="pacman", verdict="unknown"),
-        Item(name="own-thing", source="local-bin", verdict="own"),
+        Item(name="sudo", source="pacman", verdict="nonfree"),
+        Item(name="own-thing", source="local-bin", verdict="foss", own=True),
     ]
     apply(items, make_curated())
-    assert (items[0].verdict, items[0].reason) == ("foss", "ISC")
-    assert items[1].verdict == "own"
+    assert (items[0].verdict, items[0].reason, items[0].own) == ("foss", "ISC", False)
+    assert items[1].verdict == "foss"
 
 
 def test_alternative_attached_with_installed_candidates() -> None:

@@ -22,9 +22,11 @@ Source = Literal[
     "wine",
     "waydroid",
 ]
-Verdict = Literal["foss", "foss-partial", "nonfree", "blob", "own", "unknown"]
+Verdict = Literal["foss", "foss-partial", "nonfree"]
 # Verdicts that get a curated FOSS alternative attached (not the "free" headline).
-NEEDS_ALTERNATIVE: frozenset[str] = frozenset({"nonfree", "foss-partial", "blob", "unknown"})
+NEEDS_ALTERNATIVE: frozenset[str] = frozenset({"nonfree", "foss-partial"})
+# No license grant at all is "all rights reserved", even for public code.
+NO_LICENSE = "no license (all rights reserved)"
 
 
 @dataclass
@@ -52,6 +54,9 @@ class Item:
     url: str | None = None
     explicit: bool = True
     orphan: bool = False
+    own: bool = False
+    # A ~/.local/bin file no package, pip dist, symlink or repo accounts for.
+    loose: bool = False
     requiredBy: list[str] = field(default_factory=list)
     alternative: Alternative | None = None
     removeCommand: str | None = None

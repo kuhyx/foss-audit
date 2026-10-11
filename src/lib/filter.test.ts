@@ -55,9 +55,9 @@ describe("passesFilter / applyFilter", () => {
   });
 
   it("filters by verdict and source (multi-select is OR within a group)", () => {
-    expect(names({ verdicts: ["nonfree"] })).toEqual(["google-chrome", "unrar", "Some Game"]);
+    expect(names({ verdicts: ["nonfree"] })).toEqual(["google-chrome", "unrar", "Some Game", "linux-firmware", "mystery"]);
     expect(names({ sources: ["aur", "steam"] })).toEqual(["google-chrome", "Some Game"]);
-    expect(names({ sources: ["pacman"], verdicts: ["nonfree"] })).toEqual(["unrar"]);
+    expect(names({ sources: ["pacman"], verdicts: ["nonfree"] })).toEqual(["unrar", "linux-firmware"]);
   });
 
   it("filters explicit vs dependency", () => {
@@ -68,6 +68,16 @@ describe("passesFilter / applyFilter", () => {
   it("filters orphans", () => {
     expect(names({ orphan: "yes" })).toEqual([ORPHAN_LIB.name]);
     expect(names({ orphan: "no" })).not.toContain(ORPHAN_LIB.name);
+  });
+
+  it("filters untracked files", () => {
+    expect(names({ loose: "yes" })).toEqual(["mystery"]);
+    expect(names({ loose: "no" })).not.toContain("mystery");
+  });
+
+  it("filters own code", () => {
+    expect(names({ own: "yes" })).toEqual(["backup.sh"]);
+    expect(names({ own: "no" })).not.toContain("backup.sh");
   });
 
   it("treats an alternative with no names as no alternative", () => {
@@ -97,6 +107,8 @@ describe("isFilterActive", () => {
       { sources: ["aur"] },
       { kind: "explicit" },
       { orphan: "yes" },
+      { own: "yes" },
+      { loose: "yes" },
       { hasAlt: "no" },
       { altInstalled: "yes" },
     ];
