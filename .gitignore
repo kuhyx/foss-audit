@@ -1,0 +1,13 @@
+__pycache__/
+node_modules/
+dist/
+coverage/
+screenshots/
+fixtures/scan.sample.json
+*.tsbuildinfo
+.venv/
+.coverage
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/

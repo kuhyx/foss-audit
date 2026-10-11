@@ -1,0 +1,141 @@
+/*
+ * Detail panel (right-hand aside) and the easy-wins list.
+ */
+.panel {
+  display: flex;
+  flex: 0 0 28rem;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.panel-head {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h2 {
+  overflow-wrap: anywhere;
+}
+
+.panel-body {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--space-3);
+}
+
+.field dt {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+  line-height: 1.7;
+}
+
+.field dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.panel-section {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.alt-names,
+.req-list {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.req-list {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.installed-line,
+.win-alt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+/* A dependant warning: the badge carries the state, the text stays in ink. */
+.warning-line::before {
+  content: "Still needed";
+  display: inline-block;
+  margin-right: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--warning);
+  color: var(--on-fill);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+/* ---------- easy wins ---------- */
+
+.wins-scroll {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.wins {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
+  gap: var(--space-3);
+  /* Cards keep their own height; one long "still needed by" list must not
+   * stretch every card in its row into mostly empty space. */
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.win {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-3);
+}
+
+.win[aria-current="true"] {
+  border-color: var(--accent);
+}
+
+.win-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  align-items: baseline;
+}
+
+.win-name {
+  font-size: var(--text-body);
+  overflow-wrap: anywhere;
+  text-align: left;
+}

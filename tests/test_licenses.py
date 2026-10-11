@@ -1,0 +1,68 @@
+"""License-string classification: the core of every verdict."""
+
+from __future__ import annotations
+
+import pytest
+
+from foss_audit.licenses import classify_spdx, classify_text, tokens
+
+
+@pytest.mark.parametrize(
+    ("name", "expr", "verdict"),
+    [
+        ("zlib", "Zlib", "foss"),
+        ("glibc", "GPL-2.0-or-later AND LGPL-2.1-or-later", "foss"),
+        ("qt6-base", "GPL-3.0-only OR LicenseRef-Qt-Commercial", "foss"),
+        ("autoconf", "GPL2 GPL3 custom", "foss"),
+        ("wqy-zenhei", 'GPL2 custom:"font embedding exception"', "foss"),
+        ("ffmpeg-audio-thumbnailer", "GPL3 or any later version", "foss"),
+        ("clinfo", "custom:Public Domain", "foss"),
+        ("google-chrome", "custom:chrome", "nonfree"),
+        ("steam", "LicenseRef-steam-subscriber-agreement", "nonfree"),
+        ("nvidia-utils", "LicenseRef-NVIDIA-Driver-License-Agreement", "blob"),
+        ("linux-firmware-amd", "LicenseRef-WHENCE LicenseRef-amd", "blob"),
+        ("intel-oneapi-mkl", "LicenseRef-Intel-Simplified", "nonfree"),
+        ("pop-icon-theme", "CCPL", "foss"),
+        ("dual", "GPL-3.0-only OR LicenseRef-commercial", "foss"),
+        ("sudo", "custom", "unknown"),
+        ("libklvanc", "", "unknown"),
+        ("odd", "LicenseRef-Mystery", "unknown"),
+    ],
+)
+def test_classify_spdx(name: str, expr: str, verdict: str) -> None:
+    assert classify_spdx(name, expr)[0] == verdict
+
+
+def test_dual_license_with_unknown_part_is_not_free() -> None:
+    # A free OR-branch only rescues the package when nothing else is unexplained.
+    verdict, reason = classify_spdx("x", "GPL-2.0 OR LicenseRef-EULA OR LicenseRef-Mystery")
+    assert verdict == "nonfree"
+    assert "EULA" in reason
+
+
+def test_unknown_reason_names_the_token() -> None:
+    assert classify_spdx("x", "MIT LicenseRef-Mystery")[1] == "unrecognised license: LicenseRef-Mystery"
+
+
+def test_tokens_drop_operators_and_filler() -> None:
+    assert tokens("(MIT OR Apache-2.0) WITH LLVM-exception") == ["MIT", "Apache-2.0", "LLVM-exception"]
+
+
+@pytest.mark.parametrize(
+    ("text", "verdict"),
+    [
+        ("MIT License", "foss"),
+        ("BSD 3-Clause", "foss"),
+        ("GNU General Public License v3 or later (GPLv3+)", "foss"),
+        ("Python-2.0", "foss"),
+        ("Proprietary", "nonfree"),
+        ("Copyright 2013 Someone. All rights reserved.", "nonfree"),
+        ("Dual: MIT or commercial", "foss"),
+        ("", "unknown"),
+        ("UNKNOWN", "unknown"),
+        ("None", "unknown"),
+        ("Some bespoke text", "unknown"),
+    ],
+)
+def test_classify_text(text: str, verdict: str) -> None:
+    assert classify_text(text)[0] == verdict

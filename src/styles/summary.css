@@ -1,0 +1,190 @@
+/*
+ * Summary view: hero headline, verdict tiles, per-source chart.
+ */
+.summary {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  align-items: baseline;
+}
+
+/* The one hero figure per view: >= 48px, same sans, proportional digits. */
+.hero {
+  font-size: var(--space-6);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.1;
+}
+
+.headline-text {
+  flex: 1 1 30rem;
+  max-width: var(--measure);
+}
+
+/* Six tiles on a 12-column grid: two columns each. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tiles li {
+  grid-column: span 2;
+}
+
+.tile {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.tile:hover {
+  border-color: var(--text-muted);
+}
+
+.tile-label {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.tile-value {
+  font-size: var(--text-display);
+  font-weight: 600;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+}
+
+.tile-pct {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.summary > .card {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* ---------- chart ---------- */
+
+.chart {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-label);
+  list-style: none;
+}
+
+.legend li {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.chart-rows {
+  position: relative;
+  display: grid;
+  column-gap: var(--space-2);
+}
+
+.chart-row {
+  display: contents;
+}
+
+.chart-label {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chart-label:hover {
+  text-decoration: underline;
+}
+
+.chart-total {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.segment {
+  cursor: pointer;
+  outline: none;
+}
+
+.segment:hover {
+  opacity: 0.8;
+}
+
+/* SVG paths draw no outline ring; a stroke in the focus colour stands in. */
+.segment:focus-visible {
+  stroke: var(--focus-ring);
+  stroke-width: 2px;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-1);
+  font-size: var(--text-label);
+  white-space: nowrap;
+  pointer-events: none;
+  /* Below the hovered bar, so it never covers the legend above the chart. */
+  transform: translate(-50%, var(--space-1));
+}
+
+.tooltip-title {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.tooltip-value {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

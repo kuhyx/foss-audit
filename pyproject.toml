@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foss-audit"
+version = "0.1.0"
+description = "Scan every program installed on this PC and classify it as FOSS or not, with FOSS alternatives"
+requires-python = ">=3.14"
+# Standard library only at runtime: the scanner must work on a bare system Python.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["foss_audit*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN", "N", "T20", "PL"]
+ignore = ["ANN401", "PLR2004"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "PLR2004", "PLC0415"]
+# Field names mirror the JSON contract (DOCS-api-contract.md) the UI consumes.
+"foss_audit/model.py" = ["N815"]
+
+[tool.mypy]
+strict = true
+files = ["foss_audit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --cov=foss_audit --cov-branch --cov-report=term-missing"
+
+[tool.coverage.report]
+exclude_also = ["if __name__ == .__main__.:"]

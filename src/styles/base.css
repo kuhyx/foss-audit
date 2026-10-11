@@ -1,0 +1,214 @@
+/*
+ * Base elements and shared atoms.
+ *
+ * Every colour, space, radius and type size comes from @kuhyx/web-ui's
+ * tokens.css (imported first in main.tsx). Nothing here defines a colour
+ * value: a local literal would shadow the shared palette and silently
+ * un-migrate this repo. Split across six files to respect the 250-line cap.
+ */
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-size: var(--text-subtitle);
+  letter-spacing: var(--tracking-title);
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: var(--text-body);
+}
+
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+code,
+kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 2em;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.caption {
+  font-size: var(--text-label);
+}
+
+.dot,
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.swatch {
+  border-radius: 2px;
+}
+
+.verdict {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* Text on a semantic fill always uses --on-fill (tokens.css explains why). */
+.badge {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--on-fill);
+  font-size: var(--text-label);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-success {
+  background: var(--success);
+}
+
+.badge-warning {
+  background: var(--warning);
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.btn:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-fill);
+  font-weight: 600;
+}
+
+.btn-primary:disabled {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* A button that reads as an inline link (headline, easy-win names). */
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.card {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.app-msg {
+  display: grid;
+  gap: var(--space-2);
+  place-content: center;
+  min-height: 100vh;
+  padding: var(--space-6);
+  text-align: center;
+}
+
+/* ---------- help overlay ---------- */
+
+/* The scrim is derived from --bg rather than a new rgba literal. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+}
+
+.help {
+  display: grid;
+  gap: var(--space-3);
+  width: min(32rem, calc(100vw - var(--space-5)));
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-2);
+}
+
+.help dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.help-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.help dd {
+  margin: 0;
+}
+
+.help .btn {
+  justify-self: end;
+}

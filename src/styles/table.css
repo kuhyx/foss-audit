@@ -1,0 +1,122 @@
+/*
+ * The virtualised all-items table.
+ *
+ * Built from CSS grid rows rather than <table>: virtual rows are absolutely
+ * positioned, which a real table layout cannot do. Every row shares the
+ * `--tracks` template (set from columns.tsx), so columns line up, and the
+ * whole grid has a min-width so narrow viewports scroll sideways instead of
+ * crushing the cells.
+ */
+.table-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.table-scroll:focus-visible {
+  outline-offset: -2px;
+}
+
+.thead,
+.tbody {
+  min-width: 96rem;
+}
+
+.thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.tbody {
+  position: relative;
+}
+
+.tr {
+  display: grid;
+  grid-template-columns: var(--tracks);
+  align-items: center;
+  height: 40px;
+}
+
+.row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--surface-1);
+}
+
+/* Selection: a fill step plus an accent edge, so it never relies on fill
+ * alone (the step is subtle by design in both themes). */
+.row[aria-selected="true"] {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.th,
+.td {
+  overflow: hidden;
+  padding: 0 var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.th {
+  padding: 0;
+}
+
+.td:first-child {
+  padding-left: var(--space-4);
+  font-weight: 600;
+}
+
+.th-button {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-align: left;
+  cursor: pointer;
+}
+
+.th:first-child .th-button {
+  padding-left: var(--space-4);
+}
+
+.th-button:hover,
+.th[aria-sort="ascending"] .th-button,
+.th[aria-sort="descending"] .th-button {
+  color: var(--text);
+}
+
+.sort-mark {
+  color: var(--accent);
+  font-size: var(--text-caption);
+}
+
+.table-empty {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+  place-content: center;
+  padding: var(--space-6);
+  text-align: center;
+}

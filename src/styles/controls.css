@@ -1,0 +1,116 @@
+/*
+ * The table's filter bar: toggle chips and any/yes/no segmented controls.
+ */
+.filters {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.chips,
+.segmented,
+.facet-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.facet-row {
+  gap: var(--space-2) var(--space-4);
+}
+
+.facet-label {
+  min-width: 4.5rem;
+  margin-right: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.segmented .facet-label {
+  min-width: 0;
+}
+
+.chip,
+.seg {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.chip:hover,
+.seg:hover {
+  background: var(--surface-1);
+}
+
+.chip[aria-pressed="true"],
+.seg[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+/* Segmented control: one joined pill, inner corners squared. */
+.seg {
+  border-radius: 0;
+}
+
+.seg + .seg {
+  margin-left: -1px;
+}
+
+.facet-label + .seg {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.seg:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* The pressed segment's accent border must draw over its neighbours'. */
+.seg[aria-pressed="true"] {
+  position: relative;
+}
+
+.chip-count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.result-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- copy-to-clipboard ---------- */
+
+.copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.command {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow-wrap: anywhere;
+}
+
+.copy-status {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}

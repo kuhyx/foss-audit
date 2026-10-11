@@ -1,0 +1,848 @@
+{
+  "_comment": "Human-verified verdicts and FOSS alternatives (research 2026-10-11). Keys are fnmatch globs on the item name, first match wins. 'candidates' are package/program names checked live to fill Alternative.installed.",
+  "verdicts": {
+    "jdk*-openjdk": [
+      "foss",
+      "OpenJDK: GPL-2.0 with Classpath exception; 'LicenseRef-Java' is only Arch's label"
+    ],
+    "jdk-openjdk": [
+      "foss",
+      "OpenJDK: GPL-2.0 with Classpath exception; 'LicenseRef-Java' is only Arch's label"
+    ],
+    "openjdk-*": [
+      "foss",
+      "OpenJDK: GPL-2.0 with Classpath exception"
+    ],
+    "gamescope": [
+      "foss",
+      "BSD-2-Clause; bundled ReShade effect compiler is BSD-3-Clause"
+    ],
+    "lib32-gamescope*": [
+      "foss",
+      "BSD-2-Clause; bundled ReShade effect compiler is BSD-3-Clause"
+    ],
+    "7zip": [
+      "foss-partial",
+      "LGPL/BSD, but the RAR decoder carries the unRAR restriction"
+    ],
+    "endless-sky": [
+      "foss-partial",
+      "GPL-3.0 code; a few landscape images use the non-free Unsplash License"
+    ],
+    "osu-lazer*": [
+      "foss-partial",
+      "Code MIT; osu-resources (skins, samples, fonts) CC-BY-NC-4.0"
+    ],
+    "libfdk-aac": [
+      "foss-partial",
+      "FSF: free 'as far as it goes', GPL-incompatible; Debian non-free"
+    ],
+    "intel-oneapi-umf": [
+      "foss",
+      "oneAPI Unified Memory Framework is open source"
+    ],
+    "xone-dongle-firmware": [
+      "blob",
+      "Xbox wireless dongle firmware extracted from Microsoft's driver"
+    ],
+    "lib32-nvidia-utils": [
+      "blob",
+      "NVIDIA proprietary userspace driver (32-bit)"
+    ],
+    "aic94xx-firmware": [
+      "blob",
+      "Adaptec SAS firmware"
+    ],
+    "ast-firmware": [
+      "blob",
+      "ASPEED firmware"
+    ],
+    "wd719x-firmware": [
+      "blob",
+      "Western Digital SCSI firmware"
+    ],
+    "discord": [
+      "nonfree",
+      "Proprietary Electron app"
+    ],
+    "flashplayer-standalone-debug": [
+      "nonfree",
+      "Adobe Flash EULA; discontinued"
+    ],
+    "nvidia-cg-toolkit": [
+      "nonfree",
+      "NVIDIA Cg licence: binary-only, no modification"
+    ],
+    "ceserver": [
+      "nonfree",
+      "Cheat Engine: source-available, upstream has no LICENSE (no grant)"
+    ],
+    "crafty": [
+      "nonfree",
+      "Hyatt notice: personal use only without written permission"
+    ],
+    "musictube": [
+      "nonfree",
+      "Flavio Tordini, proprietary paid app ('All Rights Reserved')"
+    ],
+    "krita-plugin-pythonplugindevelopertools-git": [
+      "unknown",
+      "Upstream repo has no LICENSE file"
+    ],
+    "0ad-data*": [
+      "foss",
+      "GPL-2.0+ data, CC-BY-SA-3.0 art/audio; the AUR NC label is wrong"
+    ],
+    "sl": [
+      "foss",
+      "Toyoda permissive licence (Debian main)"
+    ],
+    "memstack-skill-loader": [
+      "nonfree",
+      "PyPI: 'Proprietary. Part of MemStack Pro'"
+    ],
+    "marker-pdf": [
+      "foss-partial",
+      "Code open; model weights under modified OpenRAIL-M (revenue-capped)"
+    ],
+    "unity": [
+      "nonfree",
+      "Official Unity CLI (proprietary, EULA)"
+    ],
+    "claude": [
+      "nonfree",
+      "Claude Code native install (proprietary)"
+    ],
+    "Proton*": [
+      "foss-partial",
+      "BSD-3 glue + Wine/DXVK/vkd3d (free); shipped through Steam"
+    ],
+    "Steam Linux Runtime*": [
+      "foss-partial",
+      "Mostly Debian FOSS libraries, distributed under the Steam Subscriber Agreement"
+    ],
+    "Steamworks Common Redistributables": [
+      "nonfree",
+      "Windows redistributables (DirectX, VC++)"
+    ],
+    "CPLEX*": [
+      "nonfree",
+      "IBM ILOG CPLEX proprietary licence"
+    ],
+    "photopea-mcp-server": [
+      "foss",
+      "MIT, but it drives the proprietary Photopea web app"
+    ],
+    "py-rust-stemmers": [
+      "foss",
+      "MIT (LICENSE file; metadata empty)"
+    ],
+    "py_rust_stemmers": [
+      "foss",
+      "MIT (LICENSE file; metadata empty)"
+    ],
+    "counts": [
+      "foss",
+      "nnethercote/counts, Unlicense"
+    ],
+    "apkeep": [
+      "foss",
+      "EFF apkeep, MIT"
+    ],
+    "net.blockbench.Blockbench": [
+      "foss",
+      "GPL-3.0"
+    ],
+    "Joplin*": [
+      "foss",
+      "AGPL-3.0"
+    ],
+    "linuxdeploy*": [
+      "foss",
+      "MIT (tauri build tooling cache)"
+    ],
+    "butler": [
+      "foss",
+      "itch.io butler, MIT"
+    ],
+    "micromamba": [
+      "foss",
+      "BSD-3-Clause"
+    ],
+    "uv": [
+      "foss",
+      "MIT OR Apache-2.0"
+    ],
+    "uvx": [
+      "foss",
+      "MIT OR Apache-2.0"
+    ],
+    "ruff": [
+      "foss",
+      "MIT"
+    ],
+    "containerd": [
+      "foss",
+      "Apache-2.0"
+    ],
+    "miniconda3": [
+      "foss",
+      "conda BSD-3; note Anaconda 'defaults' channel ToS"
+    ],
+    "YouTube Music": [
+      "foss",
+      "Pear Desktop (ex th-ch/youtube-music), MIT; client of a proprietary service"
+    ],
+    "LineageOS (Waydroid)": [
+      "foss",
+      "Waydroid MAINLINE LineageOS image, Apache-2.0/GPL"
+    ],
+    "node": [
+      "foss",
+      "Node.js, MIT"
+    ],
+    "blas": [
+      "foss",
+      "BSD-style (Netlib) (manually verified custom license)"
+    ],
+    "cblas": [
+      "foss",
+      "BSD-style (Netlib) (manually verified custom license)"
+    ],
+    "lapack": [
+      "foss",
+      "BSD-3 (Netlib) (manually verified custom license)"
+    ],
+    "lapacke": [
+      "foss",
+      "BSD-3 (Netlib) (manually verified custom license)"
+    ],
+    "dnssec-anchors": [
+      "foss",
+      "Public domain data (manually verified custom license)"
+    ],
+    "iana-etc": [
+      "foss",
+      "Public domain data (manually verified custom license)"
+    ],
+    "licenses": [
+      "foss",
+      "Arch license texts (manually verified custom license)"
+    ],
+    "enet": [
+      "foss",
+      "MIT (manually verified custom license)"
+    ],
+    "flite1*": [
+      "foss",
+      "BSD-like (CMU) (manually verified custom license)"
+    ],
+    "gd": [
+      "foss",
+      "BSD-like (GD license) (manually verified custom license)"
+    ],
+    "gsm": [
+      "foss",
+      "TU Berlin permissive (manually verified custom license)"
+    ],
+    "krb5": [
+      "foss",
+      "MIT Kerberos (MIT/BSD) (manually verified custom license)"
+    ],
+    "lib32-krb5": [
+      "foss",
+      "MIT Kerberos (MIT/BSD) (manually verified custom license)"
+    ],
+    "l-smash": [
+      "foss",
+      "ISC (manually verified custom license)"
+    ],
+    "leptonica": [
+      "foss",
+      "BSD-2 (manually verified custom license)"
+    ],
+    "lib32-bzip2": [
+      "foss",
+      "bzip2 (BSD-like) (manually verified custom license)"
+    ],
+    "lib32-lib*": [
+      "foss",
+      "X11/MIT (manually verified custom license)"
+    ],
+    "lib32-xcb-util-keysyms": [
+      "foss",
+      "X11/MIT (manually verified custom license)"
+    ],
+    "libbsd": [
+      "foss",
+      "BSD/ISC (manually verified custom license)"
+    ],
+    "libldap": [
+      "foss",
+      "OpenLDAP Public License (manually verified custom license)"
+    ],
+    "libyuv": [
+      "foss",
+      "BSD-3 (manually verified custom license)"
+    ],
+    "lsof": [
+      "foss",
+      "BSD-like (manually verified custom license)"
+    ],
+    "netcdf": [
+      "foss",
+      "BSD-like (UCAR) (manually verified custom license)"
+    ],
+    "ocaml-integers": [
+      "foss",
+      "MIT (manually verified custom license)"
+    ],
+    "perl-xml-writer": [
+      "foss",
+      "Perl-style permissive (manually verified custom license)"
+    ],
+    "pigz": [
+      "foss",
+      "zlib (manually verified custom license)"
+    ],
+    "pngcrush": [
+      "foss",
+      "zlib/libpng (manually verified custom license)"
+    ],
+    "popt": [
+      "foss",
+      "MIT (manually verified custom license)"
+    ],
+    "python-hidapi": [
+      "foss",
+      "BSD/GPL (manually verified custom license)"
+    ],
+    "python-numpy": [
+      "foss",
+      "BSD-3 (manually verified custom license)"
+    ],
+    "sudo": [
+      "foss",
+      "ISC (manually verified custom license)"
+    ],
+    "ttf-dejavu": [
+      "foss",
+      "Bitstream Vera (free) (manually verified custom license)"
+    ],
+    "unzip": [
+      "foss",
+      "Info-ZIP (manually verified custom license)"
+    ],
+    "xorg-xinput": [
+      "foss",
+      "MIT (manually verified custom license)"
+    ],
+    "xsel": [
+      "foss",
+      "MIT-style (manually verified custom license)"
+    ],
+    "zsh": [
+      "foss",
+      "MIT-like (zsh license) (manually verified custom license)"
+    ],
+    "libklvanc-git*": [
+      "foss",
+      "LGPL-2.1 (upstream) (manually verified custom license)"
+    ],
+    "udiskie-systemd-git": [
+      "foss",
+      "MIT (udiskie) (manually verified custom license)"
+    ],
+    "vscodium-insiders-marketplace": [
+      "foss",
+      "VSCodium patch package (MIT) (manually verified custom license)"
+    ],
+    "_libgcc_mutex *": [
+      "foss",
+      "conda meta-package, no code (manually verified custom license)"
+    ],
+    "depotdownloader": [
+      "foss",
+      "SteamRE DepotDownloader, GPL-2.0 (manually verified custom license)"
+    ],
+    "book-guard-desktop": [
+      "own",
+      "kuhy's own Flutter desktop app"
+    ]
+  },
+  "alternatives": {
+    "claude-code": {
+      "names": [
+        "opencode",
+        "Goose",
+        "aider",
+        "qwen-code"
+      ],
+      "candidates": [
+        "opencode",
+        "aider",
+        "qwen-code",
+        "goose"
+      ],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Harness is replaceable; porting hooks/skills/MCP setup is the work",
+      "lockIn": "The model itself is not replaceable; local Qwen3-Coder is clearly weaker"
+    },
+    "claude": {
+      "names": [
+        "opencode",
+        "Goose",
+        "aider",
+        "qwen-code"
+      ],
+      "candidates": [
+        "opencode",
+        "aider",
+        "qwen-code",
+        "goose"
+      ],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Harness is replaceable; porting hooks/skills/MCP setup is the work",
+      "lockIn": "The model itself is not replaceable"
+    },
+    "google-chrome": {
+      "names": [
+        "Chromium",
+        "ungoogled-chromium",
+        "Helium",
+        "Firefox"
+      ],
+      "candidates": [
+        "chromium",
+        "ungoogled-chromium-bin",
+        "helium-browser-bin",
+        "firefox",
+        "librewolf"
+      ],
+      "fit": "drop-in",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "Chrome adds only branding, codecs, Widevine and Google Sync"
+    },
+    "discord": {
+      "names": [
+        "Stoat (ex-Revolt)",
+        "Matrix/Element",
+        "Mumble",
+        "Vesktop (still Discord network)"
+      ],
+      "candidates": [
+        "element-desktop",
+        "mumble",
+        "vesktop",
+        "vesktop-bin"
+      ],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "The value is the network of people, not the client",
+      "lockIn": "Network service; third-party clients break Discord ToS"
+    },
+    "steam*": {
+      "names": [
+        "Heroic",
+        "Lutris",
+        "itch app",
+        "DepotDownloader"
+      ],
+      "candidates": [
+        "heroic-games-launcher-bin",
+        "lutris",
+        "itch-setup-bin",
+        "steamdepotdownloader-bin"
+      ],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Store, DRM and library are Valve's service",
+      "lockIn": "Steam-DRM games only run through Steam"
+    },
+    "nvidia-utils": {
+      "names": [
+        "NVK (Mesa)",
+        "nouveau"
+      ],
+      "candidates": [
+        "vulkan-nouveau"
+      ],
+      "fit": "partial",
+      "effort": "XL",
+      "effortReason": "GPU driver",
+      "lockIn": "NVK ~40-70% of proprietary perf, no RT/DLSS (2026)"
+    },
+    "opencl-nvidia": {
+      "names": [
+        "rusticl (Mesa)",
+        "PoCL"
+      ],
+      "candidates": [
+        "opencl-rusticl-mesa",
+        "pocl"
+      ],
+      "fit": "partial",
+      "effort": "XL",
+      "effortReason": "GPU compute stack",
+      "lockIn": "Needs NVK for GPU; PoCL is CPU"
+    },
+    "cuda": {
+      "names": [
+        "ROCm (AMD only)",
+        "ZLUDA (AMD only)",
+        "Vulkan compute (llama.cpp/ncnn)"
+      ],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "CUDA ecosystem; PyTorch/ollama need it on NVIDIA",
+      "lockIn": "Hardware-locked to the RTX 3090"
+    },
+    "cudnn": {
+      "names": [
+        "MIOpen (AMD only)",
+        "oneDNN (CPU)"
+      ],
+      "candidates": [
+        "onednn"
+      ],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Vendor-tuned DNN kernels",
+      "lockIn": "Hardware-locked to the RTX 3090"
+    },
+    "nsight-*": {
+      "names": [
+        "RenderDoc",
+        "Tracy",
+        "perf"
+      ],
+      "candidates": [
+        "renderdoc",
+        "tracy",
+        "perf"
+      ],
+      "fit": "partial",
+      "effort": "XL",
+      "effortReason": "Kernel-level GPU profiling needs vendor counters",
+      "lockIn": "Hardware-locked"
+    },
+    "nvidia-cg-toolkit": {
+      "names": [
+        "Slang",
+        "glslang",
+        "DXC"
+      ],
+      "candidates": [
+        "shader-slang-bin",
+        "glslang",
+        "directx-shader-compiler"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Only punes-git needs it; port its shaders or drop the dep",
+      "lockIn": ""
+    },
+    "intel-oneapi-*": {
+      "names": [
+        "onetbb",
+        "libgomp/libomp",
+        "OpenBLAS"
+      ],
+      "candidates": [
+        "onetbb",
+        "openmp",
+        "openblas"
+      ],
+      "fit": "drop-in",
+      "effort": null,
+      "effortReason": "Pulled in by blender and python-tensorflow; intel-oneapi-mkl is an orphan",
+      "lockIn": "Only prebuilt binaries need the closed runtimes"
+    },
+    "*unrar*": {
+      "names": [
+        "libarchive (bsdtar)",
+        "unar"
+      ],
+      "candidates": [
+        "libarchive",
+        "unar"
+      ],
+      "fit": "good",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "RAR creation is proprietary-only; extraction is covered. libunrar is pulled by calibre"
+    },
+    "nmap": {
+      "names": [
+        "RustScan",
+        "masscan",
+        "naabu",
+        "zmap"
+      ],
+      "candidates": [
+        "rustscan",
+        "masscan",
+        "naabu",
+        "zmap"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Port+service scanner is M; NSE scripts and OS-fingerprint DB are L",
+      "lockIn": "NPSL is source-available; fine for personal use"
+    },
+    "aseprite*": {
+      "names": [
+        "Pixelorama",
+        "LibreSprite"
+      ],
+      "candidates": [
+        "pixelorama",
+        "pixelorama-bin",
+        "libresprite"
+      ],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Rebuilding the aseprite MCP/Lua tooling for Pixelorama",
+      "lockIn": "Source-available: you may build it yourself for personal use"
+    },
+    "reaper": {
+      "names": [
+        "Ardour",
+        "Zrythm",
+        "LMMS",
+        "Qtractor"
+      ],
+      "candidates": [
+        "ardour",
+        "zrythm",
+        "lmms",
+        "qtractor"
+      ],
+      "fit": "partial",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "No ReaScript equivalent"
+    },
+    "ttf-ms-win10*": {
+      "names": [
+        "Liberation",
+        "Carlito",
+        "Caladea",
+        "Selawik"
+      ],
+      "candidates": [
+        "ttf-liberation",
+        "ttf-carlito",
+        "ttf-caladea"
+      ],
+      "fit": "good",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "Metric-compatible, not pixel-identical"
+    },
+    "geoip-database": {
+      "names": [
+        "DB-IP Lite (mmdb)",
+        "iptoasn"
+      ],
+      "candidates": [
+        "dbip-lite-country-mmdb"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Country-level DB from RIR data; only python-geoip needs it",
+      "lockIn": "GeoLite2 EULA"
+    },
+    "flashplayer-standalone*": {
+      "names": [
+        "Ruffle",
+        "Lightspark"
+      ],
+      "candidates": [
+        "ruffle-nightly-bin",
+        "ruffle",
+        "lightspark"
+      ],
+      "fit": "good",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "Some heavy AS3/Stage3D content still fails in Ruffle"
+    },
+    "musictube": {
+      "names": [
+        "Pear Desktop",
+        "FreeTube",
+        "ytmusicapi + mpv"
+      ],
+      "candidates": [
+        "YouTube Music",
+        "pear-desktop",
+        "freetube",
+        "mpv"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "ytmusicapi + mpv player",
+      "lockIn": "Still a YouTube client"
+    },
+    "ceserver": {
+      "names": [
+        "PINCE",
+        "scanmem/GameConqueror"
+      ],
+      "candidates": [
+        "pince-git",
+        "scanmem",
+        "gameconqueror"
+      ],
+      "fit": "good",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "Anti-cheat blocks all of them"
+    },
+    "crafty": {
+      "names": [
+        "Stockfish"
+      ],
+      "candidates": [
+        "stockfish"
+      ],
+      "fit": "drop-in",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": ""
+    },
+    "CPLEX*": {
+      "names": [
+        "HiGHS",
+        "SCIP 10",
+        "CBC",
+        "OR-Tools CP-SAT"
+      ],
+      "candidates": [
+        "highs",
+        "scip",
+        "coin-or-cbc",
+        "python-highspy"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Port the model to PuLP/Pyomo/OR-Tools",
+      "lockIn": "CPLEX still wins on large hard MIPs"
+    },
+    "unity": {
+      "names": [
+        "Godot",
+        "Stride",
+        "Bevy"
+      ],
+      "candidates": [
+        "godot",
+        "godot-mono",
+        "godot-bin"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Per-project port; Asset Store assets do not carry over",
+      "lockIn": "Engine ecosystem"
+    },
+    "memstack-skill-loader": {
+      "names": [
+        "Claude Code skills (built in)"
+      ],
+      "candidates": [],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "A skill loader is a small script",
+      "lockIn": ""
+    },
+    "linux-firmware*": {
+      "names": [],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Device firmware",
+      "lockIn": "Closed on any hardware"
+    },
+    "amd-ucode": {
+      "names": [],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "CPU microcode",
+      "lockIn": "Closed on any hardware"
+    },
+    "xone-dongle-firmware": {
+      "names": [
+        "Bluetooth pad + xpadneo"
+      ],
+      "candidates": [
+        "xpadneo-dkms",
+        "xpadneo-dkms-git"
+      ],
+      "fit": "partial",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "Dongle firmware is Microsoft's"
+    },
+    "osu-lazer*": {
+      "names": [
+        "CC0 skins/samples (OpenGameArt, Freesound)"
+      ],
+      "candidates": [],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Skinning work for a full CC0 resource set",
+      "lockIn": "NC only restricts commercial use"
+    },
+    "geoip": {
+      "names": [
+        "DB-IP Lite"
+      ],
+      "candidates": [],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "",
+      "lockIn": ""
+    },
+    "Steamworks Common Redistributables": null,
+    "Proton*": null,
+    "Steam Linux Runtime*": null,
+    "libfdk-aac": {
+      "names": [
+        "FFmpeg native AAC encoder",
+        "Opus"
+      ],
+      "candidates": [
+        "ffmpeg",
+        "opus"
+      ],
+      "fit": "good",
+      "effort": null,
+      "effortReason": "",
+      "lockIn": "Pulled in by gst-plugins-bad and pipewire-audio"
+    },
+    "*": {
+      "names": [
+        "FOSS games: OpenTTD, 0 A.D., Luanti, Xonotic, Wesnoth, Mindustry"
+      ],
+      "candidates": [
+        "openttd",
+        "0ad",
+        "0ad-git",
+        "luanti",
+        "wesnoth",
+        "mindustry"
+      ],
+      "fit": "none",
+      "effort": null,
+      "effortReason": "Specific games are not replaceable; FOSS clones cover genres",
+      "lockIn": "Per-title proprietary content",
+      "onlySource": "steam"
+    }
+  }
+}

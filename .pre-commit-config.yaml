@@ -1,0 +1,79 @@
+# Formatting, linting, coverage and the shared gates are pass/fail decisions that
+# code can adjudicate, so the LLM is never in the loop for them.
+# Run: pre-commit run --files <changed>   (or --all-files)
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format (backend)
+        entry: .venv/bin/ruff format
+        language: system
+        types: [python]
+
+      - id: ruff
+        name: ruff check (backend)
+        entry: .venv/bin/ruff check
+        language: system
+        types: [python]
+
+      - id: mypy
+        name: mypy --strict (backend)
+        entry: .venv/bin/mypy
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: pytest-coverage
+        name: pytest (100% branch coverage gate)
+        entry: .venv/bin/python -m pytest -q -p no:cacheprovider --cov-fail-under=100
+        language: system
+        pass_filenames: false
+        files: ^(foss_audit/|tests/|data/curated\.json|pyproject\.toml)
+
+      - id: frontend-lint
+        name: tsc + eslint (frontend)
+        entry: pnpm run lint
+        language: system
+        pass_filenames: false
+        files: ^(src/|package\.json|eslint\.config\.js|tsconfig\.json|vite\.config\.ts)
+
+      - id: frontend-coverage
+        name: vitest coverage gate (frontend)
+        entry: pnpm run coverage
+        language: system
+        pass_filenames: false
+        files: ^(src/|package\.json|vite\.config\.ts)
+
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+
+      - id: file-length-cap
+        name: file length <= 250 lines
+        entry: bash scripts/check_file_length.sh
+        language: system
+        pass_filenames: true
+
+      # Four markdown namespaces (README / CLAUDE* / DOCS* / TODO*), owned by
+      # the shared gate in ~/src/utils.
+      - id: md-naming
+        name: markdown naming convention
+        entry: scripts/check_md_naming.sh
+        language: system
+        files: \.(md|markdown)$
+
+      - id: dependency-freshness
+        name: dependencies on newest stable
+        entry: scripts/check_dependency_freshness.sh
+        language: system
+        pass_filenames: true
+        files: (pyproject\.toml|package\.json|pnpm-lock\.yaml|\.github/workflows/.*\.ya?ml)$
+
+      - id: repo-contract
+        name: repo contract (CLAUDE.md Commands + test_changed)
+        entry: scripts/check_repo_contract.sh
+        language: system
+        pass_filenames: false
+        files: ^(CLAUDE\.md|AGENTS\.md|scripts/test_changed\.sh)$
