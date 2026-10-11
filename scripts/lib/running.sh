@@ -45,9 +45,10 @@ proc_start() {
 # Newest mtime (epoch seconds) among the watched files; 0 when none.
 newest_source_mtime() {
     local newest
-    # stat fails for tracked-but-deleted files; the rest still count.
+    # Relative paths: run.sh has cd'd to SCRIPT_DIR. stat fails for
+    # tracked-but-deleted files; the rest still count.
     newest="$(git -C "$SCRIPT_DIR" ls-files -z --cached --others --exclude-standard -- "${WATCHED_PATHS[@]}" \
-        | (cd "$SCRIPT_DIR" && xargs -0 -r stat -c %Y 2>/dev/null || true) \
+        | { xargs -0 -r stat -c %Y 2>/dev/null || true; } \
         | sort -n | tail -n 1)"
     echo "${newest:-0}"
 }
