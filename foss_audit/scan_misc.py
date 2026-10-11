@@ -1,5 +1,5 @@
 """Scan the non-package-manager sources: npm, cargo, flatpak, AppImages, /opt,
-~/.local/bin, Steam, Wine and Waydroid.
+~/.local/bin, Wine and Waydroid (Steam is scan_steam.py).
 
 Most of these carry no license metadata, so they default to "nonfree" (no
 license grant) and data/curated.json supplies the real verdict. Scripts are
@@ -9,11 +9,11 @@ traced to their pip distribution or their checkout's LICENSE instead.
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import subprocess
 from pathlib import Path
 
+from foss_audit.cited_terms import cited_item, is_elf
 from foss_audit.licenses import classify_text
 from foss_audit.model import NO_LICENSE, Item
 from foss_audit.own_license import license_for_path, origin_of, repo_root
@@ -22,7 +22,6 @@ from foss_audit.scan_pacman import owned_by_pacman
 from foss_audit.scan_python import dist_license, script_owners
 
 HOME = Path.home()
-STEAM_APPS = HOME / ".local/share/Steam/steamapps"
 WINE_PREFIX = HOME / ".wine/drive_c"
 # Wine's own stub directories; anything else under Program Files is a real install.
 WINE_STOCK = {
@@ -36,7 +35,6 @@ WINE_STOCK = {
 OPT_ROOT = Path("/opt")
 WAYDROID_IMAGE = Path("/var/lib/waydroid/images/system.img")
 TOOL_ROOTS = (HOME / ".local/share/pipx", HOME / ".local/share/uv")
-ACF_FIELD = re.compile(r'^\s*"(name|appid|buildid)"\s+"([^"]*)"', re.MULTILINE)
 
 
 def unknown(name: str, source: str, **kw: object) -> Item:
@@ -132,11 +130,6 @@ def scan_opt() -> list[Item]:
     return [unknown(Path(d).name, "opt", reason=d) for d in dirs if d not in owned]
 
 
-def _is_elf(path: Path) -> bool:
-    with path.open("rb") as fh:
-        return fh.read(4) == b"\x7fELF"
-
-
 def from_checkout(name: str, source: str, path: Path, how: str) -> Item:
     """An Item licensed by the checkout or package directory holding `path`."""
     lic, own = license_for_path(path)
@@ -185,11 +178,12 @@ def classify_local_bin(path: Path, owners: dict[str, Path]) -> Item | None:
     if origin is not None:
         how = f"{link}, built from {origin}" if path.is_symlink() else f"copy of {origin}"
         return from_checkout(path.name, "local-bin", origin, how)
-    if path.is_symlink():
-        return from_checkout(path.name, "local-bin", target, link)
+    cited = cited_item(path.name, target, link)
+    if cited is not None or path.is_symlink():
+        return cited or from_checkout(path.name, "local-bin", target, link)
     # A hand-placed script is kuhy's own; a native binary is someone else's.
     # A pnpm-generated shim is licensed by the package it execs.
-    script = target.is_file() and not _is_elf(target)
+    script = target.is_file() and not is_elf(target)
     kind = "script" if script else "binary"
     return (pnpm_item(path, target) if script else None) or unknown(
         path.name, "local-bin", reason=f"{kind} in ~/.local/bin; {NO_LICENSE}", own=script, loose=True
@@ -204,26 +198,6 @@ def scan_local_bin() -> list[Item]:
     owners = script_owners()
     items = [classify_local_bin(p, owners) for p in sorted(root.iterdir()) if p.exists()]
     return [i for i in items if i is not None]
-
-
-def scan_steam() -> list[Item]:
-    """Installed Steam apps from appmanifest_*.acf (games, Proton, runtimes)."""
-    items = []
-    for acf in sorted(STEAM_APPS.glob("appmanifest_*.acf")):
-        fields = dict(ACF_FIELD.findall(acf.read_text(errors="replace")))
-        name = fields.get("name", acf.stem)
-        items.append(
-            Item(
-                name=name,
-                version=fields.get("buildid"),
-                source="steam",
-                verdict="nonfree",
-                reason="Steam app (proprietary unless curated)",
-                url=f"https://store.steampowered.com/app/{fields.get('appid', '')}",
-                removeCommand=f"steam steam://uninstall/{fields.get('appid', '')}",
-            ),
-        )
-    return items
 
 
 def scan_wine() -> list[Item]:

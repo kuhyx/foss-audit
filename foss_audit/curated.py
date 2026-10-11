@@ -27,7 +27,7 @@ class Curated:
         return cls(verdicts=data["verdicts"], alternatives=data["alternatives"])
 
     def verdict_for(self, name: str) -> list[str] | None:
-        """[verdict, reason] for the first matching glob, else None."""
+        """[verdict, reason(, license)] for the first matching glob, else None."""
         return next((v for k, v in self.verdicts.items() if fnmatchcase(name, k)), None)
 
     def alternative_for(self, item: Item) -> dict[str, Any] | None:
@@ -60,6 +60,10 @@ def apply(items: list[Item], curated: Curated) -> list[Item]:
         # from his LICENSE files.
         if hit and not item.own:
             item.verdict, item.reason = hit[0], hit[1]  # type: ignore[assignment]
+            # An optional third element names a license the files do not
+            # state; it is added to what the scanner found, never replaces it.
+            if len(hit) > 2:
+                item.license = f"{item.license} {hit[2]}".strip()
         if item.own or item.verdict not in NEEDS_ALTERNATIVE:
             continue
         alt = curated.alternative_for(item)

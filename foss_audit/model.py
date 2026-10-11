@@ -60,6 +60,9 @@ class Item:
     requiredBy: list[str] = field(default_factory=list)
     alternative: Alternative | None = None
     removeCommand: str | None = None
+    # Scanner-found detail (EULA link, bundled free parts) that a curated
+    # reason must not wipe out; serialised as the tail of `reason`.
+    note: str = ""
 
     @property
     def id(self) -> str:
@@ -67,8 +70,12 @@ class Item:
         return f"{self.source}:{self.name}"
 
     def to_json(self) -> dict[str, Any]:
-        """Serialise with the computed id first."""
-        return {"id": self.id, **asdict(self)}
+        """Serialise with the computed id first and the note folded into reason."""
+        data = asdict(self)
+        note = data.pop("note")
+        if note:
+            data["reason"] = f"{self.reason}; {note}" if self.reason else note
+        return {"id": self.id, **data}
 
 
 @dataclass

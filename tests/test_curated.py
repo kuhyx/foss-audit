@@ -17,6 +17,7 @@ def make_curated() -> Curated:
         verdicts={
             "sudo": ["foss", "ISC"],
             "own-thing": ["nonfree", "should not apply"],
+            "redist": ["nonfree", "Windows redistributables", "LicenseRef-MS"],
         },
         alternatives={
             "google-chrome": ALT,
@@ -73,3 +74,16 @@ def test_item_json_has_id_first() -> None:
     data = Item(name="vim", source="pacman", verdict="foss").to_json()
     assert next(iter(data)) == "id"
     assert data["id"] == "pacman:vim"
+
+
+def test_curated_license_is_appended_and_note_survives() -> None:
+    items = [
+        Item(name="redist", source="steam", verdict="nonfree", license="LicenseRef-SSA", note="EULA: x"),
+        Item(name="sudo", source="pacman", verdict="nonfree", license="ISC"),
+    ]
+    apply(items, make_curated())
+    assert items[0].license == "LicenseRef-SSA LicenseRef-MS"
+    assert items[0].to_json()["reason"] == "Windows redistributables; EULA: x"
+    assert "note" not in items[0].to_json()
+    assert items[1].license == "ISC"
+    assert Item(name="n", source="steam", verdict="nonfree", note="only").to_json()["reason"] == "only"

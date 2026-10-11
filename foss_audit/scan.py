@@ -14,7 +14,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from foss_audit import scan_misc, scan_pacman, scan_python
+from foss_audit import scan_misc, scan_pacman, scan_python, scan_steam
 from foss_audit.curated import Curated, apply
 from foss_audit.model import Item, ScanError
 
@@ -30,7 +30,7 @@ SCANNERS: dict[str, Callable[[], list[Item]]] = {
     "appimage": scan_misc.scan_appimages,
     "opt": scan_misc.scan_opt,
     "local-bin": scan_misc.scan_local_bin,
-    "steam": scan_misc.scan_steam,
+    "steam": scan_steam.scan_steam,
     "wine": scan_misc.scan_wine,
     "waydroid": scan_misc.scan_waydroid,
 }

@@ -123,7 +123,8 @@
     ],
     "Steamworks Common Redistributables": [
       "nonfree",
-      "Windows redistributables (DirectX, VC++)"
+      "Windows redistributables (DirectX, VC++)",
+      "LicenseRef-Microsoft-Redistributable"
     ],
     "CPLEX*": [
       "nonfree",

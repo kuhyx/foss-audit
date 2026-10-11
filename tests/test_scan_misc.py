@@ -13,6 +13,7 @@ import pytest
 from conftest import make_repo
 
 from foss_audit import scan_misc
+from foss_audit.cited_terms import cited_terms
 
 ELF = b"\x7fELF" + b"\0" * 12
 
@@ -199,3 +200,20 @@ def test_local_bin_pnpm_shim(home: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert (cli.verdict, cli.own, cli.loose) == ("nonfree", False, False)
     assert cli.reason == f"pnpm shim -> {bare}; no license (all rights reserved)"
     assert (by["notshim"].own, by["notshim"].loose) == (True, True)
+
+
+def test_local_bin_binary_citing_its_terms(home: Path) -> None:
+    bin_dir = home / ".local/bin"
+    bin_dir.mkdir(parents=True)
+    native = home / ".local/share/claude/versions/2.1.0"
+    native.parent.mkdir(parents=True)
+    native.write_bytes(ELF + b"// a Beta product per Anthropic's Commercial Terms of Service.")
+    (bin_dir / "claude").symlink_to(native)
+    (bin_dir / "plain").write_bytes(ELF)
+    (bin_dir / "versions").symlink_to(native.parent)  # a directory: nothing to cite
+    by = {i.name: i for i in scan_misc.scan_local_bin()}
+    claude = by["claude"]
+    assert (claude.verdict, claude.license) == ("nonfree", "LicenseRef-Anthropic-Commercial-Terms")
+    assert claude.reason == f"-> {native}; binary cites Anthropic-Commercial-Terms"
+    assert by["plain"].license == ""
+    assert cited_terms(bin_dir / "plain") == ""

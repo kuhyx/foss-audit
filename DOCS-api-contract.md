@@ -64,6 +64,17 @@ pnpm global shims in `~/.local/bin` (a non-ELF `sh` file whose `exec` line runs
 `"$basedir…/…/node_modules/<pkg>/…"`) are traced to that package and licensed by its
 `package.json` / LICENSE: `own=false`, `loose=false`, reason `pnpm shim -> <package dir>`.
 
+Native `~/.local/bin` binaries that name their own terms (claude: "Anthropic's
+Commercial Terms") get that as a `LicenseRef-*` license, reason `-> <target>; binary cites …`.
+
+Steam apps (offline; the store site is blocked) are licensed
+`LicenseRef-Steam-Subscriber-Agreement`, plus `LicenseRef-EULA-<appid>` when Steam's
+local `appcache/appinfo.vdf` lists an app-specific EULA, plus the recognised ids of the
+install root's LICENSE/COPYING files (Proton: `BSD OFL-1.1`). The reason ends with
+`EULA: <name> <url>` and `bundled components: <id>: a, b; …` from a `licenses/` folder;
+that tail survives a curated reason. A curated verdict entry may carry a third element,
+a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`).
+
 ### `Alternative`
 
 | field | type | notes |

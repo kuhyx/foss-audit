@@ -1,4 +1,4 @@
-"""Steam, Wine and Waydroid scanners."""
+"""Wine and Waydroid scanners (Steam: test_scan_steam.py)."""
 
 from __future__ import annotations
 
@@ -7,19 +7,6 @@ from pathlib import Path
 import pytest
 
 from foss_audit import scan_misc
-
-ACF = '"AppState"\n{\n\t"appid"\t\t"2400160"\n\t"name"\t\t"Glyphica"\n\t"buildid"\t\t"42"\n}\n'
-
-
-def test_steam_manifests(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    (tmp_path / "appmanifest_2400160.acf").write_text(ACF)
-    (tmp_path / "appmanifest_1.acf").write_text("garbage")
-    monkeypatch.setattr(scan_misc, "STEAM_APPS", tmp_path)
-    by = {i.name: i for i in scan_misc.scan_steam()}
-    game = by["Glyphica"]
-    assert (game.version, game.verdict) == ("42", "nonfree")
-    assert game.removeCommand == "steam steam://uninstall/2400160"
-    assert "appmanifest_1" in by
 
 
 def test_wine_two_levels_and_stock_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

@@ -63,6 +63,9 @@ def test_tokens_drop_operators_and_filler() -> None:
         ("UNKNOWN", "nonfree"),
         ("None", "nonfree"),
         ("Some bespoke text", "nonfree"),
+        ("SIL Open Font License, Version 1.1", "foss"),
+        ("icons licensed under CC BY 4.0", "foss"),
+        ("art licensed under CC BY-NC 4.0, all rights reserved", "nonfree"),
     ],
 )
 def test_classify_text(text: str, verdict: str) -> None:

@@ -16,6 +16,11 @@ def test_identify_known_texts_and_fallback() -> None:
         own_license.identify("\n  Copyright me, do what you like\nmore") == "Copyright me, do what you like"
     )
     assert own_license.identify("   ") == ""
+    # The file's own license comes first; bundled parts it names later lose.
+    bsd = "Redistribution and use in source and binary forms...\nWine is under the Mozilla Public License"
+    assert own_license.identify(bsd) == "BSD"
+    ofl = "Licensed under the SIL Open Font License.\nPermission is hereby granted, free of charge"
+    assert own_license.identify(ofl) == "OFL-1.1"
 
 
 def test_manifest_licenses_nearest_wins(tmp_path: Path) -> None:

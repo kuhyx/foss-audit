@@ -25,9 +25,12 @@ EXTRA_REPOS = (HOME / ".claude",)
 OWN_MARKER = "github.com/kuhyx/"
 REPO_SLUG = re.compile(r"github\.com[/:]kuhyx/([\w.-]+?)(?:\.git)?(?=[/#?\s]|$)", re.MULTILINE)
 LICENSE_FILE = re.compile(r"(?i)^(licen[cs]e|copying)([.-].*)?$")
-# Distinctive phrase of each common license text; first match wins, so the
-# AGPL/LGPL headers are checked before the plain GPL one they contain.
+# Distinctive phrase of each common license text. The phrase that appears
+# EARLIEST wins: a file's own license comes first, the licenses of bundled parts
+# it mentions later (Proton's BSD header, then "Wine ... under the LGPL"). An
+# AGPL/LGPL header precedes the plain GPL wording its own text contains.
 TEXT_IDS = (
+    ("SIL Open Font License", "OFL-1.1"),
     ("GNU AFFERO GENERAL PUBLIC LICENSE", "AGPL-3.0"),
     ("GNU LESSER GENERAL PUBLIC LICENSE", "LGPL"),
     ("GNU GENERAL PUBLIC LICENSE", "GPL"),
@@ -42,9 +45,11 @@ TEXT_IDS = (
 
 def identify(text: str) -> str:
     """SPDX-ish id of a license text, or its first line when unrecognised."""
-    for phrase, spdx in TEXT_IDS:
-        if phrase.lower() in text.lower():
-            return spdx
+    lower = text.lower()
+    hits = [(lower.find(phrase.lower()), i) for i, (phrase, _) in enumerate(TEXT_IDS)]
+    found = [h for h in hits if h[0] >= 0]
+    if found:
+        return TEXT_IDS[min(found)[1]][1]
     first = text.strip().splitlines()
     return first[0][:80] if first else ""
 

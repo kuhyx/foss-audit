@@ -53,7 +53,7 @@ CUSTOM = re.compile(r"^custom:?$")
 FREE_TEXT = re.compile(
     r"\b(MIT|BSD|Apache|GPL|LGPL|AGPL|MPL|Mozilla|ISC|PSF|Python Software|Unlicense"
     r"|Zlib|Artistic|EPL|Eclipse|CC0|Public Domain|0BSD|BlueOak|WTFPL|GNU|General Public"
-    r"|Python-2\.0|TCL)\b"
+    r"|Python-2\.0|TCL|OFL|Open Font License|CC[ -]BY(?![ -]NC))\b"
     r"|License agreement for matplotlib|SciPy Develope",
     re.IGNORECASE,
 )
