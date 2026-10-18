@@ -60,6 +60,16 @@ class Repo:
     ids: list[str] = field(default_factory=list)
 
 
+@dataclass
+class Container:
+    """A container (running or stopped); `docker rmi` refuses while one uses the image."""
+
+    id: str
+    name: str
+    image: str
+    running: bool
+
+
 def run_docker(args: list[str], *, partial: bool = False) -> str | None:
     """stdout of `docker <args>`, or None when docker is missing/unreachable.
 
@@ -111,6 +121,30 @@ def inspect_labels(ids: list[str]) -> dict[str, dict[str, str]]:
     return labels
 
 
+def list_containers() -> list[Container]:
+    """Every container with its full image id, from ONE batched `docker container inspect`."""
+    ids = (run_docker(["ps", "-aq"]) or "").split()
+    if not ids:
+        return []
+    fmt = "{{.Id}} {{.Image}} {{.Name}} {{.State.Running}}"
+    out = run_docker(["container", "inspect", "--format", fmt, *ids], partial=True)
+    containers = []
+    for line in (out or "").splitlines():
+        cid, image, name, running = line.split()
+        containers.append(
+            Container(cid[:12], name.lstrip("/"), image.removeprefix("sha256:"), running == "true")
+        )
+    return containers
+
+
+def users_note(users: list[Container]) -> str:
+    """Which containers block `docker rmi`; running ones are flagged so a live service is not killed."""
+    if not users:
+        return ""
+    names = ", ".join(f"{c.name} (RUNNING)" if c.running else c.name for c in users)
+    return f"used by container{'s' if len(users) > 1 else ''} {names}"
+
+
 def repo_labels(repo: Repo, labels: dict[str, dict[str, str]]) -> dict[str, str]:
     """Merge the labels of a repository's images; the newest image (listed first) wins."""
     merged: dict[str, str] = {}
@@ -136,17 +170,22 @@ def is_foreign_bare(labels: dict[str, str]) -> bool:
     return bool(links) and not any("kuhyx" in link.lower() for link in links)
 
 
-def make_item(repo: Repo, labels: dict[str, str]) -> Item:
+def make_item(repo: Repo, labels: dict[str, str], containers: list[Container]) -> Item:
     """One Item; license from the label, else the official-image table, else unknown."""
     tags = sorted(repo.tags)
     version = ", ".join(tags) or None
     url = label_url(labels)
     remove = "docker rmi " + " ".join(f"{repo.name}:{t}" for t in tags) if tags else f"docker rmi {repo.name}"
+    # Containers go first or `docker rmi` refuses; -f stops running ones, volumes are kept (no -v).
+    users = [c for c in containers if any(c.image.startswith(i) for i in repo.ids)]
+    if users:
+        remove = "docker rm -f " + " ".join(c.id for c in users) + " && " + remove
+    note = users_note(users)
     lic = labels.get(LICENSE_LABEL, "")
     if lic.upper() in NO_ASSERTION:
         lic = OFFICIAL.get(repo.name, "")
     if not lic:
-        return unknown(repo.name, "docker", version=version, url=url, removeCommand=remove)
+        return unknown(repo.name, "docker", version=version, url=url, removeCommand=remove, note=note)
     verdict, reason = classify_spdx(repo.name, lic)
     return Item(
         name=repo.name,
@@ -157,6 +196,7 @@ def make_item(repo: Repo, labels: dict[str, str]) -> Item:
         reason=reason,
         url=url,
         removeCommand=remove,
+        note=note,
     )
 
 
@@ -168,10 +208,11 @@ def scan_docker() -> list[Item]:
     repos = group_repos(listing)
     ids = sorted({i for repo in repos.values() for i in repo.ids})
     labels = inspect_labels(ids) if ids else {}
+    containers = list_containers()
     items = []
     for name in sorted(repos):
         found = repo_labels(repos[name], labels)
         if "/" not in name and name not in OFFICIAL and not is_foreign_bare(found):
             continue
-        items.append(make_item(repos[name], found))
+        items.append(make_item(repos[name], found, containers))
     return items

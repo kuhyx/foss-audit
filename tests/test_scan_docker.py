@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
-from typing import Any
 
 import pytest
+from docker_helpers import FakeDocker, install, row
 
 from foss_audit import scan_docker
 from foss_audit.curated import Curated, apply
@@ -17,45 +16,9 @@ SRC = "org.opencontainers.image.source"
 URL = "org.opencontainers.image.url"
 
 
-def row(repo: str, tag: str, image_id: str) -> str:
-    return json.dumps({"Repository": repo, "Tag": tag, "ID": image_id})
-
-
-class FakeDocker:
-    """Answers `docker images` and ONE batched `docker image inspect`."""
-
-    def __init__(
-        self,
-        rows: list[str],
-        labels: dict[str, dict[str, str] | None],
-        images_rc: int = 0,
-        inspect_rc: int = 0,
-    ) -> None:
-        self.rows, self.labels = rows, labels
-        self.images_rc, self.inspect_rc = images_rc, inspect_rc
-        self.inspect_calls: list[list[str]] = []
-
-    def __call__(self, cmd: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
-        assert kw["timeout"] > 0
-        if cmd[1] == "images":
-            return subprocess.CompletedProcess(cmd, self.images_rc, "\n".join(self.rows) + "\n\n", "")
-        self.inspect_calls.append(cmd)
-        lines = [
-            f"sha256:{short}{'0' * 52} {json.dumps(self.labels[short])}"
-            for short in cmd[cmd.index("--format") + 2 :]
-            if short in self.labels
-        ]
-        return subprocess.CompletedProcess(cmd, self.inspect_rc, "\n".join(lines), "")
-
-
 @pytest.fixture
 def docker(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/docker")
-
-
-def install(monkeypatch: pytest.MonkeyPatch, fake: FakeDocker) -> FakeDocker:
-    monkeypatch.setattr(subprocess, "run", fake)
-    return fake
 
 
 def test_no_docker_binary(monkeypatch: pytest.MonkeyPatch) -> None:
