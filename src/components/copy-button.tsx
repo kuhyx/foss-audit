@@ -1,12 +1,15 @@
 /**
  * Copies a shell command to the clipboard. The UI never runs commands itself:
  * removing a package is the user's decision, made in their own terminal.
+ * Long text (a Claude prompt) is copied without being printed inline.
  */
 import { useState } from "react";
 
 export interface CopyButtonProps {
+  readonly buttonText?: string;
   readonly command: null | string;
   readonly label?: string;
+  readonly showText?: boolean;
 }
 
 type CopyStatus = "copied" | "failed" | "idle";
@@ -18,8 +21,10 @@ const STATUS_TEXT: Readonly<Record<CopyStatus, string>> = {
 };
 
 export function CopyButton({
+  buttonText = "Copy",
   command,
   label = "Copy remove command",
+  showText = true,
 }: CopyButtonProps): React.JSX.Element {
   const [status, setStatus] = useState<CopyStatus>("idle");
 
@@ -40,7 +45,7 @@ export function CopyButton({
 
   return (
     <span className="copy">
-      <code className="command">{command}</code>
+      {showText && <code className="command">{command}</code>}
       <button
         className="btn"
         onClick={(event): void => {
@@ -50,7 +55,7 @@ export function CopyButton({
         title={label}
         type="button"
       >
-        Copy
+        {buttonText}
       </button>
       <span aria-live="polite" className="copy-status">
         {STATUS_TEXT[status]}

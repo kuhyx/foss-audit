@@ -4,6 +4,7 @@
  */
 import type { Item, Source, Verdict } from "../lib/schema.ts";
 
+import { buildBulkPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
 import { VERDICTS } from "../lib/schema.ts";
 import { sourceRows } from "../lib/stack.ts";
 import {
@@ -16,6 +17,7 @@ import {
   VERDICT_HINTS,
   VERDICT_LABELS,
 } from "../lib/verdict.ts";
+import { CopyButton } from "./copy-button.tsx";
 import { SourceChart } from "./source-chart.tsx";
 
 export interface SummaryViewProps {
@@ -37,6 +39,7 @@ export function SummaryView({ items, onDrill }: SummaryViewProps): React.JSX.Ele
   const free = items.filter((item) => FREE_VERDICTS.has(item.verdict)).length;
   const notFree = total - free;
   const rows = sourceRows(items);
+  const promptCount = items.filter((item) => isPromptCandidate(item)).length;
 
   return (
     <div className="summary">
@@ -65,6 +68,16 @@ export function SummaryView({ items, onDrill }: SummaryViewProps): React.JSX.Ele
           <span className="muted">(non-free, incl. firmware blobs and unlicensed)</span>, out of{" "}
           {numberFormat.format(total)} installed items.
         </p>
+        {promptCount > 0 && (
+          <p className="headline-text">
+            <CopyButton
+              buttonText={`Copy Claude prompt for all ${numberFormat.format(promptCount)}`}
+              command={buildBulkPrompt(items)}
+              label="Copy one Claude prompt to research, suggest and install FOSS alternatives for every non-FOSS item"
+              showText={false}
+            />
+          </p>
+        )}
       </section>
 
       <ul aria-label="Items per verdict" className="tiles">

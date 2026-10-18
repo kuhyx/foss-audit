@@ -22,6 +22,19 @@ describe("DetailPanel", () => {
     expect(screen.getByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
   });
 
+  it("copies a Claude prompt for a non-FOSS item", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Copy Claude prompt" }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^Replace google-chrome with a FOSS alternative\n/u));
+  });
+
+  it("offers no Claude prompt for FOSS items", () => {
+    render(<DetailPanel item={OWN_SCRIPT} onClose={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Copy Claude prompt" })).toBeNull();
+  });
+
   it("warns when other packages still need it", () => {
     render(<DetailPanel item={UNRAR} onClose={vi.fn()} />);
     expect(screen.getByText(/by 1 package:/u)).toBeInTheDocument();

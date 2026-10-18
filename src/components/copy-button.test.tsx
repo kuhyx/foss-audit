@@ -35,6 +35,15 @@ describe("CopyButton", () => {
     expect(onParent).not.toHaveBeenCalled();
   });
 
+  it("can copy long text behind a named button without printing it", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    render(<CopyButton buttonText="Copy Claude prompt" command="a long prompt" showText={false} />);
+    expect(screen.queryByText("a long prompt")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Copy Claude prompt" }));
+    expect(writeText).toHaveBeenCalledWith("a long prompt");
+  });
+
   it("shows a note when there is no remove command", () => {
     render(<CopyButton command={null} />);
     expect(screen.getByText("No remove command")).toBeInTheDocument();

@@ -7,6 +7,7 @@
  */
 import type { Alternative, Item } from "../lib/schema.ts";
 
+import { buildItemPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
 import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants } from "../lib/verdict.ts";
 import { CopyButton } from "./copy-button.tsx";
 import { VerdictBadge } from "./verdict-badge.tsx";
@@ -135,6 +136,21 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
         </section>
 
         {item.alternative !== null && <AlternativeBlock alt={item.alternative} />}
+
+        {isPromptCandidate(item) && (
+          <section aria-labelledby="prompt-heading" className="panel-section">
+            <h3 id="prompt-heading">Hand it to Claude</h3>
+            <p className="muted">
+              A prompt to research, suggest and install a FOSS alternative. It never removes {item.name}.
+            </p>
+            <CopyButton
+              buttonText="Copy Claude prompt"
+              command={buildItemPrompt(item)}
+              label="Copy a Claude prompt for this item"
+              showText={false}
+            />
+          </section>
+        )}
 
       </div>
     </aside>

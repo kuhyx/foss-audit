@@ -93,8 +93,17 @@ describe("SummaryView", () => {
     expect(paths.slice(0, -1).every((d) => !d.includes("Q"))).toBe(true);
   });
 
+  it("copies one Claude prompt covering every non-FOSS item", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    render(<SummaryView items={ITEMS} onDrill={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Copy Claude prompt for all 6" }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^Replace 6 non-FOSS items with FOSS alternatives\n/u));
+  });
+
   it("copes with an empty scan", () => {
     render(<SummaryView items={[]} onDrill={vi.fn()} />);
     expect(screen.getByText("0% free")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Copy Claude prompt/u })).toBeNull();
   });
 });
