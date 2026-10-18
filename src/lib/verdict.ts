@@ -98,7 +98,7 @@ export function percent(part: number, whole: number): string {
   const value = (part / whole) * 100;
   // 1 of 3,138 is 0.03%: "0.0%" would read as "none at all".
   if (value > 0 && value < 0.1) return "<0.1%";
-  return `${value < 10 && value > 0 ? value.toFixed(1) : value.toFixed(0)}%`;
+  return `${value.toFixed(value < 10 && value > 0 ? 1 : 0)}%`;
 }
 
 export const numberFormat = new Intl.NumberFormat("en-US");
