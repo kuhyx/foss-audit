@@ -35,11 +35,11 @@ rescan (a full scan takes a few seconds). Response body:
 | `verdict` | `Verdict` | |
 | `reason` | string | one-line evidence, may be `""` |
 | `url` | string \| null | upstream homepage |
-| `requiredBy` | string[] | pacman reverse deps, else `[]` |
+| `requiredBy` | string[] | pacman reverse deps; `*-cache` sources: the `~/src/<repo>` projects whose lockfile or build file names it; else `[]` |
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
 | `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
 
-`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker" | "user-app"`
+`Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker" | "user-app" | "maven-cache" | "pub-cache" | "npm-cache" | "cargo-cache" | "pip-cache"`
 
 `Verdict` = `"foss" | "foss-partial" | "nonfree"`
 
@@ -132,6 +132,19 @@ named by `Name=` (Discord's `Game <id>` stubs by the target's file name), licens
 beside or above the target, else unknown (curated). A launcher whose target does not exist
 is `dangling: true`, reason `launcher without target: <exec path>`, `removeCommand`
 `rm '<desktop file>'`; dead launchers owned by a pacman package are left to the pacman item.
+
+Package caches (`cache_common.py` + `scan_cache_<eco>.py`; sources `maven-cache`
+(`~/.gradle/caches/modules-2` + `~/.m2`), `pub-cache`, `npm-cache` (pnpm stores + `~/.npm/_cacache`),
+`cargo-cache`, `pip-cache`): one item per package (`group:artifact` for Maven), `version` lists every
+cached version newest first. The license is read from the package itself (POM and its parents,
+Cargo.toml, package.json, METADATA, else its LICENSE file), with a cached registry lookup only when
+the cache holds none; a failed lookup stays in the reason. The verdict is the worst over all cached
+versions (the note says when versions are licensed differently); a free package whose newest version
+has a runtime dependency on a non-free package of the same cache is `foss-partial`
+(`depends on non-free <name>`). `requiredBy` is filled from `~/src` lockfiles/build files at most
+four levels deep; empty means no project names it (transitive or stale), and the note says so.
+No `removeCommand`: the next build would download it again. `scripts/check_cache_licenses.py`
+runs them on the real caches and fails while any package's license is unknown.
 
 ### `Alternative`
 

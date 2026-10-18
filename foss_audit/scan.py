@@ -15,6 +15,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from foss_audit import (
+    scan_cache_cargo,
+    scan_cache_maven,
+    scan_cache_npm,
+    scan_cache_pip,
+    scan_cache_pub,
     scan_desktop,
     scan_docker,
     scan_misc,
@@ -50,6 +55,11 @@ SCANNERS: dict[str, Callable[[], list[Item]]] = {
     "desktop": scan_desktop.scan_desktop,
     "docker": scan_docker.scan_docker,
     "user-app": scan_userapp.scan_user_apps,
+    "maven-cache": scan_cache_maven.scan_maven_cache,
+    "pub-cache": scan_cache_pub.scan_pub_cache,
+    "npm-cache": scan_cache_npm.scan_npm_cache,
+    "cargo-cache": scan_cache_cargo.scan_cargo_cache,
+    "pip-cache": scan_cache_pip.scan_pip_cache,
 }
 
 

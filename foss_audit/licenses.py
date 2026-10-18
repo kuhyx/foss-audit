@@ -53,11 +53,24 @@ CUSTOM = re.compile(r"^custom:?$")
 FREE_TEXT = re.compile(
     r"\b(MIT|BSD|Apache|GPL|LGPL|AGPL|MPL|Mozilla|ISC|PSF|Python Software|Unlicense"
     r"|Zlib|Artistic|EPL|Eclipse|CC0|Public Domain|0BSD|BlueOak|WTFPL|GNU|General Public"
-    r"|Python-2\.0|TCL|OFL|Open Font License|CC[ -]BY(?![ -]NC))\b"
+    r"|Python-2\.0|TCL|OFL|Open Font License|CC[ -]BY(?![ -]NC)|Unicode-3\.0|Unicode-DFS"
+    r"|CDLA-Permissive|bzip2-1\.0\.6|Apache-?2|MPL-?2|GPLv[23]|LGPLv[23]|wxWindows|ODC-By"
+    r"|ASLv2|Bouncy Castle|Zope Public|ZPL|Historical Permission Notice|PSFL|Expat"
+    # innosetup (npm): Inno Setup's own zlib-style permissive license.
+    r"|Inno Setup License)\b"
     r"|License agreement for matplotlib|SciPy Develope",
     re.IGNORECASE,
 )
-NONFREE_TEXT = re.compile(r"proprietary|all rights reserved|commercial|EULA", re.IGNORECASE)
+# Google's Maven artifacts declare these (Play Services, ML Kit); the JSON
+# License adds "shall be used for Good, not Evil", which OSI and FSF reject.
+NONFREE_TEXT = re.compile(
+    r"proprietary|all rights reserved|commercial|EULA|Software Development Kit License"
+    # npm's standard word for "no license granted".
+    r"|Terms of Service|JSON License|Syncfusion|\bUNLICENSED\b|NVIDIA[- ]SOFTWARE"
+    # Custom licenses no OSI/FSF review accepted (scrobblenaut's GPL-like one).
+    r"|NEBULINO PUBLIC LICENSE",
+    re.IGNORECASE,
+)
 
 
 def tokens(expr: str) -> list[str]:

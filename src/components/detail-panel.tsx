@@ -8,7 +8,7 @@
 import type { Alternative, Item } from "../lib/schema.ts";
 
 import { buildItemPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
-import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants } from "../lib/verdict.ts";
+import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants, isCacheSource } from "../lib/verdict.ts";
 import { CopyButton } from "./copy-button.tsx";
 import { VerdictBadge } from "./verdict-badge.tsx";
 
@@ -62,7 +62,25 @@ function AlternativeBlock({ alt }: { readonly alt: Alternative }): React.JSX.Ele
   );
 }
 
+/**
+ * Why `requiredBy` is empty: nothing needs it, no project names it, or not tracked.
+ */
+function noDependantsText(item: Item): string {
+  if (isCacheSource(item)) {
+    return "No ~/src lockfile or build file names it: a transitive dependency or a stale cache entry.";
+  }
+  return hasTrackedDependants(item)
+    ? "Nothing depends on it."
+    : `Not tracked: reverse dependencies are only known for pacman and AUR packages, not ${item.source}.`;
+}
+
+function dependantNoun(isCached: boolean, count: number): string {
+  const noun = isCached ? "project" : "package";
+  return count === 1 ? noun : `${noun}s`;
+}
+
 export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Element {
+  const isCached = isCacheSource(item);
   return (
     <aside aria-labelledby="panel-title" className="panel">
       <div className="panel-head">
@@ -109,18 +127,14 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
         </section>
 
         <section aria-labelledby="req-heading" className="panel-section">
-          <h3 id="req-heading">Required by</h3>
+          <h3 id="req-heading">{isCached ? "Used by" : "Required by"}</h3>
           {item.requiredBy.length === 0 ? (
-            <p className="muted">
-              {hasTrackedDependants(item)
-                ? "Nothing depends on it."
-                : `Not tracked: reverse dependencies are only known for pacman and AUR packages, not ${item.source}.`}
-            </p>
+            <p className="muted">{noDependantsText(item)}</p>
           ) : (
             <>
               <p className="warning-line">
                 by {item.requiredBy.length}{" "}
-                {item.requiredBy.length === 1 ? "package" : "packages"}:
+                {dependantNoun(isCached, item.requiredBy.length)}:
               </p>
               <ul className="req-list">
                 {item.requiredBy.map((name) => {

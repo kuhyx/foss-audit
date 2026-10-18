@@ -34,6 +34,8 @@ TEXT_IDS = (
     ("SIL Open Font License", "OFL-1.1"),
     ("GNU AFFERO GENERAL PUBLIC LICENSE", "AGPL-3.0"),
     ("GNU LESSER GENERAL PUBLIC LICENSE", "LGPL"),
+    # EPL-2.0's secondary-licenses clause names the GNU GPL further down.
+    ("Eclipse Public License", "EPL-2.0"),
     ("GNU GENERAL PUBLIC LICENSE", "GPL"),
     ("Apache License", "Apache-2.0"),
     ("Mozilla Public License", "MPL-2.0"),

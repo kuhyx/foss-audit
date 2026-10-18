@@ -27,6 +27,11 @@ Source = Literal[
     "desktop",
     "docker",
     "user-app",
+    "maven-cache",
+    "pub-cache",
+    "npm-cache",
+    "cargo-cache",
+    "pip-cache",
 ]
 Verdict = Literal["foss", "foss-partial", "nonfree"]
 # Verdicts that get a curated FOSS alternative attached (not the "free" headline).

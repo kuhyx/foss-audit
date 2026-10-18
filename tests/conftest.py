@@ -1,4 +1,5 @@
-"""Keep own_license away from the real ~/src: every test gets an empty fake home."""
+"""Keep own_license away from the real ~/src (every test gets an empty fake home),
+and upstream_license away from the network and the real cache."""
 
 from __future__ import annotations
 
@@ -8,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from foss_audit import own_license
+from foss_audit import own_license, upstream_git, upstream_license
 
 MIT = "MIT License\n\nPermission is hereby granted, free of charge, to any person...\n"
 
@@ -40,3 +41,11 @@ def fake_repo_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator
     yield tmp_path
     own_license.kuhy_repos.cache_clear()
     own_license.tracked_by_name.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def upstream_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads the real upstream-license cache or reaches a real git remote:
+    git may only fetch file:// repos, so a stray network lookup fails at once."""
+    monkeypatch.setattr(upstream_license, "CACHE_FILE", tmp_path / "upstream-cache/upstream-license.json")
+    monkeypatch.setitem(upstream_git.ENV, "GIT_ALLOW_PROTOCOL", "file")

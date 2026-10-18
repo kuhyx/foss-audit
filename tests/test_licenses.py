@@ -77,3 +77,46 @@ def test_classify_text(text: str, verdict: str) -> None:
 def test_blob_and_missing_reasons() -> None:
     assert classify_spdx("linux-firmware-amd", "LicenseRef-amd")[1] == "firmware blob: LicenseRef-amd"
     assert classify_text("")[1] == "no license (all rights reserved)"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Android Software Development Kit License",
+        "ML Kit Terms of Service",
+        "The JSON License",
+        "Syncfusion<sup>&reg;</sup> License",
+        "NEBULINO PUBLIC LICENSE",
+        "UNLICENSED",
+        "LicenseRef-NVIDIA-SOFTWARE-LICENSE",
+    ],
+)
+def test_maven_nonfree_license_names(text: str) -> None:
+    verdict, reason = classify_text(text)
+    assert verdict == "nonfree"
+    assert not reason.startswith("unrecognised")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Unicode-3.0",
+        "CDLA-Permissive-2.0",
+        "bzip2-1.0.6",
+        "Apache2",
+        "MPL2",
+        "GPLv2",
+        "wxWindows Library Licence, Version 3.1",
+        "ODC-By-1.0",
+        "Bouncy Castle Licence",
+        "ASLv2",
+        "Zope Public License",
+        "ZPL 2.1",
+        "PSFL",
+        "Expat License",
+        "Inno Setup License",
+        "Historical Permission Notice and Disclaimer (HPND)",
+    ],
+)
+def test_crate_free_license_ids(text: str) -> None:
+    assert classify_text(text) == ("foss", "")

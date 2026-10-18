@@ -65,6 +65,14 @@ export function hasTrackedDependants(item: Item): boolean {
   return item.source === "pacman" || item.source === "aur";
 }
 
+/**
+ * Package-cache sources (`maven-cache`, `pub-cache`, ...): `requiredBy` lists
+ * the ~/src projects whose lockfile or build file names the package.
+ */
+export function isCacheSource(item: Item): boolean {
+  return item.source.endsWith("-cache");
+}
+
 const EASY_FITS: ReadonlySet<Fit> = new Set<Fit>(["drop-in", "good"]);
 
 /**

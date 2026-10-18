@@ -47,6 +47,17 @@ describe("DetailPanel", () => {
     expect(screen.getByText(/by 2 packages:/u)).toBeInTheDocument();
   });
 
+  it("lists the projects that use a cached package", () => {
+    render(<DetailPanel item={{ ...UNRAR, requiredBy: ["~/src/todo"], source: "pub-cache" }} onClose={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Used by" })).toBeInTheDocument();
+    expect(screen.getByText(/by 1 project:/u)).toBeInTheDocument();
+  });
+
+  it("says a cached package no project names may be transitive", () => {
+    render(<DetailPanel item={{ ...UNRAR, requiredBy: [], source: "maven-cache" }} onClose={vi.fn()} />);
+    expect(screen.getByText(/No ~\/src lockfile or build file names it/u)).toBeInTheDocument();
+  });
+
   it("says dependants are untracked outside pacman/AUR", () => {
     render(<DetailPanel item={STEAM_GAME} onClose={vi.fn()} />);
     expect(screen.getByText(/Not tracked: .* not steam\./u)).toBeInTheDocument();

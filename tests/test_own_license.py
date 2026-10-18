@@ -109,3 +109,8 @@ def test_local_only_repo_under_repo_root_is_kuhys(tmp_path: Path) -> None:
 def test_checkout_without_git_config_is_not_kuhys(tmp_path: Path) -> None:
     (tmp_path / "src/odd/.git").mkdir(parents=True)
     assert not own_license.is_kuhy_repo(tmp_path / "src/odd")
+
+
+def test_identify_epl2_despite_its_gpl_clause() -> None:
+    text = "Eclipse Public License - v 2.0\n...may be made available under the GNU General Public License..."
+    assert own_license.identify(text) == "EPL-2.0"

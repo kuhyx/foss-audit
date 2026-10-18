@@ -30,6 +30,11 @@ export const SOURCES = [
   "desktop",
   "docker",
   "user-app",
+  "maven-cache",
+  "pub-cache",
+  "npm-cache",
+  "cargo-cache",
+  "pip-cache",
 ] as const;
 
 /**
