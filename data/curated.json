@@ -1045,7 +1045,7 @@
     },
     "android-sdk": {
       "names": [
-        "foss-android-sdk: scripts/foss_android_sdk.sh + foss_android_ndk.sh (fit good, effort M; Robolectric android-all platforms 34-37 + OpenJDK java.*, lzhiyong build-tools behind an aapt2 arg wrapper, Arch cmake/adb, NDK = Arch clang + AOSP bionic sysroot + LLVM libc++/compiler-rt; arm64 only; android-all has hidden APIs; verified: todo release APK on a Pixel 6a)",
+        "foss-android-sdk: scripts/foss_android_sdk.sh + foss_android_ndk.sh (fit good, effort M; Robolectric android-all platforms 34-37 + OpenJDK java.*, lzhiyong build-tools behind an aapt2 arg wrapper, Arch cmake/adb, NDK = Arch clang + AOSP bionic sysroot + LLVM libc++/compiler-rt for arm64-v8a, armeabi-v7a, x86_64, x86 (no riscv64); apksigner built from AOSP apksig; android-all has hidden APIs; verified: todo release APK on a Pixel 6a)",
         "lzhiyong/android-sdk-tools: AOSP-built aapt2/aapt/zipalign/aidl/dexdump (Apache-2.0; fit partial, effort L; via android.aapt2FromMavenOverride, latest 35.0.2 lags; platforms/NDK still Google's)",
         "AOSP source build, m sdk sdk_repo (Apache-2.0; fit good, effort XL; ~400 GB checkout and hours per release)",
         "Debian android-sdk-meta rebuilds (Apache-2.0; fit none, effort L; frozen at platform 23 / build-tools 29, Flutter needs compileSdk 35+)",

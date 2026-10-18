@@ -5,8 +5,8 @@
 # libc++/libc++abi, cross-built from llvm-project at Arch's clang version.
 # Sourced, not executed.
 #
-# Expects from the caller: CACHE, LLVM_SRC, RESOURCE_DIR, SYSROOT, TRIPLE,
-# API_MIN, API_MAX and a `die` function.
+# Expects from the caller: CACHE, LLVM_SRC, RESOURCE_DIR, SYSROOT, NDK_ABI,
+# TRIPLE, TARGET, PROCESSOR, RT_ARCH, API_MIN, API_MAX and a `die` function.
 
 runtime_failed() {
 	grep -B2 -A6 -m3 -E 'FAILED|error:|CMake Error' "${1}.log" >&2 || tail -20 "${1}.log" >&2
@@ -16,16 +16,18 @@ runtime_failed() {
 # CMake for one runtime, cross-compiled with the system clang at API_MIN.
 # CMake's own Android platform insists on an NDK, so this is a plain Linux
 # cross build with ANDROID set by hand (what compiler-rt keys its naming on).
+# The API level keeps LLVM from adding _FILE_OFFSET_BITS=64 on 32-bit ABIs:
+# bionic only has fseeko64 and friends from API 24.
 runtime_configure() {
 	local src="$1" build="$2"
 	shift 2
 	rm -rf "$build"
 	cmake -G Ninja -S "$src" -B "$build" -DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DANDROID=1 \
+		-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR="$PROCESSOR" -DANDROID=1 -DANDROID_NATIVE_API_LEVEL="$API_MIN" \
 		-DCMAKE_SYSROOT="$SYSROOT" -DCMAKE_MAKE_PROGRAM="$(command -v ninja)" \
 		-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_ASM_COMPILER=clang \
-		-DCMAKE_C_COMPILER_TARGET="${TRIPLE}${API_MIN}" -DCMAKE_CXX_COMPILER_TARGET="${TRIPLE}${API_MIN}" \
-		-DCMAKE_ASM_COMPILER_TARGET="${TRIPLE}${API_MIN}" -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DCMAKE_C_COMPILER_TARGET="${TARGET}${API_MIN}" -DCMAKE_CXX_COMPILER_TARGET="${TARGET}${API_MIN}" \
+		-DCMAKE_ASM_COMPILER_TARGET="${TARGET}${API_MIN}" -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
 		-DCMAKE_AR="$(command -v llvm-ar)" -DCMAKE_RANLIB="$(command -v llvm-ranlib)" "$@" >"${build}.log" 2>&1 ||
 		runtime_failed "$build"
 }
@@ -36,33 +38,39 @@ runtime_cmake() {
 }
 
 cmd_builtins() {
-	local build="${CACHE}/build-builtins"
+	local build="${CACHE}/build-builtins-${NDK_ABI}"
+	local archive="${RESOURCE_DIR}/lib/linux/libclang_rt.builtins-${RT_ARCH}-android.a" probe
 	runtime_cmake "${LLVM_SRC}/compiler-rt/lib/builtins" "$build" \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF -DLLVM_CMAKE_DIR="${LLVM_SRC}/llvm/cmake/modules"
 	mkdir -p "${RESOURCE_DIR}/lib/linux"
-	find "$build" -name "libclang_rt.builtins*.a" -exec cp {} "${RESOURCE_DIR}/lib/linux/libclang_rt.builtins-aarch64-android.a" \;
-	[[ -s "${RESOURCE_DIR}/lib/linux/libclang_rt.builtins-aarch64-android.a" ]] || die "builtins archive missing"
+	rm -f "$archive"
+	find "$build" -name "libclang_rt.builtins*.a" -exec cp {} "$archive" \;
+	[[ -s $archive ]] || die "builtins archive missing"
+	# The driver must pick this flat name at every API level (per-target dirs
+	# would embed the level), or it links nothing and every link fails late.
+	for probe in "${API_MIN}" "${API_MAX}"; do
+		[[ $(clang --target="${TARGET}${probe}" -resource-dir "$RESOURCE_DIR" -rtlib=compiler-rt \
+			-print-libgcc-file-name) == "$archive" ]] || die "clang --target=${TARGET}${probe} does not resolve $archive"
+	done
 }
 
 cmd_unwind() {
-	local build="${CACHE}/build-unwind"
+	local build="${CACHE}/build-unwind-${NDK_ABI}"
 	# Static-library try-compiles never link, so every library probe passes;
 	# bionic has pthreads in libc and a stray -lpthread breaks every C++ link.
 	runtime_cmake "${LLVM_SRC}/runtimes" "$build" -DLLVM_ENABLE_RUNTIMES=libunwind \
 		-DLIBUNWIND_HAS_PTHREAD_LIB=OFF -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_USE_COMPILER_RT=ON -DLLVM_INCLUDE_TESTS=OFF \
 		-DCMAKE_C_FLAGS=-rtlib=compiler-rt -DCMAKE_CXX_FLAGS="-rtlib=compiler-rt -nostdinc++" \
 		-DCMAKE_C_FLAGS_INIT="-resource-dir=${RESOURCE_DIR}"
-	mkdir -p "${RESOURCE_DIR}/lib/linux/aarch64"
-	cp "${build}/lib/libunwind.a" "${RESOURCE_DIR}/lib/linux/aarch64/libunwind.a"
 	cp "${build}/lib/libunwind.a" "${SYSROOT}/usr/lib/${TRIPLE}/libunwind.a"
 }
 
-readonly LIBCXX_BUILD="${CACHE}/build-libcxx"
+readonly LIBCXX_BUILD="${CACHE}/build-libcxx-${NDK_ABI}"
 
 # libc++ as the NDK ships it: the __ndk1 ABI namespace (so it never clashes
 # with a platform libc++), unversioned c++_shared/c++_static, libc++abi apart in
 # the static case and folded into the shared one. The unwinder comes from the
-# clang driver (libunwind.a in the resource dir), as with the NDK's clang.
+# clang driver (libunwind.a in the sysroot), as with the NDK's clang.
 cmd_libcxx_configure() {
 	local flags="-resource-dir=${RESOURCE_DIR} -rtlib=compiler-rt"
 	# Bionic has __cxa_thread_atexit_impl from API 23; at API_MIN libc++abi

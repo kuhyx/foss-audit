@@ -4,11 +4,13 @@
 #
 #   foss_android_sdk.sh assemble [api...]        build $FOSS_SDK
 #   foss_android_sdk.sh gradle <android-dir> <task> [gradle args...]
+#   foss_android_sdk.sh hidden <cmd...>          Google's SDK replaced by an empty dir
 #
 # Sources (all free): platform = Robolectric's android-all jar from Maven
 # Central (AOSP framework, Apache-2.0); java.* for javac's system modules =
 # OpenJDK (GPL-2.0 WITH Classpath-exception-2.0) plus android-all's libcore;
-# build-tools = lzhiyong/android-sdk-tools (AOSP source, Apache-2.0);
+# build-tools = lzhiyong/android-sdk-tools (AOSP source, Apache-2.0) plus
+# apksigner compiled from AOSP's apksig;
 # cmake, platform-tools = Arch's cmake/ninja and android-tools. The NDK
 # comes from foss_android_ndk.sh.
 # Needs: curl, sha1sum, unzip, jmod/jar (OpenJDK), unshare (util-linux).
@@ -21,6 +23,8 @@ readonly JDK="${JDK:-/usr/lib/jvm/java-21-openjdk}"
 readonly TOOLS="$HOME/.local/share/android-sdk-tools/build-tools"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 readonly HERE
+# shellcheck source=scripts/lib/foss_android_apksigner.sh
+source "${HERE}/lib/foss_android_apksigner.sh"
 # API level -> android-all release (its version starts with the Android
 # release: 14 = API 34). Apps and plugins each pick a compileSdk.
 declare -rA ANDROID_ALL=([34]=14-robolectric-10818077 [35]=15-robolectric-13954326
@@ -91,12 +95,18 @@ build_libcore() {
 # Flutter only accepts an SDK dir holding platform-tools/ (or licenses/);
 # Arch's android-tools (Apache-2.0, built from AOSP) provides adb/fastboot.
 assemble_platform_tools() {
-	local dir="${FOSS_SDK}/platform-tools" tool
+	local dir="${FOSS_SDK}/platform-tools" tool major minor micro
 	mkdir -p "$dir"
 	for tool in adb fastboot; do
 		[[ -x "/usr/bin/${tool}" ]] || die "missing /usr/bin/${tool}; pacman -S android-tools"
 		ln -sf "/usr/bin/${tool}" "${dir}/${tool}"
 	done
+	# Without package.xml AGP tries to download Google's platform-tools.
+	IFS=. read -r major minor micro _ < <(pacman -Q android-tools | cut -d' ' -f2)
+	package_xml platform-tools \
+		'<type-details xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns5:genericDetailsType"/>' \
+		"<major>${major}</major><minor>${minor}</minor><micro>${micro}</micro>" \
+		"Platform-Tools (Arch android-tools)" >"${dir}/package.xml"
 }
 
 # AGP looks for the CMake version a module asks for (default 3.22.1) under
@@ -162,6 +172,7 @@ assemble_build_tools() {
 	cp "${TOOLS}"/* "$dir/"
 	mv "${dir}/aapt2" "${dir}/aapt2.bin"
 	install -m 755 "${HERE}/foss_aapt2_wrapper.sh" "${dir}/aapt2"
+	build_apksigner "$dir"
 	build_lambda_stubs "${dir}/core-lambda-stubs.jar"
 	printf 'Pkg.Desc=FOSS Build-Tools (lzhiyong/android-sdk-tools)\nPkg.Revision=%s\n' \
 		"$BUILD_TOOLS_VER" >"${dir}/source.properties"
@@ -205,23 +216,35 @@ cmd_gradle() {
 	local -a extra=(--no-daemon)
 	[[ " $* " != *" -Pandroid.injected.build.abi="* ]] || extra+=(-Pandroid.injected.testOnly=false)
 	export ANDROID_HOME="$GOOGLE_SDK" ANDROID_SDK_ROOT="$GOOGLE_SDK"
-	# Root in the outer namespace may mount; the nested one maps back to our
-	# uid so the JVM finds $HOME (getpwuid) instead of /root.
+	covered "$FOSS_SDK" "${dir}/gradlew" -p "$dir" --console=plain -Dorg.gradle.jvmargs=-Xmx3G \
+		"${extra[@]}" "$task" "$@"
+}
+
+# Run a command with <cover> bind-mounted over Google's SDK, in a user+mount
+# namespace. Root in the outer namespace may mount; the nested one maps back
+# to our uid so the JVM finds $HOME (getpwuid) instead of /root.
+covered() {
+	local cover="$1"
+	shift
 	# shellcheck disable=SC2016 # $0, $1 and $@ belong to the inner sh
 	unshare --user --map-root-user --mount \
-		sh -c 'mount --bind "$0" "$1" && shift && exec "$@"' "$FOSS_SDK" "$GOOGLE_SDK" \
-		unshare --user --map-user="$(id -u)" --map-group="$(id -g)" \
-		"${dir}/gradlew" -p "$dir" --console=plain -Dorg.gradle.jvmargs=-Xmx3G "${extra[@]}" "$task" "$@"
+		sh -c 'mount --bind "$0" "$1" && shift && exec "$@"' "$cover" "$GOOGLE_SDK" \
+		unshare --user --map-user="$(id -u)" --map-group="$(id -g)" "$@"
+}
+
+# An EMPTY directory over Google's SDK: proves a configured build reads only
+# $FOSS_SDK, since any leftover reference to Google's path finds nothing.
+cmd_hidden() {
+	local empty rc=0
+	empty="$(mktemp -d)"
+	covered "$empty" "$@" || rc=$?
+	rmdir "$empty"
+	return "$rc"
 }
 
 case "${1:-}" in
-assemble)
-	shift
-	cmd_assemble "$@"
-	;;
-gradle)
-	shift
-	cmd_gradle "$@"
-	;;
-*) die "usage: $0 assemble [api...] | gradle <android-dir> <task> [args...]" ;;
+assemble) cmd_assemble "${@:2}" ;;
+gradle) cmd_gradle "${@:2}" ;;
+hidden) cmd_hidden "${@:2}" ;;
+*) die "usage: $0 assemble [api...] | gradle <android-dir> <task> [args...] | hidden <cmd...>" ;;
 esac

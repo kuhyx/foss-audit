@@ -8,7 +8,9 @@
 #   foss_android_ndk.sh fetch | unpack-llvm | sysroot | builtins | unwind | toolchain
 #     | libcxx-configure | libcxx-build <part> <parts> | libcxx-install
 #
-# Each phase stays under a minute; run them in that order. arm64-v8a only.
+# Each phase stays under a minute; run them in that order. NDK_ABI picks the
+# ABI (arm64-v8a, armeabi-v7a, x86_64, x86); fetch, unpack-llvm and toolchain
+# are shared, the rest run once per ABI. riscv64 is not built.
 # Needs: curl, tar, gh, python3, clang, lld, llvm, cmake, ninja.
 set -euo pipefail
 
@@ -23,7 +25,17 @@ readonly SYSROOT="${TC}/sysroot"
 readonly AOSP=https://android.googlesource.com
 readonly AOSP_REF=refs/tags/android-16.0.0_r1
 readonly NDK_REF=refs/heads/ndk-r28-release
-readonly ARCH=arm64 TRIPLE=aarch64-linux-android
+readonly NDK_ABI="${NDK_ABI:-arm64-v8a}"
+# ARCH: ndkstubgen and kernel asm; TRIPLE: sysroot lib dir; TARGET: clang
+# --target (plus API level); PROCESSOR: CMake; RT_ARCH: compiler-rt name.
+case "$NDK_ABI" in
+arm64-v8a) read -r ARCH TRIPLE TARGET PROCESSOR RT_ARCH <<<"arm64 aarch64-linux-android aarch64-linux-android aarch64 aarch64" ;;
+armeabi-v7a) read -r ARCH TRIPLE TARGET PROCESSOR RT_ARCH <<<"arm arm-linux-androideabi armv7a-linux-androideabi armv7-a arm" ;;
+x86_64) read -r ARCH TRIPLE TARGET PROCESSOR RT_ARCH <<<"x86_64 x86_64-linux-android x86_64-linux-android x86_64 x86_64" ;;
+x86) read -r ARCH TRIPLE TARGET PROCESSOR RT_ARCH <<<"x86 i686-linux-android i686-linux-android i686 i686" ;;
+*) echo "foss_android_ndk: NDK_ABI=$NDK_ABI unknown; use arm64-v8a, armeabi-v7a, x86_64 or x86" >&2 && exit 1 ;;
+esac
+readonly ARCH TRIPLE TARGET PROCESSOR RT_ARCH
 readonly API_MIN=21 API_MAX=35
 readonly STUB_LIBS=(c m dl log)
 # Soong builds these NDK stubs without symbol versions (unversioned_until),
@@ -96,7 +108,10 @@ cmd_unpack_llvm() {
 
 sysroot_headers() {
 	local inc="${SYSROOT}/usr/include" uapi="${SRC}/bionic/libc/kernel/uapi" d
-	rm -rf "$inc" && mkdir -p "${inc}/${TRIPLE}"
+	# Shared headers are rewritten; libc++'s (c++/) and other ABIs' asm dirs stay.
+	mkdir -p "$inc"
+	find "$inc" -mindepth 1 -maxdepth 1 ! -name c++ ! -name '*-linux-*' -exec rm -rf {} +
+	rm -rf "${inc:?}/${TRIPLE}" && mkdir -p "${inc}/${TRIPLE}"
 	cp -r "${SRC}/bionic/libc/include/." "$inc/"
 	for d in "$uapi"/*; do
 		[[ $(basename "$d") == asm-* ]] || cp -r "$d" "$inc/"
@@ -104,7 +119,7 @@ sysroot_headers() {
 	cp -r "${uapi}/asm-generic" "$inc/"
 	# Bionic's own additions to the kernel headers (linux/compiler_types.h).
 	cp -r "${SRC}/bionic/libc/kernel/android/uapi/." "$inc/"
-	cp -r "${uapi}/asm-${ARCH}/asm" "${inc}/${TRIPLE}/"
+	cp -r "${uapi}/asm-${ARCH/x86_64/x86}/asm" "${inc}/${TRIPLE}/"
 	cp -r "${SRC}/logging/include/android/." "${inc}/android/"
 	cp "${SRC}/nativehelper/jni.h" "$inc/"
 }
@@ -124,7 +139,7 @@ build_stubs() {
 			--arch "$ARCH" --api "$api" --api-map "${HERE}/foss_android_api_levels.json" \
 			"$map" "${work}/${lib}.c" "${work}/${lib}.map" "${work}/${lib}.syms"
 		# Stub cflags as AOSP builds NDK stubs: the declarations are deliberately bogus.
-		clang --target="${TRIPLE}${api}" -fuse-ld=lld -shared -nostdlib -fPIC -O0 -fno-builtin -fno-unwind-tables \
+		clang --target="${TARGET}${api}" -fuse-ld=lld -shared -nostdlib -fPIC -O0 -fno-builtin -fno-unwind-tables \
 			-Wno-incompatible-library-redeclaration -Wno-incomplete-setjmp-declaration \
 			-Wno-builtin-requires-header -Wno-invalid-noreturn \
 			"${version[@]}" -Wl,-soname,"lib${lib}.so" \
@@ -137,7 +152,7 @@ build_stubs() {
 build_crt() {
 	local api="$1" out="$2" bionic="${SRC}/bionic/libc/arch-common/bionic" work
 	work="$(mktemp -d "${CACHE}/crt.XXXX")"
-	local -a cc=(clang --target="${TRIPLE}${api}" --sysroot="$SYSROOT" -fPIC -O2 -fno-stack-protector
+	local -a cc=(clang --target="${TARGET}${api}" --sysroot="$SYSROOT" -fPIC -O2 -fno-stack-protector
 		-DPLATFORM_SDK_VERSION="$api" -I"${SRC}/bionic/libc" -I"$bionic" -c)
 	local src
 	for src in crtbegin.c crtbegin_so.c crtbrand.S crtend.S crtend_so.S crt_pad_segment.S; do
@@ -154,6 +169,10 @@ build_crt() {
 cmd_sysroot() {
 	sysroot_headers
 	local api out
+	mkdir -p "${SYSROOT}/usr/lib/${TRIPLE}"
+	# The NDK's toolchain file links -latomic; the __atomic_* calls live in
+	# the builtins, so this is an empty linker script, as in the NDK.
+	echo '/* __atomic_* are in libclang_rt.builtins (see llvm.org/D47606). */' >"${SYSROOT}/usr/lib/${TRIPLE}/libatomic.a"
 	for ((api = API_MIN; api <= API_MAX; api++)); do
 		out="${SYSROOT}/usr/lib/${TRIPLE}/${api}"
 		rm -rf "$out" && mkdir -p "$out"
@@ -174,11 +193,6 @@ write_wrapper() {
 cmd_toolchain() {
 	mkdir -p "${TC}/bin" "${RESOURCE_DIR}" "${NDK}/build"
 	ln -sfn "/usr/lib/clang/${LLVM_MAJOR}/include" "${RESOURCE_DIR}/include"
-	# The NDK's toolchain file links -latomic; the __atomic_* calls live in
-	# the builtins, so this is an empty linker script, as in the NDK.
-	mkdir -p "${RESOURCE_DIR}/lib/linux/aarch64"
-	echo '/* __atomic_* are in libclang_rt.builtins (see llvm.org/D47606). */' \
-		| tee "${RESOURCE_DIR}/lib/linux/aarch64/libatomic.a" >"${SYSROOT}/usr/lib/${TRIPLE}/libatomic.a"
 	write_wrapper clang /usr/bin/clang
 	write_wrapper clang++ /usr/bin/clang++
 	local tool
