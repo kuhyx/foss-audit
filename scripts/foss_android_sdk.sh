@@ -140,9 +140,8 @@ assemble_platform() {
 	# kotlinc and lint read java.* from android.jar itself, as in Google's.
 	cp "$android_all" "${dir}/android.jar"
 	"${JDK}/bin/jar" --update --file "${dir}/android.jar" -C "$classes" java -C "$classes" javax
-	rm -rf "$classes"
-	: >"${dir}/framework.aidl"
-	echo '[]' >"${dir}/optional/optional.json"
+	python3 -I "${HERE}/foss_android_jar_nullability.py" "${dir}/android.jar"
+	rm -rf "$classes" && : >"${dir}/framework.aidl" && echo '[]' >"${dir}/optional/optional.json"
 	printf 'Pkg.Desc=FOSS Android Platform %s\nPkg.Revision=1\nAndroidVersion.ApiLevel=%s\nLayoutlib.Api=15\n' \
 		"$api" "$api" >"${dir}/source.properties"
 	package_xml "platforms;android-${api}" \
