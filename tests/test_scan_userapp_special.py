@@ -24,8 +24,13 @@ def test_gh_copilot(home: Path) -> None:
     write(base / "copilot/copilot")
     (item,) = scan_userapp.scan_gh_copilot()
     assert (item.name, item.verdict, item.version) == ("gh-copilot", "nonfree", None)
+    assert item.removeCommand == f"rm -rf {base / 'copilot'}"
     write(base / "extensions/gh-copilot/manifest.yml", "owner: github\ntag: v1.1.0\n", 0o600)
-    assert scan_userapp.scan_gh_copilot()[0].version == "1.1.0"
+    (item,) = scan_userapp.scan_gh_copilot()
+    assert item.version == "1.1.0"
+    assert item.removeCommand == f"gh extension remove copilot && rm -rf {base / 'copilot'}"
+    (base / "copilot/copilot").unlink()
+    assert scan_userapp.scan_gh_copilot()[0].removeCommand == "gh extension remove copilot"
     write(base / "extensions/gh-copilot/manifest.yml", "owner: github\n", 0o600)
     assert scan_userapp.scan_gh_copilot()[0].version is None
 

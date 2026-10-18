@@ -128,14 +128,14 @@ def scan_apps() -> list[Item]:
 
 
 def scan_gh_copilot() -> list[Item]:
-    """The gh Copilot CLI: the downloaded `copilot` agent and the gh-copilot extension."""
-    base = share() / "gh"
-    manifest = base / "extensions/gh-copilot/manifest.yml"
-    if not (manifest.is_file() or (base / "copilot/copilot").is_file()):
+    """The gh Copilot CLI: the gh-copilot extension (gh removes it) and the downloaded `copilot` agent."""
+    manifest, agent = share() / "gh/extensions/gh-copilot/manifest.yml", share() / "gh/copilot"
+    steps = {"gh extension remove copilot": manifest.is_file(), rm_rf(agent): (agent / "copilot").is_file()}
+    if not (remove := " && ".join(step for step, present in steps.items() if present)):
         return []
     tag = re.search(r"^tag:\s*v?(\S+)", manifest.read_text(), re.MULTILINE) if manifest.is_file() else None
-    reason = f"{shown(base)}; no license shipped (GitHub Copilot terms)"
-    return [unknown("gh-copilot", SOURCE, version=tag[1] if tag else None, reason=reason)]
+    reason = f"{shown(agent.parent)}; no license shipped (GitHub Copilot terms)"
+    return [unknown("gh-copilot", SOURCE, version=tag and tag[1], reason=reason, removeCommand=remove)]
 
 
 def scan_android_sdk() -> list[Item]:
