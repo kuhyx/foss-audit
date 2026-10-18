@@ -27,6 +27,7 @@ from foss_audit.cited_terms import is_elf
 from foss_audit.licenses import classify_text
 from foss_audit.model import Item
 from foss_audit.own_license import identify, is_kuhy_repo, origin_of, repo_root
+from foss_audit.scan_android import scan_android_sdk, scan_foss_android_sdk
 from foss_audit.scan_misc import unknown
 
 SOURCE: Final = "user-app"
@@ -138,26 +139,6 @@ def scan_gh_copilot() -> list[Item]:
     return [unknown("gh-copilot", SOURCE, version=tag and tag[1], reason=reason, removeCommand=remove)]
 
 
-def scan_android_sdk() -> list[Item]:
-    """~/sdk/Android/Sdk: Google's SDK License is accepted via licenses/* hash files."""
-    sdk = HOME / "sdk/Android/Sdk"
-    if not sdk.is_dir():
-        return []
-    accepted = sorted(p.name for p in (sdk / "licenses").glob("*") if p.is_file())
-    if "android-sdk-license" not in accepted:
-        return [unknown("android-sdk", SOURCE, reason=f"{shown(sdk)}; no SDK license accepted")]
-    reason = f"{shown(sdk)}; Android SDK License accepted ({', '.join(accepted)})"
-    return [
-        Item(
-            name="android-sdk",
-            source=SOURCE,
-            verdict="nonfree",
-            license="LicenseRef-Android-SDK-License",
-            reason=reason,
-        )
-    ]
-
-
 def java_runtime(runtime: Path) -> tuple[str, str]:
     """(JAVA_VERSION, license) of an unpacked JRE; license is "" unless it is OpenJDK.
 
@@ -241,6 +222,7 @@ def scan_user_apps() -> list[Item]:
         scan_apps,
         scan_gh_copilot,
         scan_android_sdk,
+        scan_foss_android_sdk,
         scan_prism_java,
         scan_proton_tools,
         scan_godot_templates,

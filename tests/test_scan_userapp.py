@@ -9,18 +9,20 @@ import pytest
 from conftest import make_repo
 from userapp_helpers import ELF, MIT, by_name, write
 
-from foss_audit import scan, scan_userapp
+from foss_audit import scan, scan_android, scan_userapp
 
 
 @pytest.fixture
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(scan_userapp, "HOME", tmp_path)
+    monkeypatch.setattr(scan_android, "HOME", tmp_path)
     (tmp_path / ".local/share").mkdir(parents=True)
     return tmp_path
 
 
 def test_nothing_installed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(scan_userapp, "HOME", tmp_path)
+    monkeypatch.setattr(scan_android, "HOME", tmp_path)
     assert scan_userapp.scan_user_apps() == []
     (tmp_path / ".local/share").mkdir(parents=True)
     assert scan_userapp.scan_user_apps() == []

@@ -7,13 +7,14 @@ from pathlib import Path
 import pytest
 from userapp_helpers import GPL2, MIT, by_name, write
 
-from foss_audit import scan_userapp
+from foss_audit import scan_android, scan_userapp
 from foss_audit.curated import Curated, apply
 
 
 @pytest.fixture
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(scan_userapp, "HOME", tmp_path)
+    monkeypatch.setattr(scan_android, "HOME", tmp_path)
     (tmp_path / ".local/share").mkdir(parents=True)
     return tmp_path
 
@@ -33,23 +34,6 @@ def test_gh_copilot(home: Path) -> None:
     assert scan_userapp.scan_gh_copilot()[0].removeCommand == "gh extension remove copilot"
     write(base / "extensions/gh-copilot/manifest.yml", "owner: github\n", 0o600)
     assert scan_userapp.scan_gh_copilot()[0].version is None
-
-
-def test_android_sdk(home: Path) -> None:
-    sdk = home / "sdk/Android/Sdk"
-    assert scan_userapp.scan_android_sdk() == []
-    sdk.mkdir(parents=True)
-    (item,) = scan_userapp.scan_android_sdk()
-    assert (item.verdict, item.license, item.reason) == (
-        "nonfree",
-        "",
-        "~/sdk/Android/Sdk; no SDK license accepted",
-    )
-    write(sdk / "licenses/android-sdk-license", "abc\n", 0o644)
-    write(sdk / "licenses/google-gdk-license", "def\n", 0o644)
-    (item,) = scan_userapp.scan_android_sdk()
-    assert (item.verdict, item.license) == ("nonfree", "LicenseRef-Android-SDK-License")
-    assert "Android SDK License accepted (android-sdk-license, google-gdk-license)" in item.reason
 
 
 def test_prism_java_runtimes(home: Path) -> None:

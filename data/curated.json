@@ -1045,21 +1045,23 @@
     },
     "android-sdk": {
       "names": [
+        "foss-android-sdk: scripts/foss_android_sdk.sh + foss_android_ndk.sh (fit good, effort M; Robolectric android-all platforms 34-37 + OpenJDK java.*, lzhiyong build-tools behind an aapt2 arg wrapper, Arch cmake/adb, NDK = Arch clang + AOSP bionic sysroot + LLVM libc++/compiler-rt; arm64 only; android-all has hidden APIs; verified: todo release APK on a Pixel 6a)",
         "lzhiyong/android-sdk-tools: AOSP-built aapt2/aapt/zipalign/aidl/dexdump (Apache-2.0; fit partial, effort L; via android.aapt2FromMavenOverride, latest 35.0.2 lags; platforms/NDK still Google's)",
         "AOSP source build, m sdk sdk_repo (Apache-2.0; fit good, effort XL; ~400 GB checkout and hours per release)",
         "Debian android-sdk-meta rebuilds (Apache-2.0; fit none, effort L; frozen at platform 23 / build-tools 29, Flutter needs compileSdk 35+)",
         "android-tools (adb, fastboot: Apache-2.0)"
       ],
       "candidates": [
+        "foss-android-sdk",
         "android-sdk-tools",
         "aosp-sdk",
         "android-sdk-meta",
         "android-tools",
         "android-udev"
       ],
-      "fit": "partial",
-      "effort": "XL",
-      "effortReason": "Only build-tools and platform-tools have maintained free builds; android.jar platforms and the NDK mean an AOSP source build per release",
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "The scripts assemble platforms, build-tools and an NDK from free sources in minutes; armv7/x86_64 NDK targets and each new API level are still manual",
       "lockIn": "Play Store targetSdk rules track Google's SDK releases; F-Droid's AGPL sdkmanager only fetches the same Google binaries"
     },
     "*": {
