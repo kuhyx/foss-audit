@@ -28,6 +28,8 @@ from foss_audit.licenses import classify_spdx, classify_text, tokens
         ("sudo", "custom", "nonfree"),
         ("libklvanc", "", "nonfree"),
         ("odd", "LicenseRef-Mystery", "nonfree"),
+        ("php", "PHP-3.01", "foss"),
+        ("php-legacy", "PHP-3.0", "foss"),
     ],
 )
 def test_classify_spdx(name: str, expr: str, verdict: str) -> None:
