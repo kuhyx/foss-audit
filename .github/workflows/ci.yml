@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14.8"
+          python-version: "3.15.1"
       - run: pip install -e ".[dev]"
       - name: Format
         run: ruff format --check foss_audit tests
@@ -36,10 +36,11 @@ jobs:
       # Reads the pinned pnpm from package.json's packageManager field.
       - uses: pnpm/action-setup@v4
       # 24 is the engines floor; pinning CI to it catches newer-only APIs.
+      # .nvmrc is the one pin (checked by the dependency-freshness gate).
       - uses: actions/setup-node@v4
         with:
           cache: pnpm
-          node-version: "24.22.0"
+          node-version-file: .nvmrc
       - run: pnpm install --frozen-lockfile
       - name: Lint (typecheck + eslint)
         run: pnpm run lint
