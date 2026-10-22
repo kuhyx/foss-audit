@@ -80,3 +80,18 @@ repos:
         language: system
         pass_filenames: false
         files: ^(CLAUDE\.md|AGENTS\.md|scripts/test_changed\.sh)$
+
+      # Every website passes the AgentReady checker (~/src/utils/agent_ready):
+      # builds, then checks robots/sitemap/llms.txt/ai-catalog/404/no-JS text/
+      # markdown mirrors/JSON-LD in the build output. `files:` limits it to
+      # commits touching web inputs (override: [agent_ready] files in
+      # repo-contract.toml; the installer rewrites this line to match). CI
+      # rebuilds on every push and is the strict authority. pre-commit stage,
+      # not pre-push: a cold tsc + vite build + check measured 1.5-2.7 s
+      # (kcd2-dice-solver, personal-website copies, 2026-10-22).
+      - id: agent-ready
+        name: AgentReady (website build output)
+        entry: scripts/check_agent_ready.sh
+        language: system
+        pass_filenames: false
+        files: '^(src/|public/|index\.html$|(vite|astro)\.config\.[cm]?[jt]s$|package\.json$|pnpm-lock\.yaml$|package-lock\.json$|yarn\.lock$|repo-contract\.toml$)'

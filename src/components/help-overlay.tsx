@@ -1,18 +1,11 @@
 /**
  * The `?` shortcut sheet.
  */
+import { SHORTCUTS } from "../lib/views.ts";
+
 export interface HelpOverlayProps {
   readonly onClose: () => void;
 }
-
-const SHORTCUTS: readonly (readonly [string, string])[] = [
-  ["/", "focus search"],
-  ["↑ ↓", "move the selected row (table focused)"],
-  ["PgUp PgDn", "scroll the table"],
-  ["Enter", "activate the focused tile, bar or button"],
-  ["Esc", "close this, then the detail panel, then leave search"],
-  ["?", "this help"],
-];
 
 export function HelpOverlay({ onClose }: HelpOverlayProps): React.JSX.Element {
   return (

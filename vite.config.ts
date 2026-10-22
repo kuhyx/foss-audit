@@ -3,6 +3,8 @@ import babel from "@rolldown/plugin-babel";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+import { agentReadySite } from "./src/site/vite-plugin.ts";
+
 // The Python backend (foss_audit/server.py) binds 127.0.0.1 only. Proxying the
 // API prefix through Vite keeps the UI same-origin in both dev and preview, so the
 // backend needs no CORS headers. run.sh exports FOSS_AUDIT_API_PORT when
@@ -20,8 +22,12 @@ const proxy = { "/api": { target: `http://127.0.0.1:${apiPort}` } };
 // bundle is exercised end to end in a real browser instead.
 const compiler = process.env.VITEST === undefined ? [babel({ presets: [reactCompilerPreset()] })] : [];
 
+// The public site is static files with no SPA fallback (src/site): the app
+// has one route, every docs page is its own index.html, and a missing path is
+// a real 404. "mpa" makes `vite preview` behave the same.
 const config = defineConfig({
-  plugins: [react(), ...compiler],
+  appType: "mpa",
+  plugins: [react(), ...compiler, agentReadySite()],
   preview: { host: "127.0.0.1", proxy },
   server: { host: "127.0.0.1", proxy },
   test: {

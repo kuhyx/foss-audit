@@ -1,0 +1,8 @@
+# Repo-contract settings, read by ~/src/utils/repo_contract.
+# [agent_ready]: this repo is a website and must pass the AgentReady
+# checker (~/src/utils/agent_ready). See repo_contract/web.py for keys.
+
+[agent_ready]
+dist = "dist"
+build = "pnpm run build"
+install = "pnpm install --frozen-lockfile"

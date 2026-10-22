@@ -6,18 +6,13 @@
 import type { View } from "../lib/url-state.ts";
 
 import { numberFormat } from "../lib/verdict.ts";
+import { VIEW_LABELS } from "../lib/views.ts";
 
 export interface ViewTabsProps {
   readonly counts: Readonly<Record<View, number>>;
   readonly onSelect: (view: View) => void;
   readonly view: View;
 }
-
-const LABELS: Readonly<Record<View, string>> = {
-  summary: "Summary",
-  table: "All items",
-  wins: "Easy wins",
-};
 
 const ORDER: readonly View[] = ["summary", "table", "wins"];
 
@@ -35,7 +30,7 @@ export function ViewTabs({ counts, onSelect, view }: ViewTabsProps): React.JSX.E
             }}
             type="button"
           >
-            {LABELS[v]}
+            {VIEW_LABELS[v]}
             <span className="tab-count">{numberFormat.format(counts[v])}</span>
           </button>
         );
