@@ -137,9 +137,10 @@ assemble_platform() {
 	# zip -D: no directory entries, which AGP would export as packages.
 	rm -f "${dir}/core-for-system-modules.jar"
 	(cd "$classes" && zip -qrD "${dir}/core-for-system-modules.jar" .)
-	# kotlinc and lint read java.* from android.jar itself, as in Google's.
+	# kotlinc/lint read java.* from android.jar, as in Google's. OpenJDK's java.* name jdk.internal.*
+	# and sun.* internally, so those go in too or L8 fails: "Missing class jdk.internal.loader.NativeLibrary".
 	cp "$android_all" "${dir}/android.jar"
-	"${JDK}/bin/jar" --update --file "${dir}/android.jar" -C "$classes" java -C "$classes" javax
+	"${JDK}/bin/jar" --update --file "${dir}/android.jar" -C "$classes" java -C "$classes" javax -C "$classes" jdk -C "$classes" sun
 	python3 -I "${HERE}/foss_android_jar_nullability.py" "${dir}/android.jar"
 	rm -rf "$classes" && : >"${dir}/framework.aidl" && echo '[]' >"${dir}/optional/optional.json"
 	printf 'Pkg.Desc=FOSS Android Platform %s\nPkg.Revision=1\nAndroidVersion.ApiLevel=%s\nLayoutlib.Api=15\n' \
