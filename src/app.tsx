@@ -2,7 +2,9 @@
  * The app shell: owns nothing but wiring.
  *
  * View, filters, sort and the open row live in the URL (hooks/use-url-state);
- * the scan lives in hooks/use-scan. Everything else is derived per render.
+ * the scan lives in hooks/use-scan, and the table's multi-selection in
+ * hooks/use-selection (here, so it outlives view switches and empty filters).
+ * Everything else is derived per render.
  */
 import { useDeferredValue, useRef, useState } from "react";
 
@@ -17,10 +19,12 @@ import { ErrorBanner } from "./components/error-banner.tsx";
 import { FilterBar } from "./components/filter-bar.tsx";
 import { HelpOverlay } from "./components/help-overlay.tsx";
 import { ItemsTable } from "./components/items-table.tsx";
+import { SelectionBar } from "./components/selection-bar.tsx";
 import { SummaryView } from "./components/summary-view.tsx";
 import { ViewTabs } from "./components/view-tabs.tsx";
 import { useKeyboard } from "./hooks/use-keyboard.ts";
 import { useScan } from "./hooks/use-scan.ts";
+import { useSelection } from "./hooks/use-selection.ts";
 import { updateState, useUrlState } from "./hooks/use-url-state.ts";
 import { applyFilter, DEFAULT_FILTER } from "./lib/filter.ts";
 import { isEasyWin } from "./lib/verdict.ts";
@@ -53,6 +57,7 @@ export function App(): React.JSX.Element {
   const [showHelp, setShowHelp] = useState(false);
   const [dismissed, setDismissed] = useState<null | string>(null);
   const searchReference = useRef<HTMLInputElement>(null);
+  const selection = useSelection();
 
   useKeyboard({
     onEscape: (): void => {
@@ -89,6 +94,8 @@ export function App(): React.JSX.Element {
   const results = applyFilter(scan.items, deferredFilter);
   const wins = scan.items.filter((item) => isEasyWin(item));
   const selectedItem = scan.items.find((item) => item.id === url.selected) ?? null;
+  // From the whole scan, not `results`: rows the filter hides stay selected.
+  const checkedItems = scan.items.filter((item) => selection.ids.has(item.id));
 
   const errorKey = `${scan.generatedAt}|${state.refreshError ?? ""}`;
   const messages = [
@@ -133,8 +140,12 @@ export function App(): React.JSX.Element {
           {url.view === "table" && (
             <>
               <FilterBar filter={url.filter} items={scan.items} onChange={setFilter} shown={results.length} />
+              <SelectionBar items={checkedItems} onClear={selection.clear} />
               <ItemsTable
+                checked={selection.ids}
                 items={results}
+                onCheck={selection.click}
+                onCheckAll={selection.set}
                 onSelect={select}
                 onSort={(sort): void => {
                   updateState((s) => ({ ...s, sort }));

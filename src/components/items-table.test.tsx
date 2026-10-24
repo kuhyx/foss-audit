@@ -7,11 +7,15 @@ import type { SortState } from "../lib/url-state.ts";
 import { DEAD_LAUNCHER, ITEMS, makeItem } from "../test/fixtures.ts";
 import { ItemsTable } from "./items-table.tsx";
 
+// Selection is covered in items-table-selection.test.tsx.
+const NO_CHECKS = { checked: new Set<string>(), onCheck: vi.fn(), onCheckAll: vi.fn() };
+
 function setup(props: { items?: readonly Item[]; selected?: null | string; sort?: null | SortState } = {}) {
   const onSelect = vi.fn<(id: string) => void>();
   const onSort = vi.fn<(sort: null | SortState) => void>();
   const view = render(
     <ItemsTable
+      {...NO_CHECKS}
       items={props.items ?? ITEMS}
       onSelect={onSelect}
       onSort={onSort}
@@ -26,8 +30,9 @@ function column(index: number): string[] {
   return screen.getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[index]?.textContent ?? "");
 }
 
-const NAME = 0;
-const FIT = 9;
+// Cell 0 is the selection checkbox.
+const NAME = 1;
+const FIT = 10;
 
 describe("ItemsTable", () => {
   it("renders an explained empty state", () => {
@@ -38,14 +43,14 @@ describe("ItemsTable", () => {
   it("renders every row with formatted cells", () => {
     setup();
     expect(column(NAME)).toHaveLength(ITEMS.length);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(12);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(13);
     const steam = screen.getAllByRole("row").find((row) => row.textContent.includes("Some Game"))!;
     expect(steam).toHaveTextContent("—");
     expect(steam).toHaveTextContent("0ad");
     expect(steam).toHaveTextContent("Good");
     const unrar = screen.getAllByRole("row").find((row) => row.textContent.includes("unrar"))!;
     expect(unrar).toHaveTextContent("dependency");
-    expect(within(unrar).getAllByRole("cell")[7]).toHaveTextContent("1");
+    expect(within(unrar).getAllByRole("cell")[8]).toHaveTextContent("1");
     expect(screen.getAllByText("orphan")).toHaveLength(1);
     expect(screen.getAllByText("loose")).toHaveLength(1);
   });
@@ -67,7 +72,7 @@ describe("ItemsTable", () => {
     expect(fits).toEqual(["Drop-in", "Good", "Good"]);
     expect(column(FIT).at(-1)).toBe("");
     view.rerender(
-      <ItemsTable items={ITEMS} onSelect={vi.fn()} onSort={vi.fn()} selected={null} sort={{ desc: true, id: "fit" }} />,
+      <ItemsTable {...NO_CHECKS} items={ITEMS} onSelect={vi.fn()} onSort={vi.fn()} selected={null} sort={{ desc: true, id: "fit" }} />,
     );
     expect(column(FIT).slice(0, 3)).toEqual(["Good", "Good", "Drop-in"]);
     expect(column(FIT).at(-1)).toBe("");
@@ -77,7 +82,7 @@ describe("ItemsTable", () => {
     "sorts by %s and marks only that header",
     (id) => {
       setup({ sort: { desc: true, id } });
-      const sorted = screen.getAllByRole("columnheader").filter((h) => h.getAttribute("aria-sort") !== "none");
+      const sorted = screen.getAllByRole("columnheader").filter((h) => (h.getAttribute("aria-sort") ?? "none") !== "none");
       expect(sorted).toHaveLength(1);
       expect(sorted[0]).toHaveAttribute("aria-sort", "descending");
       expect(column(NAME)).toHaveLength(ITEMS.length);
@@ -89,12 +94,12 @@ describe("ItemsTable", () => {
     await user.click(screen.getByRole("button", { name: "Name" }));
     expect(onSort).toHaveBeenLastCalledWith({ desc: false, id: "name" });
     view.rerender(
-      <ItemsTable items={ITEMS} onSelect={vi.fn()} onSort={onSort} selected={null} sort={{ desc: false, id: "name" }} />,
+      <ItemsTable {...NO_CHECKS} items={ITEMS} onSelect={vi.fn()} onSort={onSort} selected={null} sort={{ desc: false, id: "name" }} />,
     );
     await user.click(screen.getByRole("button", { name: /Name/u }));
     expect(onSort).toHaveBeenLastCalledWith({ desc: true, id: "name" });
     view.rerender(
-      <ItemsTable items={ITEMS} onSelect={vi.fn()} onSort={onSort} selected={null} sort={{ desc: true, id: "name" }} />,
+      <ItemsTable {...NO_CHECKS} items={ITEMS} onSelect={vi.fn()} onSort={onSort} selected={null} sort={{ desc: true, id: "name" }} />,
     );
     expect(screen.getByText("▼")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Name/u }));

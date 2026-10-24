@@ -88,4 +88,10 @@ describe("buildBulkPrompt", () => {
     expect(text).toMatch(/one item at a time/u);
     expect(text).toMatch(/must not: remove, disable or uninstall any of them/u);
   });
+
+  // The summary view's "all non-FOSS" button: selection prompts must not
+  // change a byte of it.
+  it("is byte-identical to the pre-selection output", () => {
+    expect(buildBulkPrompt(ITEMS)).toMatchSnapshot();
+  });
 });

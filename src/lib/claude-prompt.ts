@@ -12,8 +12,8 @@ import type { Item } from "./schema.ts";
 
 import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants, VERDICT_LABELS } from "./verdict.ts";
 
-const REPO = "~/src/foss-audit";
-const SCAN = ".venv/bin/python -m foss_audit.scan";
+export const REPO = "~/src/foss-audit";
+export const SCAN = ".venv/bin/python -m foss_audit.scan";
 
 /**
 Everything the scanner does not call plain FOSS gets a prompt.
@@ -66,7 +66,7 @@ function removeLine(item: Item): string {
 /**
 The scan facts for one item, as `- ` bullet lines.
 */
-function factLines(item: Item): string[] {
+export function factLines(item: Item): string[] {
   return [
     `- id: \`${item.id}\`, source: ${item.source}, version: ${orFallback(item.version, "unknown")}`,
     `- verdict: ${VERDICT_LABELS[item.verdict]}; evidence: ${orFallback(item.reason, "none recorded")}`,
@@ -78,14 +78,14 @@ function factLines(item: Item): string[] {
   ];
 }
 
-const RESEARCH_STEP =
+export const RESEARCH_STEP =
   "- 0. research: find the current FOSS options for it (pacman, AUR, flatpak, upstream), including the curated ones listed for it. Verify each licence from a primary source (LICENSE file or upstream page) and check the project is still maintained.";
 
-function suggestStep(stop: string): string {
+export function suggestStep(stop: string): string {
   return `- 1. suggest: rank up to 3 candidates with fit (drop-in / good / partial / none), build-it effort (S / M / L / XL), lock-in and what I would lose. Update the matching entry in ${REPO}/data/curated.json (or add one), run the backend tests, commit it in that repo, then ${stop}.`;
 }
 
-const INSTALL_STEP =
+export const INSTALL_STEP =
   "- 2. install: install the alternative I pick, migrate config/data where that is cheap, and show it actually running.";
 
 /**

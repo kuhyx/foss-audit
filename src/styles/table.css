@@ -74,8 +74,21 @@
   padding: 0;
 }
 
-.td:first-child {
+/* The selection checkbox owns the row's left inset; the name is the first
+ * data cell. */
+.th-check,
+.td-check {
+  display: flex;
+  align-items: center;
   padding-left: var(--space-4);
+}
+
+.check {
+  margin: 0;
+  cursor: pointer;
+}
+
+.td:nth-child(2) {
   font-weight: 600;
 }
 
@@ -97,10 +110,6 @@
   cursor: pointer;
 }
 
-.th:first-child .th-button {
-  padding-left: var(--space-4);
-}
-
 .th-button:hover,
 .th[aria-sort="ascending"] .th-button,
 .th[aria-sort="descending"] .th-button {
@@ -119,4 +128,23 @@
   place-content: center;
   padding: var(--space-6);
   text-align: center;
+}
+
+/* Multi-selection bar: outside the scroller, so it stays put while the rows
+ * scroll; hidden (not rendered) while nothing is selected. */
+.selection-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.selection-count {
+  font-weight: 600;
 }

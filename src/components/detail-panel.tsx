@@ -124,6 +124,11 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
         <section aria-labelledby="remove-heading" className="panel-section">
           <h3 id="remove-heading">Remove</h3>
           <CopyButton command={item.removeCommand} />
+          {item.removeVia !== "" && (
+            <p className="muted" data-testid="remove-via">
+              {item.removeVia}
+            </p>
+          )}
         </section>
 
         <section aria-labelledby="req-heading" className="panel-section">

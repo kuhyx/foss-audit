@@ -1,0 +1,78 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildBulkPrompt > is byte-identical to the pre-selection output 1`] = `
+"Replace 6 non-FOSS items with FOSS alternatives
+
+## what
+For every item listed under \`## known\`, research FOSS alternatives, suggest the best one, then install it unless the item is marked research only (firmware blobs, Steam library entries).
+## where
+This Arch Linux machine. Scanner and curated verdicts: ~/src/foss-audit (data/curated.json).
+## must
+- Work one item at a time, in the order listed: steps 0 and 1 for an item, then wait for my pick before step 2.
+- 0. research: find the current FOSS options for it (pacman, AUR, flatpak, upstream), including the curated ones listed for it. Verify each licence from a primary source (LICENSE file or upstream page) and check the project is still maintained.
+- 1. suggest: rank up to 3 candidates with fit (drop-in / good / partial / none), build-it effort (S / M / L / XL), lock-in and what I would lose. Update the matching entry in ~/src/foss-audit/data/curated.json (or add one), run the backend tests, commit it in that repo, then stop and ask me which one to install (or move on, for research-only items).
+- 2. install: install the alternative I pick, migrate config/data where that is cheap, and show it actually running.
+- must not: remove, disable or uninstall any of them; print their remove commands for me instead.
+- must not: install anything before I have picked from step 1.
+- optional: skip items whose curated entry is already settled and whose alternative is already installed; list them at the end instead.
+## done
+- every item has a curated.json entry with verified licences, committed in that repo with \`.venv/bin/python -m pytest -q\` green.
+- every installable item I picked shows its alternative under \`alternative.installed\` in \`.venv/bin/python -m foss_audit.scan\`.
+## verify
+On this machine, from ~/src/foss-audit: \`.venv/bin/python -m foss_audit.scan | jq '.items[] | select(.verdict != "foss") | {id, alternative}'\`.
+## known
+
+### google-chrome (\`aur:google-chrome\`): research, suggest, install
+- id: \`aur:google-chrome\`, source: aur, version: 5.2.0-1
+- verdict: Non-free; evidence: custom:chrome
+- licence: custom:chrome
+- homepage: https://www.google.com/chrome
+- required by: nothing
+- curated alternatives: Chromium, Firefox (fit: Drop-in, build-it effort: XL · infeasible, why: a browser, lock-in: Google Sync); already installed: ungoogled-chromium-bin
+- remove command: \`sudo pacman -Rns google-chrome\` (do not run it)
+
+### unrar (\`pacman:unrar\`): research, suggest, install
+- id: \`pacman:unrar\`, source: pacman, version: 5.2.0-1
+- verdict: Non-free; evidence: GPL-3.0-or-later
+- licence: custom:unrar
+- homepage: unknown
+- required by: file-roller
+- curated alternatives: libarchive (fit: Good, build-it effort: unknown); already installed: libarchive
+- remove command: \`sudo pacman -Rns unrar\` (do not run it)
+
+### Some Game (\`steam:Some Game\`): research only
+- id: \`steam:Some Game\`, source: steam, version: unknown
+- verdict: Non-free; evidence: Steam app
+- licence: none found
+- homepage: unknown
+- required by: not tracked for steam
+- curated alternatives: 0 A.D. (fit: Good, build-it effort: unknown); already installed: 0ad
+- remove command: \`steam steam://uninstall/1\` (do not run it)
+
+### linux-firmware (\`pacman:linux-firmware\`): research only
+- id: \`pacman:linux-firmware\`, source: pacman, version: 5.2.0-1
+- verdict: Non-free; evidence: firmware blob
+- licence: GPL-3.0-or-later
+- homepage: unknown
+- required by: nothing
+- curated alternatives: none yet
+- remove command: \`sudo pacman -Rns linux-firmware\` (do not run it)
+
+### unar (\`pacman:unar\`): research, suggest, install
+- id: \`pacman:unar\`, source: pacman, version: 5.2.0-1
+- verdict: FOSS (partial); evidence: GPL-3.0-or-later
+- licence: GPL-3.0-or-later
+- homepage: unknown
+- required by: nothing
+- curated alternatives: none yet
+- remove command: \`sudo pacman -Rns unar\` (do not run it)
+
+### mystery (\`opt:mystery\`): research, suggest, install
+- id: \`opt:mystery\`, source: opt, version: 5.2.0-1
+- verdict: Non-free; evidence: no license found
+- licence: none found
+- homepage: unknown
+- required by: not tracked for opt
+- curated alternatives: none yet
+- remove command: \`sudo pacman -Rns mystery\` (do not run it)"
+`;

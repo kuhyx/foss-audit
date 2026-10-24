@@ -71,6 +71,14 @@ describe("DetailPanel", () => {
     expect(screen.getByText("No remove command")).toBeInTheDocument();
   });
 
+  it("explains the remove command's shape under it when removeVia is set", () => {
+    const view = render(<DetailPanel item={{ ...CHROME, removeVia: "~/src/sufler via torch" }} onClose={vi.fn()} />);
+    expect(screen.getByTestId("remove-via")).toHaveTextContent("~/src/sufler via torch");
+    view.unmount();
+    render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    expect(screen.queryByTestId("remove-via")).toBeNull();
+  });
+
   it("flags own code", () => {
     render(<DetailPanel item={OWN_SCRIPT} onClose={vi.fn()} />);
     expect(screen.getByText("yes — kuhy's own")).toBeInTheDocument();

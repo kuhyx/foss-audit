@@ -7,7 +7,12 @@
  *
  * Keyboard: the scroller is a focus stop. ArrowUp/ArrowDown move the selection
  * (opening the detail panel) and scroll it into view; PageUp/PageDown/Home/End
- * scroll natively because the focused element is the scroller itself.
+ * scroll natively because the focused element is the scroller itself. Space
+ * toggles the open row's checkbox (Shift+Space extends the range).
+ *
+ * Multi-select (the checkbox column) is controlled: the ids live in App, so
+ * they survive filter and sort changes. Ranges follow the rows as currently
+ * sorted and filtered, never the order of `items`.
  */
 import type { SortingState, Updater } from "@tanstack/react-table";
 
@@ -19,10 +24,18 @@ import type { Item } from "../lib/schema.ts";
 import type { SortState } from "../lib/url-state.ts";
 
 import { elementAt } from "../lib/array.ts";
+import { headerCheck } from "../lib/selection.ts";
+import { HeaderCheckbox, RowCheckbox } from "./check-cells.tsx";
 import { COLUMN_TRACKS, columns, features } from "./columns.tsx";
 
 export interface ItemsTableProps {
+  /**
+  Multi-selected ids; may include rows the current filter hides.
+  */
+  readonly checked: ReadonlySet<string>;
   readonly items: readonly Item[];
+  readonly onCheck: (id: string, order: readonly string[], isShift: boolean) => void;
+  readonly onCheckAll: (ids: readonly string[], isOn: boolean) => void;
   readonly onSelect: (id: string) => void;
   readonly onSort: (sort: null | SortState) => void;
   readonly selected: null | string;
@@ -35,7 +48,10 @@ const ARIA_SORT = { asc: "ascending", desc: "descending" } as const;
 const SORT_MARK = { asc: "▲", desc: "▼" } as const;
 
 export function ItemsTable({
+  checked,
   items,
+  onCheck,
+  onCheckAll,
   onSelect,
   onSort,
   selected,
@@ -66,6 +82,8 @@ export function ItemsTable({
   });
 
   const rows = table.getRowModel().rows;
+  const order = rows.map((row) => row.original.id);
+  const shownCheck = headerCheck(checked, order);
   // The warning this silences says the compiler cannot memoise
   // useVirtualizer safely. That is exactly why this component carries
   // "use no memo" above; the directive is the fix the warning asks for.
@@ -86,6 +104,13 @@ export function ItemsTable({
   }, [selectedIndex, virtualizer]);
 
   function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
+    // Space only from the scroller itself: on a focused checkbox or sort
+    // button it already does their own thing, and must not toggle twice.
+    if (selectedIndex !== -1 && event.key === " " && event.target === event.currentTarget) {
+      event.preventDefault();
+      onCheck(elementAt(order, selectedIndex), order, event.shiftKey);
+      return;
+    }
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
     const isDown = event.key === "ArrowDown";
@@ -121,6 +146,14 @@ export function ItemsTable({
         {table.getHeaderGroups().map((group) => {
           return (
             <div className="tr" key={group.id} role="row">
+              <div className="th th-check" role="columnheader">
+                <HeaderCheckbox
+                  onToggle={(): void => {
+                    onCheckAll(order, shownCheck !== "all");
+                  }}
+                  state={shownCheck}
+                />
+              </div>
               {group.headers.map((header) => {
                 const direction = header.column.getIsSorted();
                 return (
@@ -166,6 +199,15 @@ export function ItemsTable({
               role="row"
               style={{ transform: `translateY(${virtual.start}px)` }}
             >
+              <div className="td td-check" role="cell">
+                <RowCheckbox
+                  checked={checked.has(row.original.id)}
+                  name={row.original.name}
+                  onCheck={(isShift): void => {
+                    onCheck(row.original.id, order, isShift);
+                  }}
+                />
+              </div>
               {row.getAllCells().map((cell) => {
                 return (
                   <div className="td" key={cell.id} role="cell">

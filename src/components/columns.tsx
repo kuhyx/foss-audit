@@ -42,9 +42,11 @@ const ranked = { sortFn: "basic", sortUndefined: "last" } as const;
 
 /**
  * CSS grid track per column, in column order. Kept beside the definitions so
- * adding a column cannot forget its width.
+ * adding a column cannot forget its width. The first track is the selection
+ * checkbox, which items-table.tsx renders itself (it is not a data column).
  */
 export const COLUMN_TRACKS = [
+  "2.5rem", // selection checkbox
   "minmax(12rem, 1.4fr)", // name
   "minmax(8rem, 0.7fr)", // version
   "7rem", // source

@@ -80,6 +80,18 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: "mystery" })).toBeNull();
   });
 
+  it("keeps a multi-selection across filters and shows the selection bar", async () => {
+    const user = await renderApp("/?view=table");
+    expect(screen.queryByRole("region", { name: "Selection" })).toBeNull();
+    await user.click(screen.getByRole("checkbox", { name: "Select unrar" }));
+    await user.click(screen.getByRole("button", { name: /^opt/u }));
+    await user.click(screen.getByRole("checkbox", { name: "Select mystery" }));
+    expect(screen.getByRole("region", { name: "Selection" })).toHaveTextContent("2 selected");
+    expect(screen.queryByRole("heading", { name: "mystery" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+    expect(screen.queryByRole("region", { name: "Selection" })).toBeNull();
+  });
+
   it("does not show the detail panel on the summary", async () => {
     await renderApp("/?sel=pacman%3Aunrar");
     expect(screen.queryByRole("heading", { name: "unrar" })).toBeNull();
