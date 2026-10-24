@@ -36,8 +36,10 @@ def scan_android_sdk() -> list[Item]:
     if not sdk.is_dir():
         return []
     accepted = sorted(p.name for p in (sdk / "licenses").glob("*") if p.is_file())
+    remove = f"rm -rf {shlex.quote(str(sdk))}"
     if "android-sdk-license" not in accepted:
-        return [unknown("android-sdk", SOURCE, reason=f"{shown(sdk)}; no SDK license accepted")]
+        reason = f"{shown(sdk)}; no SDK license accepted"
+        return [unknown("android-sdk", SOURCE, reason=reason, removeCommand=remove)]
     reason = f"{shown(sdk)}; Android SDK License accepted ({', '.join(accepted)})"
     return [
         Item(
@@ -46,6 +48,7 @@ def scan_android_sdk() -> list[Item]:
             verdict="nonfree",
             license="LicenseRef-Android-SDK-License",
             reason=reason,
+            removeCommand=remove,
         )
     ]
 

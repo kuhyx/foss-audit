@@ -51,7 +51,8 @@ def test_rustup_one_item_all_versions(home: Path) -> None:
     assert item.version == "1.9.0, 1.77.2, stable"
     assert item.license == "MIT OR Apache-2.0"
     assert item.verdict == "foss"
-    assert item.removeCommand is None
+    toolchains = "1.9.0-x86_64-unknown-linux-gnu 1.77.2-x86_64-unknown-linux-gnu stable-aarch64-apple-darwin"
+    assert item.removeCommand == f"rustup toolchain uninstall {toolchains}"
 
 
 def test_rust_license_file_can_downgrade(home: Path) -> None:

@@ -12,11 +12,14 @@ family; the constant is the fallback.
 from __future__ import annotations
 
 import re
+import shlex
+from collections.abc import Callable
 from pathlib import Path
 
 from foss_audit.licenses import classify_text
 from foss_audit.model import Item, Verdict
 from foss_audit.own_license import identify
+from foss_audit.remove_cmd import removing, shell_path
 from foss_audit.scan_toolchain_tools import (
     SOURCE,
     first_text,
@@ -32,6 +35,8 @@ HOME = Path.home()
 
 # rustup names a toolchain "<version|channel>-<host triple>".
 HOST_TRIPLE = re.compile(r"-(x86_64|aarch64|i686|armv7\w*|riscv64\w*)-.*$")
+# Builds the remove command for a family's version directories.
+Remover = Callable[[list[Path]], str]
 
 
 def classify_license_text(text: str) -> tuple[Verdict, str]:
@@ -59,15 +64,28 @@ def family_item(name: str, spdx: str, versions: list[str], files: list[Path], wh
     )
 
 
-def family(name: str, spdx: str, dirs: list[Path], globs: tuple[str, ...], where: str) -> list[Item]:
+def rm_dirs(dirs: list[Path]) -> str:
+    """Remove the version dirs as such: nvm is a shell function, fvm's cache dir is configurable."""
+    return "rm -rf " + " ".join(shell_path(d, HOME) for d in dirs)
+
+
+def manager(command: str) -> Remover:
+    """Remove the versions through the manager that keeps state about them (rustup, pyenv)."""
+    return lambda dirs: " ".join([command, *(shlex.quote(d.name) for d in dirs)])
+
+
+def family(
+    name: str, spdx: str, dirs: list[Path], globs: tuple[str, ...], remove: Remover = rm_dirs
+) -> list[Item]:
     """The family item for version directories `dirs`; none when no version is installed.
 
-    License files are looked up newest version first.
+    License files are looked up newest version first; the reason names the dirs' parent.
     """
     if not dirs:
         return []
     files = [f for d in reversed(dirs) for g in globs for f in sorted(d.glob(g))]
-    return [family_item(name, spdx, [_label(d) for d in dirs], files, where)]
+    item = family_item(name, spdx, [_label(d) for d in dirs], files, shell_path(dirs[0].parent, HOME))
+    return [removing(item, remove(dirs))]
 
 
 def _label(directory: Path) -> str:
@@ -89,21 +107,25 @@ def scan_rust() -> list[Item]:
         "MIT OR Apache-2.0",
         subdirs(HOME / ".rustup/toolchains"),
         ("share/doc/rust/LICENSE-MIT", "share/doc/rust/LICENSE-APACHE", "share/doc/rust/licenses/MIT.txt"),
-        "~/.rustup/toolchains",
+        manager("rustup toolchain uninstall"),
     )
 
 
 def scan_pyenv() -> list[Item]:
     """CPython interpreters installed by pyenv (virtualenvs excluded)."""
     dirs = [p for p in subdirs(HOME / ".pyenv/versions") if is_real_python(p)]
-    return family("python (pyenv)", "PSF-2.0", dirs, ("lib/python*/LICENSE.txt",), "~/.pyenv/versions")
+    return family(
+        "python (pyenv)",
+        "PSF-2.0",
+        dirs,
+        ("lib/python*/LICENSE.txt",),
+        manager("pyenv uninstall -f"),
+    )
 
 
 def scan_nvm() -> list[Item]:
     """Node.js versions installed by nvm."""
-    return family(
-        "node (nvm)", "MIT", subdirs(HOME / ".nvm/versions/node"), ("LICENSE",), "~/.nvm/versions/node"
-    )
+    return family("node (nvm)", "MIT", subdirs(HOME / ".nvm/versions/node"), ("LICENSE",))
 
 
 def scan_fvm() -> list[Item]:
@@ -113,7 +135,6 @@ def scan_fvm() -> list[Item]:
         "BSD-3-Clause",
         subdirs(HOME / "sdk/fvm/versions"),
         ("LICENSE",),
-        "~/sdk/fvm/versions",
     )
 
 
@@ -127,7 +148,7 @@ def scan_go() -> list[Item]:
     version = marker.read_text().partition("\n")[0].removeprefix("go") if marker.is_file() else ""
     item = family_item("go", "BSD-3-Clause", [version] if version else [], [root / "LICENSE"], "~/sdk/go")
     item.version = version or None
-    return [item]
+    return [removing(item, rm_dirs([root]))]
 
 
 def scan_toolchains() -> list[Item]:

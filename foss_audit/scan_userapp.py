@@ -193,7 +193,8 @@ def scan_godot_templates() -> list[Item]:
     versions = sorted(p for p in root.glob("*") if p.is_dir())
     if not versions:
         return []
-    return [licensed("godot export templates", root, *versions, version=", ".join(v.name for v in versions))]
+    names = ", ".join(v.name for v in versions)
+    return [licensed("godot export templates", root, *versions, version=names, removeCommand=rm_rf(root))]
 
 
 def scan_actions_runner() -> list[Item]:
@@ -205,7 +206,18 @@ def scan_actions_runner() -> list[Item]:
     # `bin` is a symlink to bin.<runner version>.
     ver = re.search(r"bin\.(\d[\d.]*)$", (runners[-1] / "bin").resolve().name)
     lic_dirs = [d for r in runners for d in (r, r / "bin")]
-    return [licensed("github actions-runner", root, *lic_dirs, version=ver[1] if ver else None)]
+    # A runner installed as a systemd service (svc.sh writes `.service`) must drop it first.
+    services = [
+        f"(cd {shlex.quote(str(r))} && sudo ./svc.sh uninstall)"
+        for r in runners
+        if (r / ".service").is_file()
+    ]
+    remove = " && ".join([*services, rm_rf(root)])
+    item = licensed(
+        "github actions-runner", root, *lic_dirs, version=ver[1] if ver else None, removeCommand=remove
+    )
+    item.removeVia = "deregister it on GitHub too: config.sh remove --token <token>"
+    return [item]
 
 
 def scan_llama_cpp() -> list[Item]:
@@ -213,7 +225,8 @@ def scan_llama_cpp() -> list[Item]:
     root = share() / "mangatl/llama.cpp"
     if not any(p.name == "llama-server" for p in elf_programs(root, depth=4)):
         return []
-    return [licensed("llama.cpp (llama-server)", root, root)]
+    # Only the vendored copy: mangatl/ next to it holds the app's sqlite db and models.
+    return [licensed("llama.cpp (llama-server)", root, root, removeCommand=rm_rf(root))]
 
 
 def scan_user_apps() -> list[Item]:
