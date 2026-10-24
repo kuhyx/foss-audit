@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Iterator
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 
 import pytest
 
@@ -89,3 +90,50 @@ def test_server_main_binds_localhost(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "argv", ["server", "--port", "6000"])
     server.main()
     assert seen == {"addr": ("127.0.0.1", 6000), "served": True}
+
+
+def write_scan(path: Path, n: int) -> Path:
+    path.write_text(json.dumps({"items": [], "errors": [], "n": n}))
+    return path
+
+
+def test_scan_file_is_served_and_reread_on_refresh(tmp_path: Path) -> None:
+    saved = write_scan(tmp_path / "scan.json", 1)
+    cache = server.ScanCache(scan_file=saved)
+    assert cache.get(refresh=False)["n"] == 1
+    write_scan(saved, 2)
+    assert cache.get(refresh=False)["n"] == 1  # cached: no reread
+    assert cache.get(refresh=True)["n"] == 2  # refresh re-reads the file, never scans
+
+
+class IdleServer:
+    def __init__(self, *_args: object) -> None:
+        pass
+
+    def serve_forever(self) -> None:
+        pass
+
+
+def test_server_main_loads_scan_file_at_startup(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    saved = write_scan(tmp_path / "scan.json", 7)
+    monkeypatch.setattr(server, "ThreadingHTTPServer", IdleServer)
+    monkeypatch.setattr(server, "CACHE", server.ScanCache())
+    monkeypatch.setattr(sys, "argv", ["server", "--scan-file", str(saved)])
+    server.main()
+    saved.unlink()  # already in memory: serving it must not touch the disk
+    assert server.CACHE.get(refresh=False)["n"] == 7
+
+
+@pytest.mark.parametrize("content", [None, "[1]", "{not json"])
+def test_server_main_rejects_bad_scan_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str], content: str | None
+) -> None:
+    path = tmp_path / "scan.json"
+    if content is not None:
+        path.write_text(content)
+    monkeypatch.setattr(server, "ThreadingHTTPServer", IdleServer)
+    monkeypatch.setattr(sys, "argv", ["server", "--scan-file", str(path)])
+    with pytest.raises(SystemExit) as exc:
+        server.main()
+    assert exc.value.code == 2
+    assert "--scan-file" in capsys.readouterr().err

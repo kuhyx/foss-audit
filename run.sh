@@ -7,6 +7,7 @@
 #   ./run.sh --build             serve the production build (vite preview)
 #   ./run.sh --port 5190         UI port (default 5190)
 #   ./run.sh --api-port 5191     backend port (default 5191)
+#   ./run.sh --scan-file PATH    serve a saved `python -m foss_audit.scan` output
 #   ./run.sh --no-open           do not launch a browser (headless use)
 #   ./run.sh --install-launcher  add foss-audit to dmenu/rofi, then exit
 #
@@ -34,6 +35,7 @@ PORT=5190
 API_PORT=5191
 PRODUCTION_BUILD=false
 OPEN_BROWSER=true
+SCAN_FILE=""
 API_PID=""
 UI_PID=""
 COREPACK_SHIM_DIR=""
@@ -74,7 +76,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 usage() {
-    sed -n '4,16p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '4,17p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -135,7 +137,9 @@ wait_for() {
 start_api() {
     port_in_use "$API_PORT" && die "port ${API_PORT} is already in use (another foss-audit?); try --api-port"
     command -v python3 >/dev/null 2>&1 || die "python3 not found"
-    setsid python3 -m foss_audit.server --port "$API_PORT" &
+    local scan_args=()
+    [[ -z "$SCAN_FILE" ]] || scan_args=(--scan-file "$SCAN_FILE")
+    setsid python3 -m foss_audit.server --port "$API_PORT" "${scan_args[@]}" &
     API_PID=$!
     wait_for "http://127.0.0.1:${API_PORT}/api/health" "scanner API"
 }
@@ -216,6 +220,9 @@ while [[ $# -gt 0 ]]; do
         --api-port)
             [[ "${2:-}" =~ ^[0-9]+$ ]] || die "--api-port needs a number"
             API_PORT="$2"; shift 2 ;;
+        --scan-file)
+            [[ -r "${2:-}" ]] || die "--scan-file needs a readable file"
+            SCAN_FILE="$(realpath "$2")"; shift 2 ;;
         --install-launcher) install_launcher; exit 0 ;;
         -h|--help) usage ;;
         *) die "unknown option: $1 (try --help)" ;;
