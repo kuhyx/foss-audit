@@ -6,7 +6,18 @@ dev/preview server proxies `/api` to it, so the UI always fetches same-origin.
 ## `GET /api/scan[?refresh=1]`
 
 Scans the machine live. The result is cached in memory; `refresh=1` forces a
-rescan (a full scan takes a few seconds). Response body:
+rescan (a full scan takes ~45 s).
+
+Started with `--scan-file PATH` (`python3 -m foss_audit.server --scan-file
+/tmp/fa_scan.json`, or `./run.sh --scan-file PATH`), the backend never scans:
+it serves that saved `python -m foss_audit.scan` output, loaded once at startup
+(a missing file, bad JSON or an object without `items` exits with a usage
+error), and `refresh=1` re-reads the same file from disk. The E2E flow
+(`scripts/e2e_selection.sh`) relies on this to start in about a second.
+`./run.sh --scan-file` only applies to a fresh start: an instance already
+running is reused as it is.
+
+Response body:
 
 ```jsonc
 {
