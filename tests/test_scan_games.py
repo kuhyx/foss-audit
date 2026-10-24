@@ -24,6 +24,7 @@ def test_wine_two_levels_and_stock_dirs(monkeypatch: pytest.MonkeyPatch, tmp_pat
 def test_waydroid(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     image = tmp_path / "system.img"
     monkeypatch.setattr(scan_games, "WAYDROID_IMAGE", image)
+    monkeypatch.setattr(scan_games, "HOME", tmp_path)
     assert scan_games.scan_waydroid() == []
     image.write_text("")
     assert scan_games.scan_waydroid()[0].name == "LineageOS (Waydroid)"
