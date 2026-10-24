@@ -164,7 +164,8 @@ to three levels below a lockfile; build output, vendored copies and hidden direc
   package in another);
 - a lockfile that lists it although nothing declared reaches it is re-locked once per lockfile
   (pub: blamed on the SDK packages instead, whose pubspecs are not in the cache), unless it is
-  that project's own package;
+  that project's own package or one of its path dependencies' manifests already removes it
+  (`~/src/app lockfile lists x through its local pkg`);
 - several projects: every project's step, then the package's own cache entries deleted once. No
   project reaches it: it is stale and only its exact cache entries are deleted.
 

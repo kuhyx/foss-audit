@@ -35,6 +35,8 @@ Graph = dict[str, set[str]]
 Decl = tuple[str, str]
 # (kind, tokens) -> the command that removes those tokens, run in the manifest's dir.
 Render = Callable[[str, list[str]], str]
+# (commands, removeVia parts) planned for one manifest.
+Found = tuple[list[str], list[str]]
 # Package name -> (cache delete step, note on what else it deletes).
 CacheStep = Callable[[str], tuple[str, str]]
 # Directories that are build output or vendored copies, never a project.
@@ -127,6 +129,8 @@ class Manifest:
     # Its workspace members and path dependencies, never blamed as a parent. Per
     # manifest: a name that is local in one repo is a registry package in another.
     local: frozenset[str] = frozenset()
+    # The package this manifest itself builds, when it has a name.
+    name: str = ""
 
     def declare(self, name: str, kind: str, token: str | None = None) -> None:
         """Record that this manifest declares `name` under `kind`."""
@@ -188,33 +192,42 @@ class Planner:
         steps = [f"(cd {shell_path(m.dir)} && {m.render(kind, toks)})" for kind, toks in wanted.items()]
         return steps, via
 
-    def _group(self, group: list[Manifest], name: str) -> tuple[list[str], list[str]]:
-        """Steps for the manifests sharing one lockfile (a workspace)."""
-        found = [self._steps(m, name, self._parents(m, name)) for m in group]
-        # The project's own package (a cached copy of it came from elsewhere) is never re-locked.
-        own = any(name in m.local for m in group)
-        if not any(steps for steps, _ in found) and name in group[0].locked and not own:
-            # Listed by the lockfile, reached by nothing declared: an SDK package's
-            # dependency (pub), else a stale lock entry that re-locking drops.
-            sdk = f"(SDK, its pubspec is not in the cache) → {name}"
-            found = [self._steps(m, name, [(r, f"{r} {sdk}") for r in m.fallback]) for m in group]
-            if not any(steps for steps, _ in found) and group[0].relock:
-                folder, command = group[0].relock
-                why = f"{shown(folder)} lockfile lists {name} but nothing it declares reaches it"
-                found = [([f"(cd {shell_path(folder)} && {command})"], [why])]
-        return [s for steps, _ in found for s in steps], [v for _, via in found for v in via]
+    def _unreached(self, key: Path, group: list[Manifest], name: str, covered: set[str]) -> list[Found]:
+        """A lockfile lists `name` but nothing its manifests declare reaches it."""
+        local = set().union(*(m.local for m in group))
+        # The project's own package (a cached copy of it came from elsewhere): nothing to do.
+        if name not in group[0].locked or name in local:
+            return []
+        # Pulled in by one of its path dependencies, whose own manifest already removes it.
+        if through := sorted(local & covered):
+            return [([], [f"{shown(key)} lockfile lists {name} through its local {', '.join(through)}"])]
+        # An SDK package's dependency (pub), else a stale entry that re-locking drops.
+        sdk = f"(SDK, its pubspec is not in the cache) → {name}"
+        found = [self._steps(m, name, [(r, f"{r} {sdk}") for r in m.fallback]) for m in group]
+        if not any(steps for steps, _ in found) and group[0].relock:
+            folder, command = group[0].relock
+            why = f"{shown(folder)} lockfile lists {name} but nothing it declares reaches it"
+            found = [([f"(cd {shell_path(folder)} && {command})"], [why])]
+        return found
 
     def plan(self, name: str, cache_step: str, note: str = "") -> tuple[str, str]:
         """(removeCommand, removeVia) for package `name`."""
+        # Manifests sharing one lockfile (a workspace) are planned together.
         groups: dict[Path, list[Manifest]] = {}
         for m in self.manifests:
             groups.setdefault(m.relock[0] if m.relock else m.dir, []).append(m)
+        reached = {
+            key: [self._steps(m, name, self._parents(m, name)) for m in g] for key, g in groups.items()
+        }
+        covered = {m.name for k, g in groups.items() for m, (s, _) in zip(g, reached[k], strict=True) if s}
         steps: list[str] = []
         via: list[str] = []
-        for group in groups.values():
-            more, why = self._group(group, name)
-            steps += more
-            via += why
+        for key, group in groups.items():
+            found = reached[key]
+            if not any(more for more, _ in found):
+                found = self._unreached(key, group, name, covered)
+            steps += [s for more, _ in found for s in more]
+            via += [v for _, why in found for v in why]
         if not via:
             via.append("stale: no ~/src project reaches it, so only its cache entries are deleted")
         return joined([*steps, cache_step]), "; ".join(dict.fromkeys([*via, *([note] if note else [])]))

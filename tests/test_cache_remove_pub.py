@@ -53,7 +53,8 @@ def items(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Item]:
     monkeypatch.setattr(cache_remove, "HOME", tmp_path)
     monkeypatch.setattr(upstream_license, "upstream_license", {}.__getitem__)
     write(src / "app/pubspec.yaml", APP)
-    write(src / "app/pubspec.lock", lock("http", "http_parser", "meta", "lints", "unreached", flutter=True))
+    listed = ("http", "http_parser", "meta", "lints", "unreached", "path")
+    write(src / "app/pubspec.lock", lock(*listed, flutter=True))
     write(src / "app/build/x/pubspec.yaml", "name: x\ndependencies:\n  gone: any\n")
     write(src / "local_pkg/pubspec.yaml", "name: local_pkg\ndependencies:\n  path: any\n")
     write(src / "cli/pubspec.yaml", "name: cli\ndependencies:\n  http: any\n")
@@ -127,6 +128,15 @@ def test_sdk_dependency_is_blamed_on_the_sdk_packages(items: dict[str, Item]) ->
         == f"(cd ~/src/app && flutter pub remove flutter inline flutter_test); rm -rf {HOSTED}/meta-1.0.0"
     )
     assert meta.removeVia.startswith("~/src/app via flutter (SDK, its pubspec is not in the cache) → meta")
+
+
+def test_locked_through_a_path_dependency_is_not_blamed_on_the_sdk(items: dict[str, Item]) -> None:
+    path = items["path"]
+    assert path.removeCommand == f"(cd ~/src/local_pkg && dart pub remove path); rm -rf {HOSTED}/path-1.0.0"
+    assert (
+        path.removeVia
+        == "~/src/app lockfile lists path through its local local_pkg; ~/src/local_pkg declares path"
+    )
 
 
 def test_unreached_lock_entry_is_relocked(items: dict[str, Item]) -> None:

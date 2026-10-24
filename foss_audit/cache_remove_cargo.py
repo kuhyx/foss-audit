@@ -74,8 +74,8 @@ def manifests(root: Path) -> list[Manifest]:
         data = _toml(path)
         if data is None:
             continue
-        m = Manifest(path.parent, render)
-        local = {str(_table(data.get("package")).get("name", ""))}
+        m = Manifest(path.parent, render, name=str(_table(data.get("package")).get("name", "")))
+        local = {m.name}
         for name, flags, key, is_path in declarations(data):
             m.declare(name, flags, key)
             if is_path:

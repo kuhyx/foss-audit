@@ -152,7 +152,7 @@ def manifests(root: Path) -> list[Manifest]:
             local.add(norm(str(_table(data.get("project")).get("name", ""))))
             decls += declarations(data)
         tool = "poetry remove" if poetry else "uv remove" + ("" if lock else " --frozen")
-        m = Manifest(folder, partial(render, tool))
+        m = Manifest(folder, partial(render, tool), name=min(local - {""}, default=""))
         for name, kind in decls:
             m.declare(name, kind)
         if lock:

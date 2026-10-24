@@ -48,7 +48,8 @@ def manifests(root: Path) -> list[Manifest]:
     members: dict[Path, set[str]] = {}
     for path in projects(["pubspec.yaml"], root, lock="pubspec.lock"):
         text = _read(path)
-        m = Manifest(path.parent, partial(render, _tool(bool(FLUTTER_SDK.search(text)))))
+        tool = _tool(bool(FLUTTER_SDK.search(text)))
+        m = Manifest(path.parent, partial(render, tool), name=parse_pubspec(text).name)
         deps = declared_deps(text)
         for name, _source in deps:
             m.declare(name, "")
@@ -58,7 +59,7 @@ def manifests(root: Path) -> list[Manifest]:
             lock_text = _read(lock)
             m.locked = locks.setdefault(lock, frozenset(lock_packages(lock_text)))
             m.relock = (lock.parent, f"{_tool(bool(LOCK_FLUTTER.search(lock_text)))} pub get")
-        members.setdefault(lock or path, set()).add(parse_pubspec(text).name)
+        members.setdefault(lock or path, set()).add(m.name)
         found.append((m, {name for name, source in deps if source == "path"}))
     for m, paths in found:
         m.local = frozenset(
