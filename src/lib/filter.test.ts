@@ -20,6 +20,18 @@ import {
   toggleMember,
 } from "./filter.ts";
 
+const FIREBASE_COMMON = makeItem({
+  id: "maven-cache:com.google.firebase:firebase-common",
+  license: "Apache-2.0",
+  name: "firebase-common",
+  source: "maven-cache",
+});
+// Every letter of "firebase", in order, only across the licence.
+const QEMU = makeItem({
+  license: "BSD-2-Clause BSD-2-Clause-Patent BSD-3-Clause CC0-1.0 FSFAP GPL-1.0-or-later GPL-2.0-only GPL-2.0-only WITH Linux-syscall-note GPL-2.0-only WITH Linux-syscall-note OR BSD-2-Clause GPL-2.0-only WITH Linux-syscall-note OR BSD-3-Clause",
+  name: "qemu-audio-alsa",
+});
+
 function names(filter: Partial<FilterState>): string[] {
   return applyFilter(ITEMS, { ...DEFAULT_FILTER, ...filter }).map((item) => item.name);
 }
@@ -30,10 +42,25 @@ describe("matchesQuery", () => {
     expect(matchesQuery(CHROME, ' '.repeat(3))).toBe(true);
   });
 
-  it("fuzzy-matches the name, licence and alternative names", () => {
-    expect(matchesQuery(CHROME, "gchrm")).toBe(true);
-    expect(matchesQuery(CHROME, "custom:ch")).toBe(true);
-    expect(matchesQuery(CHROME, "firefox")).toBe(true);
+  it("matches a case-insensitive substring of the name or the id", () => {
+    expect(matchesQuery(FIREBASE_COMMON, "firebase")).toBe(true);
+    expect(matchesQuery(FIREBASE_COMMON, "FIREBASE-Common")).toBe(true);
+    expect(matchesQuery(FIREBASE_COMMON, "maven-cache:com.google")).toBe(true);
+    expect(matchesQuery(CHROME, "aur:goo")).toBe(true);
+  });
+
+  it("tolerates typos in the name or the id", () => {
+    expect(matchesQuery(FIREBASE_COMMON, "firbase")).toBe(true);
+    expect(matchesQuery(FIREBASE_COMMON, "firebsae")).toBe(true);
+  });
+
+  it("does not search the licence or the alternative names", () => {
+    expect(matchesQuery(CHROME, "custom:ch")).toBe(false);
+    expect(matchesQuery(CHROME, "firefox")).toBe(false);
+  });
+
+  it("does not match letters scattered in order across the licence", () => {
+    expect(matchesQuery(QEMU, "firebase")).toBe(false);
   });
 
   it("does not search the free-text reason", () => {
@@ -41,11 +68,7 @@ describe("matchesQuery", () => {
     expect(matchesQuery(item, "chrome")).toBe(false);
   });
 
-  it("does not let a match span two fields", () => {
-    expect(matchesQuery(CHROME, "chromecustom")).toBe(false);
-  });
-
-  it("is false for an item without an alternative when nothing matches", () => {
+  it("is false when nothing matches", () => {
     expect(matchesQuery(MYSTERY, "zzz")).toBe(false);
   });
 });
@@ -104,6 +127,22 @@ describe("passesFilter / applyFilter", () => {
 
   it("combines the search with the facets", () => {
     expect(names({ query: "unrar", verdicts: ["nonfree"] })).toEqual(["unrar"]);
+  });
+
+  it("shows typo hits only when nothing matches exactly", () => {
+    const typo = makeItem({ name: "firbase-tools" });
+    const exact = makeItem({ name: "firebase-tools" });
+    const all = [typo, QEMU, FIREBASE_COMMON, exact];
+    const search = (query: string): string[] =>
+      applyFilter(all, { ...DEFAULT_FILTER, query }).map((item) => item.name);
+    expect(search("firebase")).toEqual(["firebase-common", "firebase-tools"]);
+    expect(search("firxbase")).toEqual(["firbase-tools", "firebase-common", "firebase-tools"]);
+  });
+
+  it("ranks typo hits on the first letter before the rest", () => {
+    const airbase = makeItem({ name: "airbase" });
+    const found = applyFilter([airbase, FIREBASE_COMMON], { ...DEFAULT_FILTER, query: "firbase" });
+    expect(found.map((item) => item.name)).toEqual(["firebase-common", "airbase"]);
   });
 });
 

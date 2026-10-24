@@ -5,9 +5,9 @@
  * Keeping the predicate a plain function makes it the single definition used
  * by the table, the result count and the summary's click-through links.
  */
-import { fuzzyMatch } from "@kuhyx/web-ui";
-
 import type { Item, Source, Verdict } from "./schema.ts";
+
+import { type CompiledQuery, compileQuery, type Rank } from "./fuzzy.ts";
 
 /**
  * A boolean facet: unset, or required true/false.
@@ -51,28 +51,26 @@ function passesKind(kind: Kind, isExplicit: boolean): boolean {
 }
 
 /**
- * Fuzzy search over name, licence and alternative names.
+ * Typo-tolerant search over the name and the id only (see fuzzy.ts).
  *
- * `reason` is deliberately not searched: it is a long free-text sentence, and
- * a subsequence match over it is almost always true ("chrome" matched 20 xorg
- * packages through their evidence strings).
- *
- * Each field is matched on its own. A subsequence match over one concatenated
- * string would let a query span two fields ("chrgpl" matching "chrome" +
- * "GPL"), which looks like a bug to anyone reading the result.
+ * Licence, alternative names and reason are deliberately not searched: long
+ * strings make loose matches near-certain, and "select all shown" then picks
+ * up rows that merely mention the query ("firebase" grabbed qemu packages
+ * through their licence lists).
  */
-export function matchesQuery(item: Item, query: string): boolean {
-  const q = query.trim();
-  const fields = [
-    item.name,
-    item.license,
-    ...(item.alternative?.names ?? []),
-  ];
-  // fuzzyMatch("") is true, so an empty query matches every item.
-  return fields.some((field) => fuzzyMatch(q, field));
+function queryRank(item: Item, query: CompiledQuery): null | Rank {
+  return query.rank([item.name, item.id]);
 }
 
-export function passesFilter(item: Item, filter: FilterState): boolean {
+/**
+ * One item on its own: true for an exact or a typo hit. `applyFilter` then
+ * drops the typo hits whenever any row matches exactly.
+ */
+export function matchesQuery(item: Item, query: string): boolean {
+  return queryRank(item, compileQuery(query)) !== null;
+}
+
+function passesFacets(item: Item, filter: FilterState): boolean {
   const alt = item.alternative;
   const hasAlt = alt !== null && alt.names.length > 0;
   return (
@@ -84,16 +82,35 @@ export function passesFilter(item: Item, filter: FilterState): boolean {
     passesTri(filter.loose, item.loose) &&
     passesTri(filter.dangling, item.dangling) &&
     passesTri(filter.hasAlt, hasAlt) &&
-    passesTri(filter.altInstalled, (alt?.installed.length ?? 0) > 0) &&
-    matchesQuery(item, filter.query)
+    passesTri(filter.altInstalled, (alt?.installed.length ?? 0) > 0)
   );
 }
 
+export function passesFilter(item: Item, filter: FilterState): boolean {
+  return passesFacets(item, filter) && matchesQuery(item, filter.query);
+}
+
+/**
+ * The rows that pass. Typo hits are a fallback, shown only when no row has
+ * the query as an exact substring: otherwise "firebase" would also list
+ * "airbase" (2 edits away) and "select all shown" would grab it. Typo hits
+ * whose matches start on each word's first letter come first. Scan order is
+ * kept within a rank; the table re-sorts only when a column sort is set.
+ */
 export function applyFilter(
   items: readonly Item[],
   filter: FilterState,
 ): Item[] {
-  return items.filter((item) => passesFilter(item, filter));
+  const query = compileQuery(filter.query);
+  // One bucket per rank (see fuzzy.ts Rank), each kept in scan order.
+  const buckets: [Item[], Item[], Item[]] = [[], [], []];
+  for (const item of items) {
+    if (!passesFacets(item, filter)) continue;
+    const rank = queryRank(item, query);
+    if (rank !== null) buckets[rank].push(item);
+  }
+  const [exact, anchored, loose] = buckets;
+  return exact.length > 0 ? exact : [...anchored, ...loose];
 }
 
 export function isFilterActive(filter: FilterState): boolean {

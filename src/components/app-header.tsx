@@ -49,12 +49,12 @@ export function AppHeader({
         </span>
       </p>
       <input
-        aria-label="Search name, licence or alternative"
+        aria-label="Search name or id (typos ok)"
         className="search"
         onChange={(event): void => {
           onQuery(event.target.value);
         }}
-        placeholder="Search name, licence, alternative  (/)"
+        placeholder="Search name or id, typos ok  (/)"
         ref={searchRef}
         type="search"
         value={query}

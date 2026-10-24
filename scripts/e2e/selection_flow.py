@@ -65,7 +65,11 @@ class Flow:
         self.url = url
         self.items = items
         self.picked: set[str] = set()
+        self.firebase: list[str] = []
         self.notes: list[str] = []
+
+    def haystack(self, item_id: str) -> str:
+        return f"{self.items[item_id]['name']} {item_id}".lower()
 
     def expect_count(self, want: int, what: str) -> None:
         try:
@@ -101,19 +105,37 @@ class Flow:
         self.p.search("firebase")
         self.expect_count(len(self.picked), "after refilter")
         rows = self.p.collect()
+        stray = [r["id"] for r in rows if "firebase" not in self.haystack(r["id"])]
+        check(not stray, f"firebase shows rows without firebase in name or id: {stray[:5]}")
+        want = {i for i in self.items if "firebase" in self.haystack(i)}
+        self.firebase = [r["id"] for r in rows]
+        check(set(self.firebase) == want, f"firebase shows {len(rows)} rows, {len(want)} contain it")
         self.expect_view_marks(rows)
-        self.notes.append(f"firebase: {len(rows)} rows, header {self.p.header()}, bar {self.p.count()}")
+        header, bar = self.p.header(), self.p.count()
+        self.notes.append(f"firebase: {len(rows)} rows, all contain it, header {header}, bar {bar}")
 
     def add_one(self) -> None:
         rows = self.p.collect()
         target = next((r for r in rows if r["id"] not in self.picked), None)
         check(target is not None, "every firebase row is already selected: nothing to add")
         assert target is not None
+        check("firebase" in self.haystack(target["id"]), f"picked a non-firebase row {target['id']}")
         self.p.click_row(target["index"])
         self.picked.add(target["id"])
         self.expect_count(len(self.picked), "one more")
         check(not self.p.panel_open(), "clicking a row checkbox opened the detail panel")
         self.notes.append(f"+1 ({target['id']}): bar {self.p.count()}, no panel")
+
+    def typo_firbase(self) -> None:
+        self.p.search("firbase")
+        rows = self.p.collect()
+        ids = [r["id"] for r in rows]
+        head = ids[: len(self.firebase)]
+        check(set(head) == set(self.firebase), f"firbase: the {len(head)} firebase rows are not ranked first")
+        self.expect_count(len(self.picked), "after typo search")
+        self.expect_view_marks(rows)
+        extra = ids[len(head) :]
+        self.notes.append(f"firbase: {len(rows)} rows, the {len(head)} firebase rows first, extra {extra}")
 
     def sorted_rows(self) -> tuple[str, list[dict[str, Any]]]:
         """Sort by name until the top rows are NOT in scan order, so a range
@@ -187,8 +209,9 @@ def main() -> int:
     steps: list[tuple[str, Callable[[], None]]] = [
         ("open the All items view", flow.open_table),
         ("filter com.google, header checkbox selects every shown row", flow.select_all_google),
-        ("filter firebase: count kept, header partial/all", flow.refilter_firebase),
-        ("select one more (no detail panel)", flow.add_one),
+        ("filter firebase: only rows with it in name/id, count kept", flow.refilter_firebase),
+        ("select one more firebase row (no detail panel)", flow.add_one),
+        ("typo firbase: firebase rows ranked first", flow.typo_firbase),
         ("sort by name, shift+click rows 2..6", flow.shift_range),
         ("layout + screenshots", lambda: flow.layout(table_png, bar_png)),
         ("Copy Claude prompt", flow.copy_prompt),
