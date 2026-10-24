@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from foss_audit import scan_cache_maven as scan
+from foss_audit.scan_cache_maven_decl import build_file_names
 from tests.maven_helpers import dep, gradle_file, m2_file, offline, pom, write, zip_bytes
 
 LIB = ("org.x", "lib", "1.0")
@@ -59,7 +60,7 @@ def test_build_file_names() -> None:
         id 'org.jetbrains.kotlin.android'
         url "https://example.com/maven"
     """
-    assert scan.build_file_names(text) == {
+    assert build_file_names(text) == {
         "org.x:lib",
         "org.y:other",
         "org.z:zed",
@@ -70,7 +71,7 @@ def test_build_file_names() -> None:
 
 def test_catalog_module_and_group_name() -> None:
     toml = 'a = { module = "org.x:lib", version.ref = "x" }\nb = { group = "org.z", name = "zed" }\n'
-    assert scan.build_file_names(toml) == {"org.x:lib", "org.z:zed"}
+    assert build_file_names(toml) == {"org.x:lib", "org.z:zed"}
 
 
 def test_scan_end_to_end(caches: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
@@ -114,3 +115,12 @@ def test_scan_end_to_end(caches: tuple[Path, Path, Path], monkeypatch: pytest.Mo
     silent_item = items["org.x:silent"]
     assert (silent_item.verdict, silent_item.license) == ("foss", "MIT")
     assert "license from license of org.x:lib 1.0 (pom); 1 itself: pom (no <licenses>)" in silent_item.note
+    # Every item says how to remove it for good.
+    assert all(i.removeCommand for i in items.values())
+    assert lib.removeVia == "~/src/app declares it"
+    gms = items["com.google.android.gms:play-services-base"]
+    assert gms.requiredBy == []
+    assert gms.removeVia == "~/src/app via org.x:lib → com.google.android.gms:play-services-base"
+    assert str(gms.removeCommand).startswith("sed -i -e ")
+    assert silent_item.removeVia == "stale: no ~/src project reaches it"
+    assert silent_item.removeCommand == f"rm -rf {m2 / 'org/x/silent'}"

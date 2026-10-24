@@ -5,22 +5,24 @@ Both caches are merged into one `group:artifact` list:
 and ~/.m2/repository/<group path>/<artifact>/<version>/<artifact>-<version>.*.
 Every version with a POM or a JAR/AAR counts, POM-only BOMs and parents
 included: they were downloaded too. The license lookup per version lives in
-scan_cache_maven_resolve; `requiredBy` comes from the Gradle build files of
-~/src projects (dependency strings, `group:, name:` maps, plugin ids).
+scan_cache_maven_resolve; `requiredBy` comes from the build files, version
+catalogs and pom.xml of ~/src projects (scan_cache_maven_decl), and the
+remove command from scan_cache_maven_remove.
 """
 
 from __future__ import annotations
 
-import re
-from collections.abc import Iterable
 from pathlib import Path
 
 from foss_audit import cache_common
-from foss_audit.cache_common import CachedArtifact, CachedVersion, project_files, project_of, to_items
+from foss_audit.cache_common import CachedArtifact, CachedVersion, to_items
 from foss_audit.model import Item
+from foss_audit.scan_cache_maven_decl import declarations
+from foss_audit.scan_cache_maven_graph import dependency_graph
 from foss_audit.scan_cache_maven_inherit import borrow
 from foss_audit.scan_cache_maven_pom import Gav
 from foss_audit.scan_cache_maven_portal import fill
+from foss_audit.scan_cache_maven_remove import add_removals, cache_dirs
 from foss_audit.scan_cache_maven_repos import recorded_repos
 from foss_audit.scan_cache_maven_resolve import Store, VersionFiles, resolve_all
 
@@ -28,19 +30,7 @@ HOME = Path.home()
 GRADLE = HOME / ".gradle/caches/modules-2/files-2.1"
 M2 = HOME / ".m2/repository"
 SRC = cache_common.SRC
-BUILD_FILES = (
-    "build.gradle",
-    "build.gradle.kts",
-    "settings.gradle",
-    "settings.gradle.kts",
-    "gradle/libs.versions.toml",
-)
 ARCHIVE_SUFFIXES = frozenset({".jar", ".aar"})
-# "group:artifact" or "group:artifact:version" inside quotes.
-COORD = re.compile(r"""["']([\w.\-]+):([\w.\-]+)(?::[^"'\s]*)?["']""")
-GROUP_NAME = re.compile(r"""group\s*[:=]\s*["']([\w.\-]+)["']\s*,\s*name\s*[:=]\s*["']([\w.\-]+)["']""")
-# A plugin id resolves through its marker artifact <id>:<id>.gradle.plugin.
-PLUGIN_ID = re.compile(r"""\bid\s*[(=]?\s*["']([\w.\-]+)["']""")
 
 
 def _add(found: dict[Gav, VersionFiles], gav: Gav, path: Path) -> None:
@@ -86,24 +76,6 @@ def cached_versions() -> dict[Gav, VersionFiles]:
     return {gav: files for gav, files in found.items() if files.poms or files.archives}
 
 
-def build_file_names(text: str) -> set[str]:
-    """`group:artifact` names a Gradle build file or version catalog declares."""
-    names = {f"{g}:{a}" for g, a in COORD.findall(text)}
-    names |= {f"{g}:{a}" for g, a in GROUP_NAME.findall(text)}
-    names |= {f"{pid}:{pid}.gradle.plugin" for pid in PLUGIN_ID.findall(text)}
-    return names
-
-
-def used_by_projects(wanted: Iterable[str], root: Path) -> dict[str, set[str]]:
-    """name -> the ~/src projects whose Gradle files declare it."""
-    want = set(wanted)
-    used: dict[str, set[str]] = {}
-    for path in project_files(BUILD_FILES, root=root):
-        for name in build_file_names(path.read_text(errors="replace")) & want:
-            used.setdefault(name, set()).add(project_of(path, root=root))
-    return used
-
-
 def artifacts(versions: dict[Gav, VersionFiles]) -> list[CachedArtifact]:
     """One CachedArtifact per group:artifact, licenses resolved per version."""
     repos = recorded_repos(GRADLE.parent, {(g, a) for g, a, _ in versions})
@@ -122,6 +94,10 @@ def artifacts(versions: dict[Gav, VersionFiles]) -> list[CachedArtifact]:
 
 
 def scan_maven_cache() -> list[Item]:
-    """One Item per group:artifact cached by Gradle or Maven."""
-    arts = artifacts(cached_versions())
-    return to_items("maven-cache", arts, used_by_projects((a.name for a in arts), SRC))
+    """One Item per group:artifact cached by Gradle or Maven, each with a removal for good."""
+    versions = cached_versions()
+    arts = artifacts(versions)
+    decls = declarations(SRC)
+    items = to_items("maven-cache", arts, {name: {d.project for d in found} for name, found in decls.items()})
+    add_removals(items, decls, dependency_graph(arts, versions), cache_dirs(versions, GRADLE, M2))
+    return items

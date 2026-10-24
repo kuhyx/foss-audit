@@ -166,8 +166,27 @@ versions (the note says when versions are licensed differently); a free package 
 has a runtime dependency on a non-free package of the same cache is `foss-partial`
 (`depends on non-free <name>`). `requiredBy` is filled from `~/src` lockfiles/build files at most
 four levels deep; empty means no project names it (transitive or stale), and the note says so.
-No `removeCommand`: the next build would download it again. `scripts/check_cache_licenses.py`
-runs them on the real caches and fails while any package's license is unknown.
+`scripts/check_cache_licenses.py` runs them on the real caches and fails while any package's
+license is unknown.
+
+`maven-cache` `removeCommand` removes the artifact for good, because deleting only the cache lets
+the next build download it again (`scan_cache_maven_decl/_catalog/_graph/_remove.py`). Declarations
+are read from `build.gradle[.kts]`, `settings.gradle[.kts]`, every `gradle/*.versions.toml` (accessor
+names from `create("x") { from(files(...)) }` in the settings file, `libs` by default) and `pom.xml`.
+A project *reaches* an artifact when it declares it or declares anything whose cached POM graph
+(runtime deps of every cached version plus `<parent>` POMs) pulls it in, so an empty `requiredBy`
+is not proof of staleness. For every reaching project the command first drops each reaching
+declaration: `${EDITOR:-vi} +<line> <file>` for lines a sed cannot cut safely (spread over several
+lines, opening a `{` block, sharing the line with another dependency, an assignment, any `pom.xml`
+block), bottom-up per file; then `sed -i` with exact-content line deletes (`\#^<line>$#d`) for the
+build-file line, the catalog entry and every accessor reference (`libs.a.b`, `libs.plugins.x`), and a
+substitution dropping the alias from each single-line `[bundles]` array (the bundle stays). After all
+projects comes one `rm -rf` of the artifact's dirs in the caches it was found in
+(`~/.gradle/caches/modules-2/files-2.1/<group>/<artifact>`, `~/.m2/repository/<group path>/<artifact>`).
+An artifact no project reaches is stale: the command is that `rm -rf` alone. Steps are joined by
+`; ` so one failing step does not hide the others. `removeVia`: `~/src/a declares it; ~/src/b via
+g:x → g:y → <artifact>` (one shortest chain per reaching declaration, at most five per project),
+or `stale: no ~/src project reaches it`. The other caches have no `removeCommand` yet.
 
 ### `Alternative`
 
