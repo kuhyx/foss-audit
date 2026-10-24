@@ -1,5 +1,5 @@
 """Scan the non-package-manager sources: npm, cargo, flatpak, AppImages, /opt,
-~/.local/bin, Wine and Waydroid (Steam is scan_steam.py).
+~/.local/bin (Wine and Waydroid are scan_games.py, Steam is scan_steam.py).
 
 Most of these carry no license metadata, so they default to "nonfree" (no
 license grant) and data/curated.json supplies the real verdict. Scripts are
@@ -15,25 +15,17 @@ from pathlib import Path
 
 from foss_audit.cited_terms import cited_item, is_elf
 from foss_audit.licenses import classify_text
+from foss_audit.local_bin_remove import bin_remove
 from foss_audit.model import NO_LICENSE, Item
 from foss_audit.own_license import license_for_path, origin_of, repo_root
 from foss_audit.pnpm_shim import pnpm_item
+from foss_audit.remove_cmd import module_name, removing, shell_path, sudo_for
 from foss_audit.scan_pacman import owned_by_pacman
 from foss_audit.scan_python import dist_license, script_owners
 
 HOME = Path.home()
-WINE_PREFIX = HOME / ".wine/drive_c"
-# Wine's own stub directories; anything else under Program Files is a real install.
-WINE_STOCK = {
-    "Common Files",
-    "Internet Explorer",
-    "Windows Media Player",
-    "Windows NT",
-    "Zero G Registry",
-}
 # Installers drop these into ~/.local/bin and they belong to another source.
 OPT_ROOT = Path("/opt")
-WAYDROID_IMAGE = Path("/var/lib/waydroid/images/system.img")
 TOOL_ROOTS = (HOME / ".local/share/pipx", HOME / ".local/share/uv")
 
 
@@ -66,7 +58,8 @@ def npm_items(manifests: list[Path], remove: str = "npm uninstall -g", where: st
         pkg = pkg_json.parent
         if pkg.is_symlink():
             # `npm link` of a local project: kuhy's own tutorial/tool code.
-            items.append(from_checkout(pkg.name, "npm-global", pkg_json.resolve(), "npm link"))
+            linked = from_checkout(pkg.name, "npm-global", pkg_json.resolve(), "npm link")
+            items.append(removing(linked, f"{remove} {module_name(pkg)}"))
             continue
         data = json.loads(pkg_json.read_text())
         # Some packages (qwen-code) ship only a LICENSE file, no manifest field.
@@ -130,14 +123,28 @@ def scan_appimages() -> list[Item]:
     found: list[Path] = []
     for depth in ("*", "*/*", "*/*/*"):
         found += [p for p in HOME.glob(f"{depth}.[Aa]pp[Ii]mage") if p.is_file()]
-    return [unknown(p.name.rsplit(".", 1)[0], "appimage", reason=str(p)) for p in sorted(set(found))]
+    return [
+        unknown(
+            p.name.rsplit(".", 1)[0], "appimage", reason=str(p), removeCommand=f"rm {shell_path(p, HOME)}"
+        )
+        for p in sorted(set(found))
+    ]
 
 
 def scan_opt() -> list[Item]:
     """Directories in /opt that no pacman package owns."""
     dirs = sorted(str(p) for p in OPT_ROOT.iterdir() if p.is_dir())
     owned = owned_by_pacman(dirs)
-    return [unknown(Path(d).name, "opt", reason=d) for d in dirs if d not in owned]
+    return [
+        unknown(
+            Path(d).name,
+            "opt",
+            reason=d,
+            removeCommand=f"{sudo_for(Path(d))}rm -rf {shell_path(Path(d), HOME)}",
+        )
+        for d in dirs
+        if d not in owned
+    ]
 
 
 def from_checkout(name: str, source: str, path: Path, how: str) -> Item:
@@ -206,29 +213,5 @@ def scan_local_bin() -> list[Item]:
     if not root.is_dir():
         return []
     owners = script_owners()
-    items = [classify_local_bin(p, owners) for p in sorted(root.iterdir()) if p.exists()]
-    return [i for i in items if i is not None]
-
-
-def scan_wine() -> list[Item]:
-    """Real installs under the default Wine prefix's Program Files (vendor/product)."""
-    items = []
-    for pf in ("Program Files", "Program Files (x86)"):
-        base = WINE_PREFIX / pf
-        if not base.is_dir():
-            continue
-        for vendor in sorted(p for p in base.iterdir() if p.is_dir() and p.name not in WINE_STOCK):
-            # Exactly two levels (vendor/suite/product). rglob would walk the
-            # whole install, which was 2.7 GB for CPLEX.
-            products = sorted(
-                g for c in vendor.iterdir() if c.is_dir() for g in c.iterdir() if g.is_dir()
-            ) or [vendor]
-            items += [unknown(p.name, "wine", reason=str(p.relative_to(WINE_PREFIX))) for p in products]
-    return items
-
-
-def scan_waydroid() -> list[Item]:
-    """The Waydroid Android image, if one is installed."""
-    if not WAYDROID_IMAGE.is_file():
-        return []
-    return [unknown("LineageOS (Waydroid)", "waydroid", reason="/var/lib/waydroid/images")]
+    found = [(p, classify_local_bin(p, owners)) for p in sorted(root.iterdir()) if p.exists()]
+    return [bin_remove(i, p, owners.get(str(p)), HOME) for p, i in found if i is not None]

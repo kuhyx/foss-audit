@@ -220,7 +220,8 @@ def test_scan_end_to_end(home: Path) -> None:
         "rpcs3",
     ]
     fx = items["Firefox Beta"]
-    assert (fx.source, fx.verdict, fx.dangling, fx.removeCommand) == ("desktop", "nonfree", False, None)
+    assert (fx.source, fx.verdict, fx.dangling) == ("desktop", "nonfree", False)
+    assert fx.removeCommand == f"rm '{sdk}' '{apps(home) / 'fx.desktop'}'"
     assert fx.reason == f"fx.desktop -> {sdk}; {NO_LICENSE}"
     lic = items["Licensed"]
     assert (lic.verdict, lic.license) == ("foss", "MIT")

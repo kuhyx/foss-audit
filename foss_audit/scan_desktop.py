@@ -29,6 +29,7 @@ from foss_audit.own_license import (
     origin_of,
     repo_root,
 )
+from foss_audit.remove_cmd import quote, removing
 from foss_audit.scan_misc import unknown
 from foss_audit.scan_pacman import owned_by_pacman
 
@@ -189,25 +190,25 @@ def display_name(launcher: Launcher, command: str) -> str:
     return Path(command).name if GENERIC_NAME.fullmatch(launcher.name) else launcher.name
 
 
-def quote(path: Path) -> str:
-    """Single-quote a path for a copy-pasteable shell command."""
-    return "'" + str(path).replace("'", "'\\''") + "'"
-
-
 def target_item(name: str, launcher: Launcher, target: Path) -> Item:
     """Item for an existing, uncovered target; a license file beside it decides, else unknown."""
     how = f"{launcher.path.name} -> {target}"
     lic = license_for_path(target)[0] or sibling_license(target)
+    remove = (
+        f"rm {quote(target)} {quote(launcher.path)}",
+        "the program and its launcher; files beside it stay",
+    )
     if not lic:
-        return unknown(name, "desktop", reason=f"{how}; {NO_LICENSE}")
+        return removing(unknown(name, "desktop", reason=f"{how}; {NO_LICENSE}"), *remove)
     verdict, reason = classify_text(lic)
-    return Item(
+    item = Item(
         name=name,
         source="desktop",
         verdict=verdict,
         license=lic,
         reason=f"{how}; {reason}" if reason else how,
     )
+    return removing(item, *remove)
 
 
 def dangling_item(name: str, launcher: Launcher, command: str) -> Item:

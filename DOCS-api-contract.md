@@ -70,6 +70,23 @@ pnpm global shims in `~/.local/bin` (a non-ELF `sh` file whose `exec` line runs
 Native `~/.local/bin` binaries that name their own terms (claude: "Anthropic's
 Commercial Terms") get that as a `LicenseRef-*` license, reason `-> <target>; binary cites …`.
 
+Remove commands of these sources (`remove_cmd.py`, `local_bin_remove.py`; paths are
+shell-quoted, a leading `~/` stays outside the quotes; `sudo ` only when someone else owns
+the path):
+
+- `local-bin`: a pip --user entry point removes its distribution
+  (`pip uninstall --user <dist>`, removeVia `entry point of pip-user package <dist>`); a pnpm
+  shim `pnpm remove -g <pkg>`; a link into `<prefix>/lib/node_modules/<pkg>`
+  `npm uninstall -g --prefix <prefix> <pkg> && rm <link>`; claude's native install (a
+  cited-terms binary in a `versions/` dir) `rm <link> && rm -rf <…/versions>`. Any other
+  symlink loses only the link (removeVia `symlink only; <target> stays`: the target can be a
+  checkout or an install dir holding data); loose files `rm <path>` (`rm -r` for a directory).
+- `conda`: `<root>/bin/conda remove -n <env> <pkg>`; a root without its own conda binary
+  gets `micromamba remove -p <env prefix> <pkg>`.
+- `appimage`: `rm <file>`; `opt`: `rm -rf <dir>`; `wine`: `rm -rf <product dir>` (removeVia:
+  the uninstall registry entry stays); `waydroid`: `sudo systemctl stop waydroid-container &&
+  sudo rm -rf /var/lib/waydroid [~/.local/share/waydroid]` (`scan_games.py`).
+
 Software no package manager tracks (`scan_unowned.py`):
 
 - `unowned`: real executables (not symlinks, 0-byte stubs, `*.so*`, `*.debug`, …) in
@@ -94,14 +111,17 @@ Software no package manager tracks (`scan_unowned.py`):
   `gh-copilot`, `android-sdk` (`~/sdk/Android/Sdk`, nonfree "Android SDK License"),
   `PrismLauncher java runtimes` (foss when OpenJDK), one item per
   `Steam/compatibilitytools.d/*` (GE-Proton), `godot export templates`,
-  `github actions-runner` and `llama.cpp (llama-server)` (mangatl's vendored copy).
+  `github actions-runner` and `llama.cpp (llama-server)` (mangatl's vendored copy). Every one
+  is `rm -rf <dir>`; the runner first runs `(cd <runner> && sudo ./svc.sh uninstall)` for each
+  runner installed as a service, and its removeVia says to deregister it on GitHub.
 
 - `toolchain` (`scan_toolchain.py`): one item per toolchain family with every installed
   version in `version` (`~/.rustup/toolchains` -> `rust (rustup)`, `~/.pyenv/versions` ->
   `python (pyenv)` minus virtualenvs, `~/.nvm/versions/node` -> `node (nvm)`,
   `~/sdk/fvm/versions` -> `flutter (fvm)`, `~/sdk/go` -> `go` only when `bin/go` exists);
   the license is the family constant, judged against the LICENSE file the toolchain ships
-  when there is one; no `removeCommand`. Global tools are one item each: `.dotnet/tools`
+  when there is one; `removeCommand` is `rustup toolchain uninstall <toolchain…>`,
+  `pyenv uninstall -f <version…>`, else `rm -rf <version dir…>` (nvm, fvm, `~/sdk/go`). Global tools are one item each: `.dotnet/tools`
   (LICENSE or nuspec in `.store`), `~/.pub-cache/bin` (LICENSE of the hosted package),
   user gems (`s.licenses` of the gemspec), and `go install`ed tools in ~/sdk/go/bin or
   ~/go/bin, one item per module (`go version -m`, LICENSE from the module cache); anything without a license is `nonfree`.
@@ -133,6 +153,8 @@ named by `Name=` (Discord's `Game <id>` stubs by the target's file name), licens
 beside or above the target, else unknown (curated). A launcher whose target does not exist
 is `dangling: true`, reason `launcher without target: <exec path>`, `removeCommand`
 `rm '<desktop file>'`; dead launchers owned by a pacman package are left to the pacman item.
+A live target's `removeCommand` is `rm '<target>' '<desktop file>'` (removeVia: files beside
+the program stay).
 
 Package caches (`cache_common.py` + `scan_cache_<eco>.py`; sources `maven-cache`
 (`~/.gradle/caches/modules-2` + `~/.m2`), `pub-cache`, `npm-cache` (pnpm stores + `~/.npm/_cacache`),

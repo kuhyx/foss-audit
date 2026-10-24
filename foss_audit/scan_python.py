@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 from email.parser import HeaderParser
 from pathlib import Path
 from urllib.parse import unquote
@@ -11,11 +12,14 @@ from urllib.parse import unquote
 from foss_audit.licenses import classify_text
 from foss_audit.model import Item, Source
 from foss_audit.own_license import OWN_MARKER, checkout_for_url, declared_license, is_kuhy_repo, repo_root
+from foss_audit.remove_cmd import shell_path, sudo_for
 
 HOME = Path.home()
 PIPX_VENVS = HOME / ".local/share/pipx/venvs"
 UV_TOOLS = HOME / ".local/share/uv/tools"
 CONDA_ROOTS = (Path("/opt/miniconda3"), HOME / "miniconda3", HOME / "micromamba")
+# Shared with the ~/.local/bin entry points a pip --user dist installs.
+PIP_USER_REMOVE = "pip uninstall --user {name}"
 
 
 def _norm(name: str) -> str:
@@ -124,8 +128,7 @@ def scan_pip_user() -> list[Item]:
     items: list[Item] = []
     for site in user_sites():
         items += [
-            _dist_item(m, "pip-user", "pip uninstall --user {name}")
-            for m in sorted(site.glob("*.dist-info/METADATA"))
+            _dist_item(m, "pip-user", PIP_USER_REMOVE) for m in sorted(site.glob("*.dist-info/METADATA"))
         ]
     return items
 
@@ -154,6 +157,14 @@ def scan_uv_tools() -> list[Item]:
     return _tool_venvs(UV_TOOLS, "uv-tool", "uv tool uninstall {name}")
 
 
+def conda_remove(root: Path, prefix: Path, env: str, package: str) -> str:
+    """Remove `package` from one env with the root's own conda; micromamba when the root has none."""
+    conda, name = root / "bin/conda", shlex.quote(package)
+    if conda.is_file():
+        return f"{sudo_for(root)}{shell_path(conda, HOME)} remove -n {shlex.quote(env)} {name}"
+    return f"{sudo_for(root)}micromamba remove -p {shell_path(prefix, HOME)} {name}"
+
+
 def scan_conda() -> list[Item]:
     """Packages in every conda env (base + envs/*) under the known roots."""
     items: list[Item] = []
@@ -164,15 +175,17 @@ def scan_conda() -> list[Item]:
                 data = json.loads(rec.read_text())
                 lic = str(data.get("license") or "")
                 verdict, reason = classify_text(lic)
+                package = str(data.get("name", rec.stem))
                 items.append(
                     Item(
-                        name=f"{data.get('name', rec.stem)} [{env}]",
+                        name=f"{package} [{env}]",
                         version=data.get("version"),
                         source="conda",
                         verdict=verdict,
                         license=lic,
                         reason=reason,
                         url=None,
+                        removeCommand=conda_remove(root, meta_dir.parent, env, package),
                     ),
                 )
     return items
