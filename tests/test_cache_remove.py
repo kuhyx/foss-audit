@@ -123,13 +123,22 @@ def test_stale_deletes_only_the_cache(home: Path) -> None:
     )
 
 
-def test_listed_but_unreached_blames_sdk_roots_else_relocks_once(home: Path) -> None:
+def test_sdk_pinned_never_removes_the_sdk_else_relocks_once(home: Path) -> None:
     flutter = manifest(home, "src/f", flutter="", http="")
     flutter.locked, flutter.fallback = frozenset({"meta"}), ("flutter",)
     flutter.relock = (home / "src/f", "pub get")
-    assert Planner([flutter], {}).plan("meta", "c") == (
-        "(cd ~/src/f && tool remove flutter); c",
-        "~/src/f via flutter (SDK, its pubspec is not in the cache) → meta",
+    g = manifest(home, "src/g", flutter="")
+    g.locked, g.fallback, g.relock = frozenset({"meta"}), ("flutter",), (home / "src/g", "pub get")
+    pinned = "pinned by the Flutter SDK; only removable with the app (~/src/f, ~/src/g)"
+    assert Planner([flutter, g], {}).plan("meta", "c") == ("c", pinned)
+    # Even with a cached edge out of it, an SDK package is never a parent to remove.
+    only_f = "pinned by the Flutter SDK; only removable with the app (~/src/f)"
+    assert Planner([flutter], {"flutter": {"meta"}}).plan("meta", "c") == ("c", only_f)
+    # A project reaching it through a real parent keeps its step; only the SDK blame goes.
+    other = manifest(home, "src/other", pkg="")
+    assert Planner([flutter, other], {"pkg": {"meta"}}).plan("meta", "c") == (
+        "(cd ~/src/other && tool remove pkg); c",
+        "pinned by the Flutter SDK; only removable with the app (~/src/f); ~/src/other via pkg → meta",
     )
     root = manifest(home, "src/ws", a="")
     member = manifest(home, "src/ws/m", b="")

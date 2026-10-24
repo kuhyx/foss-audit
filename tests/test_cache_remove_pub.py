@@ -121,13 +121,11 @@ def test_unlisted_but_reachable_is_transitive(items: dict[str, Item]) -> None:
     )
 
 
-def test_sdk_dependency_is_blamed_on_the_sdk_packages(items: dict[str, Item]) -> None:
+def test_sdk_pinned_package_only_loses_its_cache_entry(items: dict[str, Item]) -> None:
     meta = items["meta"]
-    assert (
-        meta.removeCommand
-        == f"(cd ~/src/app && flutter pub remove flutter inline flutter_test); rm -rf {HOSTED}/meta-1.0.0"
-    )
-    assert meta.removeVia.startswith("~/src/app via flutter (SDK, its pubspec is not in the cache) → meta")
+    assert meta.removeCommand == f"rm -rf {HOSTED}/meta-1.0.0"
+    assert meta.removeVia == "pinned by the Flutter SDK; only removable with the app (~/src/app)"
+    assert not any("pub remove flutter" in str(i.removeCommand) for i in items.values())
 
 
 def test_locked_through_a_path_dependency_is_not_blamed_on_the_sdk(items: dict[str, Item]) -> None:

@@ -8,9 +8,10 @@ pulls it in, so deleting the cache alone is not removal. For one package:
 - every manifest that reaches it through other dependencies (its lockfile's
   graph, plus the dependencies the cache itself records) gets each direct
   parent on such a chain removed, every chain spelled out in `removeVia`;
-- a lockfile that lists it although nothing declared reaches it is blamed on
-  the manifest's `fallback` roots (pub's SDK packages, whose pubspecs are not
-  in the cache), else re-locked;
+- a lockfile that lists it although nothing declared reaches it is re-locked,
+  unless the manifest has `fallback` roots (pub's SDK packages, whose pubspecs
+  are not in the cache): then the SDK pins it, nothing project-side is removed
+  and removeVia names the apps;
 - its own cache entries are deleted last, once.
 
 Nothing reaches it: it is stale and only its cache entries go. Steps are
@@ -41,6 +42,8 @@ Found = tuple[list[str], list[str]]
 CacheStep = Callable[[str], tuple[str, str]]
 # Directories that are build output or vendored copies, never a project.
 MEMBER_DEPTH = 3
+# Marks a removeVia part for a project whose SDK pins the package (collected in plan()).
+PINNED = "\0pinned:"
 NOT_PROJECT = frozenset({"node_modules", "target", "build", "ephemeral", "flutter_assets"})
 
 
@@ -173,7 +176,8 @@ class Planner:
 
     def _parents(self, m: Manifest, name: str) -> list[tuple[str, str]]:
         """(direct parent, how it reaches `name`) for every chain into `name`."""
-        roots = [r for r in sorted(m.direct) if r != name and r not in m.local]
+        # SDK packages (fallback) are never a parent to remove.
+        roots = [r for r in sorted(m.direct) if r != name and r not in m.local and r not in m.fallback]
         return [(r, " → ".join(self._chain(m, r, name))) for r in roots if name in self._walk(m, r)]
 
     @staticmethod
@@ -201,14 +205,15 @@ class Planner:
         # Pulled in by one of its path dependencies, whose own manifest already removes it.
         if through := sorted(local & covered):
             return [([], [f"{shown(key)} lockfile lists {name} through its local {', '.join(through)}"])]
-        # An SDK package's dependency (pub), else a stale entry that re-locking drops.
-        sdk = f"(SDK, its pubspec is not in the cache) → {name}"
-        found = [self._steps(m, name, [(r, f"{r} {sdk}") for r in m.fallback]) for m in group]
-        if not any(steps for steps, _ in found) and group[0].relock:
-            folder, command = group[0].relock
-            why = f"{shown(folder)} lockfile lists {name} but nothing it declares reaches it"
-            found = [([f"(cd {shell_path(folder)} && {command})"], [why])]
-        return found
+        # Pinned by an SDK package (pub's flutter / flutter_test): removing the SDK
+        # is no removal, so only the cache entry goes; plan() names the apps.
+        if any(m.fallback for m in group):
+            return [([], [PINNED + shown(key)])]
+        # A stale entry that re-locking drops (a manifest with `locked` names always has `relock`).
+        assert group[0].relock
+        folder, command = group[0].relock
+        why = f"{shown(folder)} lockfile lists {name} but nothing it declares reaches it"
+        return [([f"(cd {shell_path(folder)} && {command})"], [why])]
 
     def plan(self, name: str, cache_step: str, note: str = "") -> tuple[str, str]:
         """(removeCommand, removeVia) for package `name`."""
@@ -228,6 +233,10 @@ class Planner:
                 found = self._unreached(key, group, name, covered)
             steps += [s for more, _ in found for s in more]
             via += [v for _, why in found for v in why]
+        if apps := [v.removeprefix(PINNED) for v in via if v.startswith(PINNED)]:
+            first = next(i for i, v in enumerate(via) if v.startswith(PINNED))
+            via = [v for v in via if not v.startswith(PINNED)]
+            via.insert(first, f"pinned by the Flutter SDK; only removable with the app ({', '.join(apps)})")
         if not via:
             via.append("stale: no ~/src project reaches it, so only its cache entries are deleted")
         return joined([*steps, cache_step]), "; ".join(dict.fromkeys([*via, *([note] if note else [])]))

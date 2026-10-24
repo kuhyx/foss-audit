@@ -39,7 +39,7 @@ to three levels below a lockfile; build output, vendored copies and hidden direc
   dependencies are never blamed (per manifest: a name linked locally in one repo is a registry
   package in another);
 - a lockfile that lists it although nothing declared reaches it is re-locked once per lockfile
-  (pub: blamed on the SDK packages instead, whose pubspecs are not in the cache), unless it is
+  (pub: pinned by the SDK instead, see below), unless it is
   that project's own package or one of its path dependencies' manifests already removes it
   (`~/src/app lockfile lists x through its local pkg`);
 - several projects: every project's step, then the package's own cache entries deleted once. No
@@ -57,8 +57,11 @@ note on anything else the cache step deletes.
   and `git/checkouts/<db>/<rev>`.
 - pub: `flutter pub remove` when the pubspec depends on the Flutter SDK, else `dart pub remove`, in
   the declaring pubspec's directory (a workspace member's own); pubspec.lock has no edges, so the
-  graph is the cached pubspecs'. A locked package nothing cached reaches is blamed on the pubspec's
-  `sdk:` dependencies (`flutter`, `flutter_test`); re-lock `dart|flutter pub get`. Cache step `rm -rf`
+  graph is the cached pubspecs'. A locked package nothing cached reaches comes from the pubspec's
+  `sdk:` dependencies (`flutter`, `flutter_test`), whose pubspecs are not in the cache. An SDK
+  package is never removed: that project gets no step, only the cache entry goes, and `removeVia`
+  says `pinned by the Flutter SDK; only removable with the app (<projects>)`. Projects that reach
+  it through a real parent keep their steps. Re-lock `dart|flutter pub get`. Cache step `rm -rf`
   of `hosted/<server>/<name>-<ver>`, `hosted-hashes/<server>/<name>-<ver>.sha256` and whole
   `git/<repo>-<sha>` checkouts (the note names the other packages a checkout holds).
 - pip: projects are `pyproject.toml` and `requirements*.txt`. `poetry remove [--group g]` for poetry

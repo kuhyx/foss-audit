@@ -6,7 +6,8 @@ SDK, else `dart pub remove`, always in the declaring package's directory (a
 workspace member's own). pubspec.lock records no edges, so the graph is the
 cached pubspecs' dependencies; a package the lock lists that no cached chain
 reaches comes from an SDK package (flutter, flutter_test...), whose pubspec is
-not in the cache, so those are blamed (fallback). Path dependencies are local.
+not in the cache (fallback): the SDK is never removed, so only the cache entry
+goes ("pinned by the Flutter SDK"). Path dependencies are local.
 The cache step deletes hosted/<server>/<name>-<ver> (+ its hosted-hashes
 entry) and whole git checkouts, naming the other packages a checkout holds.
 """
