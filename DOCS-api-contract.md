@@ -144,8 +144,35 @@ versions (the note says when versions are licensed differently); a free package 
 has a runtime dependency on a non-free package of the same cache is `foss-partial`
 (`depends on non-free <name>`). `requiredBy` is filled from `~/src` lockfiles/build files at most
 four levels deep; empty means no project names it (transitive or stale), and the note says so.
-No `removeCommand`: the next build would download it again. `scripts/check_cache_licenses.py`
-runs them on the real caches and fails while any package's license is unknown.
+`scripts/check_cache_licenses.py` runs them on the real caches and fails while any package's
+license is unknown.
+
+`removeCommand` of a `pip-cache`, `npm-cache`, `pub-cache` or `cargo-cache` item is never null and
+removes the package for good (`cache_remove.py` + `cache_remove_<eco>.py`). Deleting the cache alone
+is not enough while a `~/src` project pulls the package in, since the next build downloads it again:
+
+- a manifest that declares it gets the ecosystem's remove command, run in that manifest's own
+  directory (`(cd ~/src/x/sub && cargo remove --dev foo)`);
+- a manifest that reaches it through other dependencies gets every direct parent on such a chain
+  removed. The graph is the nearest lockfile's (authoritative for what it lists), and the
+  dependencies the cached copies declare fill in the rest, so an item with empty `requiredBy` is
+  still transitive when a project reaches it. Workspace members and path dependencies are never
+  blamed;
+- a lockfile that lists it although nothing declared reaches it is re-locked once per lockfile
+  (pub: blamed on the SDK packages instead, whose pubspecs are not in the cache);
+- several projects: every project's step, then the package's own cache entries deleted once. No
+  project reaches it: it is stale and only its exact cache entries are deleted.
+
+Steps are subshells joined with `; `, so a failed `cd` never runs a removal elsewhere and one failing
+step never hides the others. Paths keep `~` expandable, and cache paths are always exact, never
+globs (zsh aborts on a glob that matches nothing). `removeVia` explains the shape:
+`~/src/app declares foo`, `~/src/sufler/tts via torch → nvidia-cudnn-cu13`, or `stale: …`, plus a
+note on anything else the cache step deletes.
+
+- cargo: `cargo remove <manifest key>` (a renamed dependency's key, not its `package =`) with
+  `--dev`, `--build` and `--target <cfg>`; re-lock `cargo update --workspace`; cache step
+  `rm -rf` of `~/.cargo/registry/cache/<index>/<name>-<ver>.crate`, `registry/src/<index>/<name>-<ver>`
+  and `git/checkouts/<db>/<rev>`.
 
 ### `Alternative`
 
