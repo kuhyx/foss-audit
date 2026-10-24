@@ -169,25 +169,8 @@ four levels deep; empty means no project names it (transitive or stale), and the
 `scripts/check_cache_licenses.py` runs them on the real caches and fails while any package's
 license is unknown.
 
-`maven-cache` `removeCommand` removes the artifact for good, because deleting only the cache lets
-the next build download it again (`scan_cache_maven_decl/_catalog/_graph/_remove.py`). Declarations
-are read from `build.gradle[.kts]`, `settings.gradle[.kts]`, every `gradle/*.versions.toml` (accessor
-names from `create("x") { from(files(...)) }` in the settings file, `libs` by default) and `pom.xml`.
-A project *reaches* an artifact when it declares it or declares anything whose cached POM graph
-(POM runtime deps of every cached version, `<parent>` POMs, and the dependencies and `available-at`
-links of cached Gradle `.module` files, which is what Gradle resolves for Kotlin Multiplatform
-artifacts) pulls it in, so an empty `requiredBy` is not proof of staleness. For every reaching project the command first drops each reaching
-declaration: `${EDITOR:-vi} +<line> <file>` for lines a sed cannot cut safely (spread over several
-lines, opening a `{` block, sharing the line with another dependency, an assignment, any `pom.xml`
-block), bottom-up per file; then `sed -i` with exact-content line deletes (`\#^<line>$#d`) for the
-build-file line, the catalog entry and every accessor reference (`libs.a.b`, `libs.plugins.x`), and a
-substitution dropping the alias from each single-line `[bundles]` array (the bundle stays). After all
-projects comes one `rm -rf` of the artifact's dirs in the caches it was found in
-(`~/.gradle/caches/modules-2/files-2.1/<group>/<artifact>`, `~/.m2/repository/<group path>/<artifact>`).
-An artifact no project reaches is stale: the command is that `rm -rf` alone. Steps are joined by
-`; ` so one failing step does not hide the others. `removeVia`: `~/src/a declares it; ~/src/b via
-g:x → g:y → <artifact>` (one shortest chain per reaching declaration, at most five per project),
-or `stale: no ~/src project reaches it`.
+Every `*-cache` `removeCommand` removes the package for good, from each `~/src` project that
+reaches it and then from the cache; see `DOCS-remove-commands.md`.
 
 ### `Alternative`
 

@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from foss_audit import cache_common
+from foss_audit import cache_common, cache_remove_cargo
 from foss_audit.cache_common import CachedArtifact, CachedVersion, project_files, project_of, to_items
 from foss_audit.model import Item
 from foss_audit.own_license import LICENSE_FILE, identify
@@ -220,5 +220,8 @@ def lock_users() -> dict[str, set[str]]:
 
 
 def scan_cargo_cache() -> list[Item]:
-    """Every crate in ~/.cargo's registry cache and git checkouts."""
-    return to_items("cargo-cache", cached_artifacts(), lock_users())
+    """Every crate in ~/.cargo's registry cache and git checkouts, each with its remove command."""
+    arts = cached_artifacts()
+    items = to_items("cargo-cache", arts, lock_users())
+    cache_remove_cargo.fill(items, arts, CARGO, SRC)
+    return items

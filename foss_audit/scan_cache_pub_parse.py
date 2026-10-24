@@ -81,6 +81,29 @@ def parse_pubspec(text: str) -> Pubspec:
     )
 
 
+def _sources(lines: list[str]) -> list[tuple[str, str]]:
+    """(name, "sdk" | "path" | "git" | "hosted") of each key of a dependency block."""
+    nested = [line for line in lines[1:] if line.strip() and not line.lstrip().startswith("#")]
+    found: dict[str, str] = {}
+    name = ""
+    for line in nested:
+        value = line
+        if _indent(line) == _indent(nested[0]):
+            key, _, value = line.strip().partition(":")
+            name = scalar(key)
+            found[name] = "hosted"
+        source = next((s for s in ("sdk", "path", "git") if f"{s}:" in value), None)
+        if source and found[name] == "hosted":
+            found[name] = source
+    return list(found.items())
+
+
+def declared_deps(text: str) -> list[tuple[str, str]]:
+    """(name, source) of every dependency and dev_dependency a pubspec.yaml declares."""
+    blocks = _blocks(text)
+    return [dep for key in ("dependencies", "dev_dependencies") for dep in _sources(blocks.get(key, [""]))]
+
+
 def lock_packages(text: str) -> list[str]:
     """Package names of a pubspec.lock: the 2-space keys under `packages:`."""
     lines = _blocks(text).get("packages", [""])[1:]

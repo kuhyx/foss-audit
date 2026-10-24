@@ -49,3 +49,13 @@ def upstream_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     git may only fetch file:// repos, so a stray network lookup fails at once."""
     monkeypatch.setattr(upstream_license, "CACHE_FILE", tmp_path / "upstream-cache/upstream-license.json")
     monkeypatch.setitem(upstream_git.ENV, "GIT_ALLOW_PROTOCOL", "file")
+
+
+@pytest.fixture(autouse=True)
+def no_real_projects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove commands are planned from ~/src projects: every cache scanner looks
+    under the test's own (empty unless the test fills it) src dir instead."""
+    from foss_audit import scan_cache_cargo, scan_cache_npm, scan_cache_pip, scan_cache_pub
+
+    for module in (scan_cache_cargo, scan_cache_npm, scan_cache_pip, scan_cache_pub):
+        monkeypatch.setattr(module, "SRC", tmp_path / "src")

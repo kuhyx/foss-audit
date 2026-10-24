@@ -25,6 +25,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from foss_audit import cache_remove_pub
 from foss_audit.cache_common import (
     SRC,
     CachedArtifact,
@@ -153,6 +154,20 @@ def used_by() -> dict[str, set[str]]:
     return users
 
 
+def git_packages() -> dict[Path, list[str]]:
+    """git/<repo>-<sha> checkout -> names of the packages in it."""
+    found: dict[Path, list[str]] = {}
+    for checkout in _dirs(PUB_CACHE / "git"):
+        for directory in _git_packages(checkout) if checkout.name != "cache" else ():
+            spec = _spec(directory)
+            if spec.name and spec.version:
+                found.setdefault(checkout, []).append(spec.name)
+    return found
+
+
 def scan_pub_cache() -> list[Item]:
-    """One Item per cached Dart/Flutter package, worst license over its versions."""
-    return to_items("pub-cache", artifacts(), used_by())
+    """One Item per cached Dart/Flutter package (worst license over its versions) with its remove command."""
+    arts = artifacts()
+    items = to_items("pub-cache", arts, used_by())
+    cache_remove_pub.fill(items, arts, PUB_CACHE, SRC, git_packages())
+    return items

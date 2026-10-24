@@ -13,6 +13,7 @@ import re
 from collections.abc import Iterable
 from pathlib import Path
 
+from foss_audit import cache_remove_npm, scan_cache_npm_cacache, scan_cache_npm_pnpm
 from foss_audit.cache_common import SRC, CachedArtifact, project_files, project_of, to_items
 from foss_audit.model import Item, Source
 from foss_audit.scan_cache_npm_cacache import scan_cacache
@@ -22,8 +23,8 @@ from foss_audit.scan_cache_npm_pnpm import scan_pnpm_store
 SOURCE: Source = "npm-cache"
 LOCKFILES = ("pnpm-lock.yaml", "package-lock.json")
 # A pnpm-lock.yaml package key at indent 2: `  /name@1.0.0:`, `  name@1.0.0(peer@2):`
-# or `  '@scope/name@1.0.0':`, under the top-level `packages:` / `snapshots:`.
-LOCK_KEY = re.compile(r"^  '?/?((?:@[^/@\s']+/)?[^@\s'/(]+)@")
+# or `  '@scope/name@1.0.0':` (`"` when prettier rewrote it), under `packages:` / `snapshots:`.
+LOCK_KEY = re.compile(r"""^  ['"]?/?((?:@[^/@\s'"]+/)?[^@\s'"/(]+)@""")
 LOCK_SECTIONS = ("packages:", "snapshots:")
 
 
@@ -101,4 +102,7 @@ def scan_npm_cache() -> list[Item]:
     # A blank pnpm reading still lets npm's copy of the same version be read.
     found += scan_cacache({(f.name, f.cached.version) for f in found if f.cached.license})
     used_by = lock_users(project_files(LOCKFILES, SRC), SRC)
-    return to_items(SOURCE, merge(found), used_by)
+    arts = merge(found)
+    items = to_items(SOURCE, arts, used_by)
+    cache_remove_npm.fill(items, arts, SRC, scan_cache_npm_cacache.CACACHE, scan_cache_npm_pnpm.STORE)
+    return items
