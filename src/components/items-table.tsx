@@ -204,6 +204,9 @@ export function ItemsTable({
                   checked={checked.has(row.original.id)}
                   name={row.original.name}
                   onCheck={(isShift): void => {
+                    // Back to the scroller, so Arrow keys and Space keep
+                    // working on the open row after a mouse click.
+                    scrollReference.current?.focus({ preventScroll: true });
                     onCheck(row.original.id, order, isShift);
                   }}
                 />

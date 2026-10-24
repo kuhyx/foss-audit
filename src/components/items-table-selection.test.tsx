@@ -136,6 +136,15 @@ describe("ItemsTable selection", () => {
     expect(checked()).toEqual([]);
   });
 
+  it("hands focus back to the scroller after a checkbox click, and skips row checkboxes on Tab", async () => {
+    const { checked, user } = setup({ selected: "pacman:unrar" });
+    await user.click(box("bash"));
+    expect(screen.getByRole("table")).toHaveFocus();
+    expect(box("bash")).toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(screen.getByRole("table"), { key: " " });
+    expect(checked()).toEqual(["pacman:bash", "pacman:unrar"]);
+  });
+
   it("ignores Space when no row is open", () => {
     const { checked } = setup();
     const isEvent = fireEvent.keyDown(screen.getByRole("table"), { key: " " });

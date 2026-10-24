@@ -3,7 +3,9 @@
  * header for "every row the current filter shows".
  *
  * A row checkbox stops its click from reaching the row, whose own click opens
- * the detail panel; shift is read from that click for range selection.
+ * the detail panel; shift is read from that click for range selection. Row
+ * checkboxes are not Tab stops: the scroller stays the table's one focus stop
+ * (Arrow keys, Space), and items-table.tsx hands focus back to it on click.
  */
 import type { HeaderCheck } from "../lib/selection.ts";
 
@@ -26,6 +28,7 @@ export function RowCheckbox({ checked, name, onCheck }: RowCheckboxProps): React
       // Controlled through onClick (which carries shiftKey); readOnly only
       // tells React that the missing onChange is intentional.
       readOnly
+      tabIndex={-1}
       type="checkbox"
     />
   );

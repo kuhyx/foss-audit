@@ -30,10 +30,9 @@ describe("clickRow", () => {
     expect(ids(state)).toEqual(["a", "b", "c"]);
   });
 
-  it("gives the range the clicked row's new state, so shift-click can also deselect", () => {
-    const all = setRows(EMPTY_SELECTION, ORDER, true);
-    const state = clickRow({ ...all, anchor: "a" }, "c", ORDER, true);
-    expect(ids(state)).toEqual(["d", "e"]);
+  it("always selects a shift range, even onto rows that are already selected", () => {
+    const some = { anchor: "a", ids: new Set(["c", "hidden"]) };
+    expect(ids(clickRow(some, "c", ORDER, true))).toEqual(["a", "b", "c", "hidden"]);
   });
 
   it("treats shift-click as a plain toggle without a visible anchor", () => {

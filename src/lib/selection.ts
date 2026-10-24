@@ -30,9 +30,10 @@ export function setRows(state: SelectionState, ids: readonly string[], isOn: boo
 
 /**
  * A click (or Space) on one row. With shift and an anchor that is still shown,
- * every row from the anchor to `id` inclusive takes the state `id` toggles to,
- * so shift-click deselects a range as readily as it selects one. Without a
- * visible anchor it is a plain toggle. Either way `id` becomes the anchor.
+ * every row from the anchor to `id` inclusive is selected (never deselected:
+ * "filter, select all, filter again, shift-add more" must not drop rows that
+ * were already in). Without shift or a visible anchor it is a plain toggle.
+ * Either way `id` becomes the anchor.
  */
 export function clickRow(
   state: SelectionState,
@@ -40,11 +41,13 @@ export function clickRow(
   order: readonly string[],
   isShift: boolean,
 ): SelectionState {
-  const isOn = !state.ids.has(id);
   const from = state.anchor === null ? -1 : order.indexOf(state.anchor);
   const to = order.indexOf(id);
-  const range = isShift && from !== -1 ? order.slice(Math.min(from, to), Math.max(from, to) + 1) : [id];
-  return { ...setRows(state, range, isOn), anchor: id };
+  const next =
+    isShift && from !== -1
+      ? setRows(state, order.slice(Math.min(from, to), Math.max(from, to) + 1), true)
+      : setRows(state, [id], !state.ids.has(id));
+  return { ...next, anchor: id };
 }
 
 export type HeaderCheck = "all" | "none" | "some";
