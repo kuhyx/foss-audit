@@ -72,6 +72,8 @@ window.__fa = {
   },
   button: (prefix) => [...document.querySelectorAll('.selection-bar button')]
     .find((b) => b.textContent.startsWith(prefix)),
+  sortButton: (column) => [...document.querySelectorAll('.th-button')]
+    .find((b) => b.textContent.trim().startsWith(column)),
   center(el) {
     const r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -131,6 +133,26 @@ class Page:
         self.b.call("Input.insertText", text=text)
         want = json.dumps(text)
         self.b.wait(f"new URLSearchParams(location.search).get('q') === {want}", f"q={text} in the URL")
+        self._settle()
+        self.js("document.activeElement.blur()")
+
+    def sort_by(self, column: str) -> str:
+        """Click a column's sort button; return the new `sort=` URL value."""
+        before = self.js("new URLSearchParams(location.search).get('sort')")
+        spot = self.js(f"__fa.center(__fa.sortButton({json.dumps(column)}))")
+        self.b.click(spot["x"], spot["y"])
+        sort = str(
+            self.b.wait(
+                f"(() => {{ const s = new URLSearchParams(location.search).get('sort');"
+                f" return s !== null && s !== {json.dumps(before)} && s; }})()",
+                f"sort by {column} in the URL",
+            )
+        )
+        self._settle()
+        return sort
+
+    def _settle(self) -> None:
+        """Wait until the result count and first rows stop changing (deferred render)."""
         last, same = "", 0
         deadline = time.monotonic() + 10
         while same < 3 and time.monotonic() < deadline:
@@ -138,7 +160,6 @@ class Page:
             same = same + 1 if snap == last else 0
             last = snap
             time.sleep(0.05)
-        self.js("document.activeElement.blur()")
 
     def click_row(self, index: int, *, shift: bool = False) -> None:
         """Real click on the checkbox of displayed row `index` (0-based)."""

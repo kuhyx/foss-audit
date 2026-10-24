@@ -68,7 +68,10 @@ class Flow:
         self.notes: list[str] = []
 
     def expect_count(self, want: int, what: str) -> None:
-        self.p.b.wait(f"__fa.count() === {want}", f"{what}: bar count {want} (it shows {self.p.count()})")
+        try:
+            self.p.b.wait(f"__fa.count() === {want}", f"{what}: bar count {want}", timeout=3)
+        except AssertionError as err:
+            raise AssertionError(f"{err}; the bar shows {self.p.count()}") from None
 
     def expect_view_marks(self, rows: list[dict[str, Any]]) -> None:
         wrong = [r["index"] + 1 for r in rows if r["checked"] != (r["id"] in self.picked)]
@@ -112,8 +115,22 @@ class Flow:
         check(not self.p.panel_open(), "clicking a row checkbox opened the detail panel")
         self.notes.append(f"+1 ({target['id']}): bar {self.p.count()}, no panel")
 
+    def sorted_rows(self) -> tuple[str, list[dict[str, Any]]]:
+        """Sort by name until the top rows are NOT in scan order, so a range
+        taken from `items` instead of the displayed rows would pick other ids."""
+        scan_pos = {item_id: pos for pos, item_id in enumerate(self.items)}
+        for _ in range(2):  # ascending, then descending
+            sort = self.p.sort_by("Name")
+            rows = self.p.collect()
+            top = [scan_pos[r["id"]] for r in rows[:7]]
+            if top != sorted(top):
+                return sort, rows
+        raise AssertionError(
+            "sorting by name leaves the top rows in scan order: the range test would be vacuous"
+        )
+
     def shift_range(self) -> None:
-        rows = self.p.collect()
+        sort, rows = self.sorted_rows()
         check(len(rows) >= 6, f"need 6 rows for the range, view has {len(rows)}")
         before = len(self.picked)
         # A plain click toggles row 2 (it becomes the anchor); the shift-click
@@ -124,7 +141,7 @@ class Flow:
         self.expect_count(len(self.picked), "shift range 2..6")
         check(not self.p.panel_open(), "shift-clicking a checkbox opened the detail panel")
         self.expect_view_marks(self.p.collect())
-        self.notes.append(f"range 2..6: +{len(self.picked) - before}, bar {self.p.count()}")
+        self.notes.append(f"sort={sort}, range 2..6: +{len(self.picked) - before}, bar {self.p.count()}")
 
     def layout(self, table_png: str, bar_png: str) -> None:
         geo = self.p.js(
@@ -172,7 +189,7 @@ def main() -> int:
         ("filter com.google, header checkbox selects every shown row", flow.select_all_google),
         ("filter firebase: count kept, header partial/all", flow.refilter_firebase),
         ("select one more (no detail panel)", flow.add_one),
-        ("shift+click rows 2..6", flow.shift_range),
+        ("sort by name, shift+click rows 2..6", flow.shift_range),
         ("layout + screenshots", lambda: flow.layout(table_png, bar_png)),
         ("Copy Claude prompt", flow.copy_prompt),
         ("Copy remove commands", flow.copy_script),
