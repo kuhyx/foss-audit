@@ -13,7 +13,8 @@ from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
 
-from foss_audit.cache_common import CachedArtifact, CachedVersion, to_items
+from foss_audit import cache_remove_pip
+from foss_audit.cache_common import SRC, CachedArtifact, CachedVersion, to_items
 from foss_audit.model import Item
 from foss_audit.scan_cache_pip_meta import Record, known
 from foss_audit.scan_cache_pip_net import resolve
@@ -24,6 +25,8 @@ HOME = Path.home()
 PIP_CACHE = HOME / ".cache/pip"
 UV_CACHE = HOME / ".cache/uv"
 Reader = Callable[[Path, str], "list[Record] | None"]
+# Distribution name -> (origin label, cache file) of every copy read.
+Where = dict[str, list[tuple[str, Path]]]
 # (cache root, bounded glob, origin label, reader). selfcheck/ only holds pip's
 # version-check state and uv's simple-v*/wheels-v* only index pages and
 # pointers into archive-v0, so none of those name a distribution.
@@ -50,15 +53,25 @@ def cache_files() -> Iterator[tuple[Path, str, Reader]]:
                 yield path, origin, reader
 
 
-def all_records() -> tuple[list[Record], int]:
-    """Records of every cached distribution, plus how many bodies were unreadable."""
+def read_all() -> tuple[list[Record], int, Where]:
+    """Records of every cached distribution, how many bodies were unreadable, and
+    the (origin, file) each distribution was read from (for its remove command)."""
     records: list[Record] = []
     bad = 0
+    where: Where = {}
     for path, origin, reader in cache_files():
         found = reader(path, origin)
         if found is None:
             bad += 1
+        for record in found or []:
+            where.setdefault(record.name, []).append((origin, path))
         records += found or []
+    return records, bad, where
+
+
+def all_records() -> tuple[list[Record], int]:
+    """Records of every cached distribution, plus how many bodies were unreadable."""
+    records, bad, _where = read_all()
     return records, bad
 
 
@@ -89,7 +102,9 @@ def artifacts(records: list[Record]) -> list[CachedArtifact]:
 
 
 def scan_pip_cache() -> list[Item]:
-    """One Item per distribution in ~/.cache/pip and ~/.cache/uv."""
-    records, _bad = all_records()
-    resolved = resolve(per_version(records), checkouts())
-    return to_items("pip-cache", artifacts(resolved), used_by())
+    """One Item per distribution in ~/.cache/pip and ~/.cache/uv, each with its remove command."""
+    records, _bad, where = read_all()
+    arts = artifacts(resolve(per_version(records), checkouts()))
+    items = to_items("pip-cache", arts, used_by())
+    cache_remove_pip.fill(items, arts, where, UV_CACHE, SRC)
+    return items

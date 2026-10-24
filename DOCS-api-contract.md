@@ -179,6 +179,15 @@ note on anything else the cache step deletes.
   `sdk:` dependencies (`flutter`, `flutter_test`); re-lock `dart|flutter pub get`. Cache step `rm -rf`
   of `hosted/<server>/<name>-<ver>`, `hosted-hashes/<server>/<name>-<ver>.sha256` and whole
   `git/<repo>-<sha>` checkouts (the note names the other packages a checkout holds).
+- pip: projects are `pyproject.toml` and `requirements*.txt`. `poetry remove [--group g]` for poetry
+  projects, else `uv remove` with `--optional <extra>` / `--group <group>` (`--frozen` without a
+  uv.lock, so uv only edits pyproject.toml); requirements files and `[build-system] requires` have no
+  remove CLI, so an anchored, case- and separator-insensitive `sed -i -E` deletes the line or
+  string. Graph: uv.lock / poetry.lock, then the cached Requires-Dist; re-lock `uv lock` /
+  `poetry lock`. Cache step: `uv cache clean --cache-dir ~/.cache/uv <name>` for uv's cache, plus
+  `rm -rf` of the exact pip `http-v2` body and header files, legacy `http` entries and built
+  `wheels/` (`pip cache remove` only ever touches wheels/), and of a whole cached uv environment
+  (`archive-v0/<id>`, which `uv cache clean <name>` leaves; uv rebuilds it on demand).
 
 ### `Alternative`
 
