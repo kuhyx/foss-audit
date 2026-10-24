@@ -44,7 +44,7 @@ def test_both_caches_merge(caches: tuple[Path, Path, Path]) -> None:
     assert sorted(found) == [LIB, ("org.x", "lib", "2.0")]
     assert [p.name for p in found[LIB].archives] == ["lib-1.0.jar", "lib-1.0-sources.jar"]
     assert len(found[LIB].poms) == 2
-    assert found[LIB].module
+    assert [p.name for p in found[LIB].modules] == ["lib-1.0.module"]
 
 
 def test_no_caches(caches: tuple[Path, Path, Path]) -> None:

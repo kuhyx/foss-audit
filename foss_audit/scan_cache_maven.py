@@ -38,7 +38,7 @@ def _add(found: dict[Gav, VersionFiles], gav: Gav, path: Path) -> None:
     if path.suffix == ".pom":
         files.poms.append(path)
     elif path.suffix == ".module":
-        files.module = True
+        files.modules.append(path)
     elif path.suffix in ARCHIVE_SUFFIXES:
         files.archives.append(path)
 

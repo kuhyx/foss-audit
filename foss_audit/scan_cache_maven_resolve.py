@@ -40,7 +40,8 @@ class VersionFiles:
 
     poms: list[Path] = field(default_factory=list)
     archives: list[Path] = field(default_factory=list)
-    module: bool = False
+    # Gradle .module metadata files: no license field, but the dependencies Gradle resolves.
+    modules: list[Path] = field(default_factory=list)
 
 
 @dataclass
@@ -170,7 +171,7 @@ def resolve(store: Store, gav: Gav, hops: int = 0) -> Found:
             why, urls = store.missing(parent)
             checked.append(f"{label} ({why})")
             wants += urls
-    if store.files.get(gav, VersionFiles()).module:
+    if store.files.get(gav, VersionFiles()).modules:
         checked.append("gradle .module (no license field)")
     license_text, where = store.archive(gav)
     if license_text:

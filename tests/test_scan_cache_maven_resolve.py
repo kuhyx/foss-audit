@@ -57,7 +57,7 @@ def test_missing_parent_is_fetched_from_recorded_repo_first(
 
 def test_every_failed_fetch_is_in_the_reason(monkeypatch: pytest.MonkeyPatch) -> None:
     offline(monkeypatch)
-    found = resolve_all(Store({GAV: VersionFiles(module=True)}), [GAV])[GAV]
+    found = resolve_all(Store({GAV: VersionFiles(modules=[Path("x.module")])}), [GAV])[GAV]
     assert found.license == ""
     tried = "; ".join(
         f"{url(b, GAV)}: offline {url(b, GAV)}" for b in (CENTRAL, GOOGLE, PLUGIN_PORTAL, FLUTTER)

@@ -9,6 +9,7 @@ dependencyManagement are not edges (parse_pom does not read them).
 
 from __future__ import annotations
 
+import json
 from collections import deque
 
 from foss_audit.cache_common import CachedArtifact
@@ -22,11 +23,38 @@ def dependency_graph(arts: list[CachedArtifact], versions: dict[Gav, VersionFile
     """group:artifact -> the group:artifacts its cached POMs depend on or inherit from."""
     graph = {art.name: {dep for cv in art.versions for dep in cv.deps} for art in arts}
     for (group, artifact, _), files in sorted(versions.items()):
+        edges = graph.setdefault(f"{group}:{artifact}", set())
         for path in files.poms:
             pom = parse_pom(path.read_bytes())
             if pom is not None and pom.parent is not None:
-                graph.setdefault(f"{group}:{artifact}", set()).add(f"{pom.parent[0]}:{pom.parent[1]}")
+                edges.add(f"{pom.parent[0]}:{pom.parent[1]}")
+        for path in files.modules:
+            edges |= module_edges(path.read_bytes())
     return graph
+
+
+def _coordinate(ref: object) -> str:
+    """ "g:m" of a .module {"group", "module"} reference, "" for anything else."""
+    if isinstance(ref, dict) and isinstance(ref.get("group"), str) and isinstance(ref.get("module"), str):
+        return f"{ref['group']}:{ref['module']}"
+    return ""
+
+
+def module_edges(data: bytes) -> set[str]:
+    """What a Gradle .module makes Gradle fetch: every variant's dependencies and
+    `available-at` target (a KMP root's platform artifact). Constraints fetch nothing."""
+    try:
+        meta = json.loads(data)
+    except json.JSONDecodeError, UnicodeDecodeError:
+        return set()
+    variants = meta.get("variants", []) if isinstance(meta, dict) else []
+    refs = [
+        ref
+        for variant in variants
+        if isinstance(variant, dict)
+        for ref in [*variant.get("dependencies", []), variant.get("available-at")]
+    ]
+    return {name for name in map(_coordinate, refs) if name}
 
 
 def reach(root: str, graph: Graph) -> dict[str, str]:
