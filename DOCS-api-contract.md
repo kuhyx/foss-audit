@@ -149,17 +149,22 @@ license is unknown.
 
 `removeCommand` of a `pip-cache`, `npm-cache`, `pub-cache` or `cargo-cache` item is never null and
 removes the package for good (`cache_remove.py` + `cache_remove_<eco>.py`). Deleting the cache alone
-is not enough while a `~/src` project pulls the package in, since the next build downloads it again:
+is not enough while a `~/src` project pulls the package in, since the next build downloads it again.
+Projects are the manifests and lockfiles at most four levels under `~/src`, plus workspace members up
+to three levels below a lockfile; build output, vendored copies and hidden directories (including
+`.claude/worktrees/*` checkouts) are not projects.
 
 - a manifest that declares it gets the ecosystem's remove command, run in that manifest's own
   directory (`(cd ~/src/x/sub && cargo remove --dev foo)`);
 - a manifest that reaches it through other dependencies gets every direct parent on such a chain
   removed. The graph is the nearest lockfile's (authoritative for what it lists), and the
   dependencies the cached copies declare fill in the rest, so an item with empty `requiredBy` is
-  still transitive when a project reaches it. Workspace members and path dependencies are never
-  blamed;
+  still transitive when a project reaches it. A manifest's own workspace members and path
+  dependencies are never blamed (per manifest: a name linked locally in one repo is a registry
+  package in another);
 - a lockfile that lists it although nothing declared reaches it is re-locked once per lockfile
-  (pub: blamed on the SDK packages instead, whose pubspecs are not in the cache);
+  (pub: blamed on the SDK packages instead, whose pubspecs are not in the cache), unless it is
+  that project's own package;
 - several projects: every project's step, then the package's own cache entries deleted once. No
   project reaches it: it is stale and only its exact cache entries are deleted.
 
@@ -188,6 +193,20 @@ note on anything else the cache step deletes.
   `rm -rf` of the exact pip `http-v2` body and header files, legacy `http` entries and built
   `wheels/` (`pip cache remove` only ever touches wheels/), and of a whole cached uv environment
   (`archive-v0/<id>`, which `uv cache clean <name>` leaves; uv rebuilds it on demand).
+- npm: a pnpm-lock.yaml's `importers` give each workspace project's declarations, removed with
+  `pnpm remove` in that project's directory; `packageManagerDependencies` (pnpm fetching itself)
+  with `npm pkg delete packageManager`. A package-lock.json's `packages[""]` and workspace entries
+  use `npm uninstall` (`-w <path>` from the root); a lockfileVersion 1 lock takes the root's
+  declarations from package.json. Graph: snapshots / `node_modules/*` entries, then the cached
+  package.json dependencies; re-lock `pnpm install --lockfile-only` / `npm install
+  --package-lock-only`. Cache step, `_cacache`: `npm cache clean --cache ~/.npm <key>`, one call per
+  tarball key (npm 11 deletes the entry and its content but stops at the first key it cannot
+  find); further keys of the same tarball (`pacote:tarball:<spec>` beside the
+  `make-fetch-happen:request-cache:<url>` key) lose their `index-v5/<sha256(key)>` bucket instead,
+  or they would dangle. pnpm has no per-package store command (`pnpm store prune` is store-wide),
+  so: the v3/v10 index JSON (or a git package's `<url-dir>/`), the exact v11 `package_index` rows
+  (`sqlite3 <store>/v11/index.db 'DELETE … WHERE key IN (…)'`) and `v11/links/<name>`. Shared
+  content blobs stay for `pnpm store prune`; pnpm refetches a package whose index entry is gone.
 
 ### `Alternative`
 

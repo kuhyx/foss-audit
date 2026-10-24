@@ -180,6 +180,8 @@ snapshots:
 
 def test_pnpm_lock_names() -> None:
     assert pnpm_lock_names(PNPM_LOCK) == {"@scope/pkg", "old-style", "react-dom"}
+    # A prettier-formatted lock quotes keys with double quotes.
+    assert pnpm_lock_names('packages:\n  "@s/q@1.0.0":\n    resolution: {}\n') == {"@s/q"}
 
 
 def test_package_lock_names() -> None:

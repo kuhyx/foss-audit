@@ -60,6 +60,8 @@ python = "^3.12"
 requests = "^2"
 [tool.poetry.group.dev.dependencies]
 black = "*"
+[tool.poetry.dev-dependencies]
+legacy-dev = "*"
 """
 
 POETRY_LOCK = """[[package]]
@@ -118,6 +120,8 @@ def items(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Item]:
     body(pip, "07", "pytest")
     body(pip, "08", "hatchling")
     body(pip, "09", "unreached")
+    body(pip, "10", "legacy-dev")
+    body(pip, "11", "svc")  # the project itself, cached by some other install
     write(pip / "http/a/b/c/d/e/old", "not a cache entry")
     whl = pip / "wheels/a/b/c/h/built-1.0-py3-none-any.whl"
     write(whl, wheel({"built-1.0.dist-info/METADATA": meta("built", "1.0", "License: MIT")}))
@@ -182,6 +186,13 @@ def test_several_projects_and_tools(items: dict[str, Item]) -> None:
 
 def test_unreached_lock_entry_is_relocked(items: dict[str, Item]) -> None:
     assert items["unreached"].removeCommand == "(cd ~/src/svc && uv lock); rm -rf " + http("09")
+    assert items["svc"].removeCommand == "rm -rf " + http("11")
+
+
+def test_legacy_poetry_dev_dependencies(items: dict[str, Item]) -> None:
+    assert items[
+        "legacy-dev"
+    ].removeCommand == "(cd ~/src/poet && poetry remove --group dev legacy-dev); rm -rf " + http("10")
 
 
 def test_stale_entries_by_cache(items: dict[str, Item]) -> None:

@@ -26,7 +26,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from foss_audit.cache_common import CachedArtifact
+from foss_audit.cache_common import CachedArtifact, project_files
 from foss_audit.model import Item
 
 HOME = Path.home()
@@ -38,7 +38,8 @@ Render = Callable[[str, list[str]], str]
 # Package name -> (cache delete step, note on what else it deletes).
 CacheStep = Callable[[str], tuple[str, str]]
 # Directories that are build output or vendored copies, never a project.
-NOT_PROJECT = frozenset({"node_modules", "target", "build", ".dart_tool", ".venv", "ephemeral", ".symlinks"})
+MEMBER_DEPTH = 3
+NOT_PROJECT = frozenset({"node_modules", "target", "build", "ephemeral", "flutter_assets"})
 
 
 def shell_path(path: Path) -> str:
@@ -66,9 +67,25 @@ def joined(steps: Iterable[str]) -> str:
     return "; ".join(dict.fromkeys(s for s in steps if s))
 
 
-def in_project(path: Path) -> bool:
-    """False for a manifest inside build output or a vendored dependency copy."""
-    return not NOT_PROJECT & set(path.parts)
+def projects(names: Iterable[str], root: Path, lock: str = "") -> list[Path]:
+    """Project files under ~/src, minus build output, vendored copies and hidden
+    dirs (.claude/worktrees/* checkouts are throwaway copies of their repo).
+
+    Workspace members may sit deeper than project_files looks
+    (~/src/a/b/ws/crates/x/Cargo.toml): below every `lock` file found, up to
+    MEMBER_DEPTH more levels are searched too (bounded globs, no walk).
+    """
+    wanted = list(names)
+    found = project_files(wanted, root)
+    for lockfile in project_files([lock], root) if lock else []:
+        for level in range(1, MEMBER_DEPTH + 1):
+            found += [p for n in wanted for p in lockfile.parent.glob("/".join(["*"] * level + [n]))]
+    return sorted(
+        p
+        for p in set(found)
+        if p.is_file()
+        and not any(part in NOT_PROJECT or part[0] == "." for part in p.relative_to(root).parts)
+    )
 
 
 def nearest(start: Path, names: Iterable[str], top: Path) -> Path | None:
@@ -107,6 +124,9 @@ class Manifest:
     # (directory, command) that rewrites the lockfile.
     relock: tuple[Path, str] | None = None
     fallback: tuple[str, ...] = ()
+    # Its workspace members and path dependencies, never blamed as a parent. Per
+    # manifest: a name that is local in one repo is a registry package in another.
+    local: frozenset[str] = frozenset()
 
     def declare(self, name: str, kind: str, token: str | None = None) -> None:
         """Record that this manifest declares `name` under `kind`."""
@@ -118,11 +138,9 @@ class Manifest:
 class Planner:
     """Remove command and removeVia for each package of one ecosystem."""
 
-    def __init__(self, manifests: Iterable[Manifest], cache_edges: Graph, local: Iterable[str] = ()) -> None:
+    def __init__(self, manifests: Iterable[Manifest], cache_edges: Graph) -> None:
         self.manifests = sorted(manifests, key=lambda m: m.dir)
         self.cache_edges = cache_edges
-        # Workspace members and path dependencies: never blamed as a parent.
-        self.local = frozenset(local)
         self._reach: dict[tuple[int, str], dict[str, str]] = {}
 
     def _walk(self, m: Manifest, root: str) -> dict[str, str]:
@@ -137,7 +155,7 @@ class Planner:
                 # dependency data (any version) fills in what it does not.
                 edges = m.edges[node] if node in m.edges else self.cache_edges.get(node, set())
                 for nxt in sorted(edges):
-                    if nxt not in prev and nxt not in self.local:
+                    if nxt not in prev and nxt not in m.local:
                         prev[nxt] = node
                         queue.append(nxt)
             self._reach[key] = prev
@@ -151,7 +169,7 @@ class Planner:
 
     def _parents(self, m: Manifest, name: str) -> list[tuple[str, str]]:
         """(direct parent, how it reaches `name`) for every chain into `name`."""
-        roots = [r for r in sorted(m.direct) if r != name and r not in self.local]
+        roots = [r for r in sorted(m.direct) if r != name and r not in m.local]
         return [(r, " → ".join(self._chain(m, r, name))) for r in roots if name in self._walk(m, r)]
 
     @staticmethod
@@ -173,7 +191,9 @@ class Planner:
     def _group(self, group: list[Manifest], name: str) -> tuple[list[str], list[str]]:
         """Steps for the manifests sharing one lockfile (a workspace)."""
         found = [self._steps(m, name, self._parents(m, name)) for m in group]
-        if not any(steps for steps, _ in found) and name in group[0].locked:
+        # The project's own package (a cached copy of it came from elsewhere) is never re-locked.
+        own = any(name in m.local for m in group)
+        if not any(steps for steps, _ in found) and name in group[0].locked and not own:
             # Listed by the lockfile, reached by nothing declared: an SDK package's
             # dependency (pub), else a stale lock entry that re-locking drops.
             sdk = f"(SDK, its pubspec is not in the cache) → {name}"

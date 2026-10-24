@@ -18,8 +18,8 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from foss_audit.cache_common import CachedArtifact, project_files
-from foss_audit.cache_remove import Manifest, Planner, apply, cache_graph, in_project, nearest, repo_of, rm
+from foss_audit.cache_common import CachedArtifact
+from foss_audit.cache_remove import Manifest, Planner, apply, cache_graph, nearest, projects, repo_of, rm
 from foss_audit.model import Item
 
 SECTIONS = {"dependencies": "", "dev-dependencies": "--dev", "build-dependencies": "--build"}
@@ -66,17 +66,16 @@ def read_lock(path: Path) -> tuple[dict[str, set[str]], set[str], set[str]]:
     return graph, set(graph), members
 
 
-def manifests(root: Path) -> tuple[list[Manifest], set[str]]:
-    """Every ~/src crate manifest, plus the names that are local crates."""
+def manifests(root: Path) -> list[Manifest]:
+    """Every ~/src crate manifest; its local crates are its path deps and its lock's members."""
     found: list[Manifest] = []
-    local: set[str] = set()
     locks: dict[Path, tuple[dict[str, set[str]], set[str], set[str]]] = {}
-    for path in filter(in_project, project_files(["Cargo.toml"], root)):
+    for path in projects(["Cargo.toml"], root, lock="Cargo.lock"):
         data = _toml(path)
         if data is None:
             continue
         m = Manifest(path.parent, render)
-        local.add(str(_table(data.get("package")).get("name", "")))
+        local = {str(_table(data.get("package")).get("name", ""))}
         for name, flags, key, is_path in declarations(data):
             m.declare(name, flags, key)
             if is_path:
@@ -86,8 +85,9 @@ def manifests(root: Path) -> tuple[list[Manifest], set[str]]:
             graph, listed, members = locks.setdefault(lock, read_lock(lock))
             m.edges, m.locked, m.relock = graph, frozenset(listed), (lock.parent, RELOCK)
             local |= members
+        m.local = frozenset(local - {""})
         found.append(m)
-    return found, local - {""}
+    return found
 
 
 class CacheFiles:
@@ -114,5 +114,4 @@ class CacheFiles:
 
 def fill(items: list[Item], arts: list[CachedArtifact], cargo: Path, root: Path) -> None:
     """Set removeCommand and removeVia on every cargo-cache item."""
-    found, local = manifests(root)
-    apply(items, Planner(found, cache_graph(arts), local), CacheFiles(cargo, arts).step)
+    apply(items, Planner(manifests(root), cache_graph(arts)), CacheFiles(cargo, arts).step)

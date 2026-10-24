@@ -45,6 +45,20 @@ def test_nearest_stops_at_the_repo(tmp_path: Path) -> None:
     assert nearest(tmp_path / "elsewhere", ["x.lock"], repo) is None
 
 
+def test_projects_skip_worktrees_build_output_and_vendored_copies(tmp_path: Path) -> None:
+    for rel in ("app", "app/.claude/worktrees/w", "app/build/x", "app/node_modules/y", "app/.venv"):
+        (tmp_path / rel).mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel / "Cargo.toml").write_text("")
+    assert cache_remove.projects(["Cargo.toml"], tmp_path) == [tmp_path / "app/Cargo.toml"]
+    # A workspace member deeper than the global search, found below its lockfile.
+    deep = tmp_path / "a/b/ws/crates/x/Cargo.toml"
+    deep.parent.mkdir(parents=True)
+    deep.write_text("")
+    (tmp_path / "a/b/ws/Cargo.lock").write_text("")
+    assert deep not in cache_remove.projects(["Cargo.toml"], tmp_path)
+    assert deep in cache_remove.projects(["Cargo.toml"], tmp_path, lock="Cargo.lock")
+
+
 def test_cache_graph_unions_every_version() -> None:
     art = CachedArtifact("a", [CachedVersion("1", "", "", ("b",)), CachedVersion("2", "", "", ("c",))])
     assert cache_remove.cache_graph([art]) == {"a": {"b", "c"}}
@@ -94,8 +108,11 @@ def test_every_parent_and_the_direct_declaration_are_removed(home: Path) -> None
 def test_local_packages_are_never_blamed(home: Path) -> None:
     app = manifest(home, "src/app", member="")
     member = manifest(home, "src/app/member", leaf="")
-    planner = Planner([app, member], {"member": {"leaf"}}, local=["member"])
-    assert planner.plan("leaf", "c")[1] == "~/src/app/member declares leaf"
+    app.local = frozenset({"member"})
+    # Local only where it is linked: another repo's registry copy of "member" still counts.
+    other = manifest(home, "src/other", member="")
+    planner = Planner([app, member, other], {"member": {"leaf"}})
+    assert planner.plan("leaf", "c")[1] == "~/src/app/member declares leaf; ~/src/other via member → leaf"
 
 
 def test_stale_deletes_only_the_cache(home: Path) -> None:
@@ -125,6 +142,9 @@ def test_listed_but_unreached_blames_sdk_roots_else_relocks_once(home: Path) -> 
     )
     # A member reaching it is enough: no re-lock for the root.
     assert planner.plan("b", "c") == ("(cd ~/src/ws/m && tool remove b); c", "~/src/ws/m declares b")
+    # The workspace's own package is listed by its lock but never re-locked away.
+    root.local = frozenset({"old"})
+    assert Planner([root, member], {}).plan("old", "c")[0] == "c"
 
 
 def test_apply_fills_every_item(home: Path) -> None:

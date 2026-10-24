@@ -18,14 +18,13 @@ import shlex
 from functools import partial
 from pathlib import Path
 
-from foss_audit.cache_common import CachedArtifact, project_files
-from foss_audit.cache_remove import Manifest, Planner, apply, cache_graph, in_project, nearest, repo_of, rm
+from foss_audit.cache_common import CachedArtifact
+from foss_audit.cache_remove import Manifest, Planner, apply, cache_graph, nearest, projects, repo_of, rm
 from foss_audit.model import Item
-from foss_audit.scan_cache_pub_parse import declared_deps, lock_packages
+from foss_audit.scan_cache_pub_parse import declared_deps, lock_packages, parse_pubspec
 
 FLUTTER_SDK = re.compile(r"sdk:\s*flutter\b")
 LOCK_FLUTTER = re.compile(r"^  flutter:", re.MULTILINE)
-NOT_PROJECT = frozenset({".plugin_symlinks", "flutter_assets"})
 
 
 def _read(path: Path) -> str:
@@ -42,30 +41,30 @@ def render(tool: str, _kind: str, names: list[str]) -> str:
     return f"{tool} pub remove {' '.join(map(shlex.quote, names))}"
 
 
-def manifests(root: Path) -> tuple[list[Manifest], set[str]]:
-    """Every ~/src pubspec.yaml, plus the names of path dependencies."""
-    found: list[Manifest] = []
-    local: set[str] = set()
+def manifests(root: Path) -> list[Manifest]:
+    """Every ~/src pubspec.yaml; its local packages are its path deps and its workspace's members."""
+    found: list[tuple[Manifest, set[str]]] = []
     locks: dict[Path, frozenset[str]] = {}
-    pubspecs = [
-        p for p in project_files(["pubspec.yaml"], root) if in_project(p) and not NOT_PROJECT & set(p.parts)
-    ]
-    for path in pubspecs:
+    members: dict[Path, set[str]] = {}
+    for path in projects(["pubspec.yaml"], root, lock="pubspec.lock"):
         text = _read(path)
         m = Manifest(path.parent, partial(render, _tool(bool(FLUTTER_SDK.search(text)))))
         deps = declared_deps(text)
-        for name, source in deps:
+        for name, _source in deps:
             m.declare(name, "")
-            if source == "path":
-                local.add(name)
         m.fallback = tuple(name for name, source in deps if source == "sdk")
         lock = nearest(path.parent, ["pubspec.lock"], repo_of(path, root))
         if lock:
             lock_text = _read(lock)
             m.locked = locks.setdefault(lock, frozenset(lock_packages(lock_text)))
             m.relock = (lock.parent, f"{_tool(bool(LOCK_FLUTTER.search(lock_text)))} pub get")
-        found.append(m)
-    return found, local
+        members.setdefault(lock or path, set()).add(parse_pubspec(text).name)
+        found.append((m, {name for name, source in deps if source == "path"}))
+    for m, paths in found:
+        m.local = frozenset(
+            paths | members[m.relock[0] / "pubspec.lock" if m.relock else m.dir / "pubspec.yaml"]
+        )
+    return [m for m, _ in found]
 
 
 class CacheDirs:
@@ -99,5 +98,4 @@ def fill(
     items: list[Item], arts: list[CachedArtifact], cache: Path, root: Path, git: dict[Path, list[str]]
 ) -> None:
     """Set removeCommand and removeVia on every pub-cache item."""
-    found, local = manifests(root)
-    apply(items, Planner(found, cache_graph(arts), local), CacheDirs(cache, git).step)
+    apply(items, Planner(manifests(root), cache_graph(arts)), CacheDirs(cache, git).step)

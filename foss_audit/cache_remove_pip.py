@@ -24,16 +24,16 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from foss_audit.cache_common import CachedArtifact, project_files
+from foss_audit.cache_common import CachedArtifact
 from foss_audit.cache_remove import (
     Graph,
     Manifest,
     Planner,
     apply,
     cache_graph,
-    in_project,
     joined,
     nearest,
+    projects,
     repo_of,
     rm,
     shell_path,
@@ -101,6 +101,8 @@ def declarations(data: dict[str, Any]) -> Iterator[tuple[str, str]]:
     yield from ((norm(n), "main") for n in _table(poetry.get("dependencies")) if n != "python")
     for group, table in _table(poetry.get("group")).items():
         yield from ((norm(n), f"group {group}") for n in _table(_table(table).get("dependencies")))
+    # Poetry < 1.2's dev section; `poetry remove --group dev` still edits it.
+    yield from ((norm(n), "group dev") for n in _table(poetry.get("dev-dependencies")))
 
 
 def read_lock(path: Path) -> tuple[Graph, set[str]]:
@@ -128,17 +130,18 @@ def _requirements(path: Path) -> Iterator[str]:
     yield from _names([line for line in lines if line and not line.startswith("-")])
 
 
-def manifests(root: Path) -> tuple[list[Manifest], set[str]]:
-    """One Manifest per ~/src directory with Python project files, plus the local names."""
+def manifests(root: Path) -> list[Manifest]:
+    """One Manifest per ~/src directory with Python project files; its local
+    names are its own project and its lockfile's members."""
     by_dir: dict[Path, list[Path]] = {}
-    for path in filter(in_project, project_files(FILES, root)):
+    for path in projects(FILES, root, lock="uv.lock"):
         by_dir.setdefault(path.parent, []).append(path)
     found: list[Manifest] = []
-    local: set[str] = set()
     locks: dict[Path, tuple[Graph, set[str]]] = {}
     for folder, paths in by_dir.items():
         lock = nearest(folder, LOCKS, repo_of(folder, root))
         decls: list[tuple[str, str]] = []
+        local: set[str] = set()
         poetry = lock is not None and lock.name == "poetry.lock"
         for path in paths:
             if path.name != "pyproject.toml":
@@ -157,8 +160,9 @@ def manifests(root: Path) -> tuple[list[Manifest], set[str]]:
             m.edges, m.locked = graph, frozenset(graph)
             m.relock = (lock.parent, "poetry lock" if lock.name == "poetry.lock" else "uv lock")
             local |= members
+        m.local = frozenset(local - {""})
         found.append(m)
-    return found, local - {""}
+    return found
 
 
 class CacheFiles:
@@ -194,5 +198,4 @@ def fill(
     root: Path,
 ) -> None:
     """Set removeCommand and removeVia on every pip-cache item."""
-    found, local = manifests(root)
-    apply(items, Planner(found, cache_graph(arts), local), CacheFiles(where, uv).step)
+    apply(items, Planner(manifests(root), cache_graph(arts)), CacheFiles(where, uv).step)
