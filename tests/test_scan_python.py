@@ -54,7 +54,7 @@ def test_pip_user_license_sources_and_own(home: Path) -> None:
     assert (by["sub"].verdict, by["sub"].license) == ("foss", "MIT")
     assert not by["vendored"].own
     assert by["remote"].verdict == "foss"
-    assert by["expr"].removeCommand == "pip uninstall --user expr"
+    assert by["expr"].removeCommand == "pip uninstall --break-system-packages expr"
 
 
 def test_tool_venvs_pick_the_matching_distribution(home: Path) -> None:

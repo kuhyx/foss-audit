@@ -19,7 +19,7 @@ PIPX_VENVS = HOME / ".local/share/pipx/venvs"
 UV_TOOLS = HOME / ".local/share/uv/tools"
 CONDA_ROOTS = (Path("/opt/miniconda3"), HOME / "miniconda3", HOME / "micromamba")
 # Shared with the ~/.local/bin entry points a pip --user dist installs.
-PIP_USER_REMOVE = "pip uninstall --user {name}"
+PIP_USER_REMOVE = "pip uninstall --break-system-packages {name}"
 
 
 def _norm(name: str) -> str:

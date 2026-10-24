@@ -20,7 +20,7 @@ const MERGEABLE = [
   "cargo uninstall",
   "npm uninstall -g",
   "sudo npm uninstall -g",
-  "pip uninstall --user",
+  "pip uninstall --break-system-packages",
   "uv tool uninstall",
   "gem uninstall",
 ] as const;

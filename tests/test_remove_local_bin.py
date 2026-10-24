@@ -78,7 +78,10 @@ def test_every_local_bin_entry_has_its_owners_remove_command(
     items = scan_misc.scan_local_bin()
     assert [i.name for i in items if i.removeCommand is None] == []
     by = {i.name: (i.removeCommand, i.removeVia) for i in items}
-    assert by["bandit-baseline"] == ("pip uninstall --user bandit", "entry point of pip-user package bandit")
+    assert by["bandit-baseline"] == (
+        "pip uninstall --break-system-packages bandit",
+        "entry point of pip-user package bandit",
+    )
     assert by["butler"] == ("rm ~/.local/bin/butler", "")
     assert by["my script"] == ("rm ~/'.local/bin/my script'", "")
     assert by["adir"] == ("rm -r ~/.local/bin/adir", "")

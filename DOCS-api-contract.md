@@ -75,7 +75,7 @@ shell-quoted, a leading `~/` stays outside the quotes; `sudo ` only when someone
 the path):
 
 - `local-bin`: a pip --user entry point removes its distribution
-  (`pip uninstall --user <dist>`, removeVia `entry point of pip-user package <dist>`); a pnpm
+  (`pip uninstall --break-system-packages <dist>`, removeVia `entry point of pip-user package <dist>`); a pnpm
   shim `pnpm remove -g <pkg>`; a link into `<prefix>/lib/node_modules/<pkg>`
   `npm uninstall -g --prefix <prefix> <pkg> && rm <link>`; claude's native install (a
   cited-terms binary in a `versions/` dir) `rm <link> && rm -rf <…/versions>`. Any other

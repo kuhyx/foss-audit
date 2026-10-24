@@ -26,6 +26,7 @@ import tseslint from "typescript-eslint";
 const config = tseslint.config(
   {
     ignores: [
+      ".claude",
       "dist",
       "coverage",
       ".venv",
