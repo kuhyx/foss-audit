@@ -31,6 +31,7 @@ export function makeItem(overrides: Partial<Item> = {}): Item {
     own: false,
     reason: "GPL-3.0-or-later",
     removeCommand: `sudo pacman -Rns ${name}`,
+    removeVia: "",
     requiredBy: [],
     source,
     url: null,

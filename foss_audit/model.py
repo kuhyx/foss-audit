@@ -73,6 +73,9 @@ class Item:
     requiredBy: list[str] = field(default_factory=list)
     alternative: Alternative | None = None
     removeCommand: str | None = None
+    # Why the remove command looks the way it does, e.g. the project and the
+    # dependency chain it removes ("~/src/sufler via torch"); "" when plain.
+    removeVia: str = ""
     # Scanner-found detail (EULA link, bundled free parts) that a curated
     # reason must not wipe out; serialised as the tail of `reason`.
     note: str = ""

@@ -78,6 +78,7 @@ export const itemSchema = z.object({
   own: z.boolean(),
   reason: z.string(),
   removeCommand: z.string().nullable(),
+  removeVia: z.string().default(""),
   requiredBy: z.array(z.string()),
   source: sourceSchema,
   url: z.string().nullable(),

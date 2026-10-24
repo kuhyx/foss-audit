@@ -37,7 +37,8 @@ rescan (a full scan takes a few seconds). Response body:
 | `url` | string \| null | upstream homepage |
 | `requiredBy` | string[] | pacman reverse deps; `*-cache` sources: the `~/src/<repo>` projects whose lockfile or build file names it; else `[]` |
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
-| `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it |
+| `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it. Every scanner sets it: `null` is a bug (a test enforces it) |
+| `removeVia` | string | why the command has its shape, e.g. `~/src/sufler via torch → nvidia-cudnn-cu13`; `""` when plain (UI schema tolerates its absence) |
 
 `Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker" | "user-app" | "maven-cache" | "pub-cache" | "npm-cache" | "cargo-cache" | "pip-cache"`
 
