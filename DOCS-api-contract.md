@@ -173,6 +173,12 @@ note on anything else the cache step deletes.
   `--dev`, `--build` and `--target <cfg>`; re-lock `cargo update --workspace`; cache step
   `rm -rf` of `~/.cargo/registry/cache/<index>/<name>-<ver>.crate`, `registry/src/<index>/<name>-<ver>`
   and `git/checkouts/<db>/<rev>`.
+- pub: `flutter pub remove` when the pubspec depends on the Flutter SDK, else `dart pub remove`, in
+  the declaring pubspec's directory (a workspace member's own); pubspec.lock has no edges, so the
+  graph is the cached pubspecs'. A locked package nothing cached reaches is blamed on the pubspec's
+  `sdk:` dependencies (`flutter`, `flutter_test`); re-lock `dart|flutter pub get`. Cache step `rm -rf`
+  of `hosted/<server>/<name>-<ver>`, `hosted-hashes/<server>/<name>-<ver>.sha256` and whole
+  `git/<repo>-<sha>` checkouts (the note names the other packages a checkout holds).
 
 ### `Alternative`
 
