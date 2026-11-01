@@ -16,6 +16,7 @@ from foss_audit.memo import Memo
 from foss_audit.scan_cache_npm_cacache import scan_cacache, tarballs
 from foss_audit.scan_cache_npm_pnpm import scan_pnpm_store
 from tests.npm_helpers import REG, cache_entry, json_files, no_network, pkg_json, put, tgz, write_json  # noqa: F401
+from tests.test_memo import garble
 from tests.test_scan_cache_npm_store import make_db, mp
 
 
@@ -161,3 +162,27 @@ def test_memo_hits_still_advance_the_progress_counter(
         assert ticks["npm-cache"] == (1, 1)
         ticks.clear()
         progress.reset()
+
+
+def test_garbled_npm_entries_are_read_again_and_healed(store: Path, tmp_path: Path, calls: Calls) -> None:
+    memo_file = tmp_path / "m.json"
+    first = scanned(memo_file, lambda m: list(scan_pnpm_store(store, m)))
+    garble(memo_file)
+    assert scanned(memo_file, lambda m: list(scan_pnpm_store(store, m))) == first
+    assert scanned(memo_file, lambda m: list(scan_pnpm_store(store, m))) == first
+    assert calls.pnpm == 2  # the garbled run read again, the healed file was a hit
+
+
+def test_garbled_remove_step_names_are_read_again(tmp_path: Path) -> None:
+    cache, root, memo_file = cacache_with(tmp_path), tmp_path / "pnpm", tmp_path / "m.json"
+    files = json_files(root / "v10", {"package.json": pkg_json(name="a", version="1.0.0", license="MIT")})
+    write_json(root / "v10/index/ab/a.json", {"name": "a", "version": "1.0.0", "files": files})
+    listing = list(tarballs(cache))
+    built = []
+    for _ in range(2):
+        run = Memo(memo_file)
+        built.append(NpmCache(cache, root, run, listing))
+        run.save()
+        garble(memo_file)
+    assert built[0].paths == built[1].paths
+    assert built[1].clean.keys() == {"t", "g"}

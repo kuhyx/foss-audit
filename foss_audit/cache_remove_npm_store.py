@@ -45,13 +45,19 @@ def _json_name(path: Path) -> str:
     return str(doc.get("name") or "") if isinstance(doc, dict) else ""
 
 
+def _stored_name(hit: str) -> str:
+    memo.require_text(hit)
+    return hit
+
+
 def _remembered_name(readings: memo.Memo, path: Path) -> str:
     key = f"name|{memo.stat_key(path)}"
-    hit = readings.get(key)
-    if hit is None:
-        hit = _json_name(path)
-        readings.put(key, hit)
-    return str(hit)
+    stored, name = readings.recall(key, _stored_name)
+    if stored and name is not None:
+        return name
+    name = _json_name(path)
+    readings.put(key, name)
+    return name
 
 
 def _row_name(key: str, blob: bytes) -> str:

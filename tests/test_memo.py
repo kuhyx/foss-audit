@@ -151,3 +151,40 @@ def test_stat_key_changes_with_size_and_mtime(tmp_path: Path) -> None:
 )
 def test_only_local_readings_are_reusable(license_id: str, license_from: str, ok: bool) -> None:
     assert memo.reusable(license_id, license_from) is ok
+
+
+def garble(path: Path) -> None:
+    """Keep the file valid but make every stored entry the wrong shape."""
+    doc = json.loads(path.read_text())
+    doc["entries"] = dict.fromkeys(doc["entries"], 42)
+    path.write_text(json.dumps(doc))
+
+
+def test_recall_decodes_a_stored_entry(memo_file: Path) -> None:
+    filled(memo_file, {"a": [1, 2]})
+    assert memo.Memo(memo_file).recall("a", tuple) == (True, (1, 2))
+    assert memo.Memo(memo_file).recall("missing", tuple) == (False, None)
+
+
+def test_recall_treats_a_malformed_entry_as_a_miss_and_heals_the_file(memo_file: Path) -> None:
+    filled(memo_file, {"bad": 42, "good": [1]})
+    run = memo.Memo(memo_file)
+    assert run.recall("bad", tuple) == (False, None)
+    assert run.recall("good", tuple) == (True, (1,))
+    run.put("bad", [2])
+    run.save()
+    assert json.loads(memo_file.read_text())["entries"] == {"bad": [2], "good": [1]}
+
+
+def test_a_malformed_entry_that_is_not_recomputed_is_pruned(memo_file: Path) -> None:
+    filled(memo_file, {"bad": 42})
+    run = memo.Memo(memo_file)
+    assert run.recall("bad", tuple)[0] is False
+    run.save()
+    assert json.loads(memo_file.read_text())["entries"] == {}
+
+
+def test_require_text_rejects_non_strings() -> None:
+    memo.require_text("a", "")
+    with pytest.raises(TypeError):
+        memo.require_text("a", 1)

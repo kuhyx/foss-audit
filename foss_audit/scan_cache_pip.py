@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 from foss_audit import cache_remove_pip, memo, progress
 from foss_audit.cache_common import SRC, CachedArtifact, CachedVersion, to_items
@@ -54,15 +55,22 @@ def cache_files() -> Iterator[tuple[Path, str, Reader]]:
                 yield path, origin, reader
 
 
+def _decode_records(hit: dict[str, Any]) -> list[Record] | None:
+    stored = hit["records"]
+    records = None if stored is None else [Record.from_json(r) for r in stored]
+    memo.require_text(*(f for r in records or () for f in (r.name, r.version, r.license, r.license_from)))
+    return records
+
+
 def read_cached(path: Path, origin: str, reader: Reader, readings: Memo) -> list[Record] | None:
     """`reader(path, origin)`, remembered by the file's size and mtime. An unpacked dist-info
     is read afresh: its license files and editable sources lie outside the one file."""
     if reader is read_dist_dir:
         return reader(path, origin)
     key = f"{origin}|{memo.stat_key(path)}"
-    hit = readings.get(key)
-    if hit is not None:
-        return None if hit["records"] is None else [Record.from_json(r) for r in hit["records"]]
+    stored, hit = readings.recall(key, _decode_records)
+    if stored:
+        return hit
     found = reader(path, origin)
     readings.put(key, {"records": None if found is None else [r.to_json() for r in found]})
     return found

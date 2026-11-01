@@ -21,14 +21,15 @@ def decode(data: list[Any]) -> Found | None:
     if not data:
         return None
     name, url, version, license_id, license_from, deps = data
+    memo.require_text(name, url, version, license_id, license_from, *deps)
     return Found(name, url, CachedVersion(version, license_id, license_from, tuple(deps)))
 
 
 def memoised(store: memo.Memo, key: str, read: Callable[[], Found | None]) -> Found | None:
     """The stored reading for `key`, else `read()` (stored when it came from local files only)."""
-    hit = store.get(key)
-    if hit is not None:
-        return decode(hit)
+    stored, found = store.recall(key, decode)
+    if stored:
+        return found
     found = read()
     if found is None or memo.reusable(found.cached.license, found.cached.license_from):
         store.put(key, encode(found))

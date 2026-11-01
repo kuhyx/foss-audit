@@ -17,12 +17,14 @@ import contextlib
 import json
 import os
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 MEMO_VERSION = 1
 ENV_DIR = "FOSS_AUDIT_MEMO_DIR"
 VOLATILE = ("upstream", "fetch failed", "license URL")
+MALFORMED = (TypeError, ValueError, KeyError, IndexError, AttributeError)
 
 _bypass = False
 
@@ -43,6 +45,12 @@ def stat_key(path: Path) -> str:
     except OSError:
         return f"{path}|gone"
     return f"{path}|{info.st_size}|{info.st_mtime_ns}"
+
+
+def require_text(*values: object) -> None:
+    """Raise TypeError unless every stored field is a string (a decoder's shape check)."""
+    if not all(isinstance(value, str) for value in values):
+        raise TypeError("memo entry holds a non-string")
 
 
 def reusable(license_id: str, license_from: str) -> bool:
@@ -73,6 +81,19 @@ class Memo:
                 return None
             self._touched.add(key)
             return self._entries[key]
+
+    def recall[T](self, key: str, decode: Callable[[Any], T]) -> tuple[bool, T | None]:
+        """(True, decode(stored)) for a stored entry; a malformed one is dropped and reads as a miss."""
+        raw = self.get(key)
+        if raw is None:
+            return False, None
+        try:
+            return True, decode(raw)
+        except MALFORMED:
+            with self._lock:
+                self._touched.discard(key)
+                del self._entries[key]
+            return False, None
 
     def put(self, key: str, value: Any) -> None:
         if self._path is None:

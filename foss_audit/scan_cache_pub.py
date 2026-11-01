@@ -68,14 +68,20 @@ def _spec(directory: Path) -> Pubspec:
     return parse_pubspec(read(pubspec)) if pubspec.is_file() else Pubspec()
 
 
+def _decode_license(hit: list[str]) -> tuple[str, str]:
+    license_id, where = hit
+    memo.require_text(license_id, where)
+    return license_id, where
+
+
 def cached_license(readings: Memo, package: Path, stop: Path) -> tuple[str, str]:
     """`resolve(package, stop)`, remembered by the size and mtime of the directories it lists."""
     key = "|".join(
         memo.stat_key(d) for d in [package, *package.parents][: len(package.relative_to(stop).parts) + 1]
     )
-    hit = readings.get(key)
-    if hit is not None:
-        return hit[0], hit[1]
+    stored, hit = readings.recall(key, _decode_license)
+    if stored and hit is not None:
+        return hit
     found = resolve(package, stop)
     readings.put(key, list(found))
     return found

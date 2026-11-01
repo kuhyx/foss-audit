@@ -115,6 +115,12 @@ def copies() -> Iterator[Copy]:
         yield None, partial(read_git_checkout, toml)
 
 
+def _decode(hit: list[Any]) -> list[Any]:
+    name, version, license_id, where, deps, home = hit
+    memo.require_text(name, version, license_id, where, home, *deps)
+    return list(hit)
+
+
 def cached_artifacts(readings: Memo = NO_MEMO) -> list[CachedArtifact]:
     """One artifact per crate name; the first copy of each version wins.
 
@@ -125,7 +131,7 @@ def cached_artifacts(readings: Memo = NO_MEMO) -> list[CachedArtifact]:
     seen: set[tuple[str, str]] = set()
     git_urls = GitUrls(CARGO, SRC)
     for key, load in copies():
-        stored = readings.get(key) if key else None
+        stored = readings.recall(key, _decode)[1] if key else None
         manifest = None if stored else load()
         if stored:
             head = (stored[0], stored[1])
