@@ -1185,15 +1185,16 @@
     },
     "com.google.android.libraries.identity.googleid:googleid": {
       "names": [
-        "Firebase Auth web flow, firebase_auth 7.0.1 (BSD-3-Clause, GitHub firebase/flutterfire LICENSE, release 2026-10-23) signInWithProvider(GoogleAuthProvider()): Custom Tab sign-in straight to a Firebase user, no Google ID token and no googleid; native firebase-auth 25.0.0 (Android SDK License, release 2026-10-07) has no googleid dependency in its Maven pom (fit good, effort M)",
-        "AppAuth flutter_appauth 13.0.0 (BSD-3-Clause, GitHub MaikuB/flutter_appauth LICENSE, release 2026-10-30) over net.openid:appauth 0.11.1 (Apache-2.0, Maven pom, last release 2021-12-22, repo pushed 2026-03-22): Google as OpenID provider, ID token into FirebaseAuth signInWithCredential (fit good, effort L)",
-        "flutter_web_auth_2 5.1.0 (MIT, GitHub ThexXTURBOXx/flutter_web_auth_2 LICENSE, release 2026-08-12): generic browser redirect, you write PKCE and the token exchange yourself (fit partial, effort L)"
+        "Own PKCE loopback OAuth flow already in ~/src/utils/crdt_sync_flutter (google_desktop_sign_in.dart), reused on Android: no new dependency, returns the same id_token for signInWithIdp; fit good, effort M; pilot on todo 2026-11-01",
+        "flutter_web_auth_2 5.1.0 (MIT, GitHub ThexXTURBOXx/flutter_web_auth_2 LICENSE, release 2026-08-12) as the redirect fallback (fit good, effort M)",
+        "flutter_appauth 13.0.0 (BSD-3-Clause, release 2026-10-30) over net.openid:appauth 0.11.1 (Apache-2.0, last release 2021-12-22) (fit good, effort L)",
+        "Not recommended: firebase_auth, it adds non-free native firebase-auth and GMS deps to apps that use REST"
       ],
-      "candidates": ["firebase_auth", "net.openid:appauth", "flutter_appauth", "flutter_web_auth_2"],
+      "candidates": ["crdt_sync_flutter", "flutter_web_auth_2", "flutter_appauth", "net.openid:appauth"],
       "fit": "good",
       "effort": "M",
-      "effortReason": "Pulled by google_sign_in_android 7.2.18 in 10 Flutter apps (todo, tutor, diet-guard, home_inventory, kartka, home-guard, leetcode-guard, wake-alarm, crdt_sync_flutter); each swaps one sign-in call and needs a phone test. microG has no googleid or Credential Manager artifact (repo1.maven.org/maven2/org/microg/gms/), so it is no option",
-      "lockIn": "Firebase Auth stays proprietary, which your Firebase-only rule already accepts; you lose the native account chooser, one-tap and silent re-sign-in, and the browser Custom Tab opens for each login",
+      "effortReason": "One change in crdt_sync_flutter plus a dependency bump in ~10 apps, each needing a phone sign-in check",
+      "lockIn": "Google only officially supports loopback redirects for Desktop OAuth clients; a browser tab replaces the native account chooser",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-fido": {
