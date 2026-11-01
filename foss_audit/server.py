@@ -1,9 +1,12 @@
-"""Local HTTP API for the UI: /api/scan, /api/scan/progress, /api/health.
+"""Local HTTP API for the UI: /api/scan, /api/scan/progress, /api/health, POST /api/remove.
 
 Binds 127.0.0.1 only. /api/scan never waits for a scan: it serves the last
 result (memory, saved in ~/.cache/foss-audit/scan.json) with `scanning` set
 while a background rescan runs, or 202 when there is none yet. A rescan starts
 at startup and on ?refresh=1|full unless one runs (cold ~30 s).
+
+/api/scan items leave out removeCommand/removeVia (most of the bytes);
+POST /api/remove {"ids": [...]} returns them per id for the served result.
 
 --scan-file PATH serves a saved `python -m foss_audit.scan` result instead:
 loaded at startup (a bad file is a usage error), re-read on ?refresh=1, never
@@ -30,6 +33,7 @@ from foss_audit.server_body import EncodedScan, accepts_gzip
 DEFAULT_PORT = 5191
 DEFAULT_STORE = Path.home() / ".cache/foss-audit/scan.json"
 REFRESH_MODES = frozenset({"1", "full"})
+MAX_BODY = 16 * 1024 * 1024  # 12k ids are ~0.6 MB; this only stops a runaway client
 
 
 class ScanCache:
@@ -67,6 +71,12 @@ class ScanCache:
     def get(self, *, refresh: bool, full: bool = False) -> dict[str, Any] | None:
         current = self.encoded(refresh=refresh, full=full)
         return None if current is None else {**current[0].result, "scanning": current[1]}
+
+    def removes(self, ids: list[str]) -> dict[str, dict[str, Any]]:
+        """The remove fields of `ids` in the served result (nothing before the first one)."""
+        with self._lock:
+            served = self._served
+        return {} if served is None else served.removes(ids)
 
     @staticmethod
     def _encode(result: dict[str, Any]) -> EncodedScan:
@@ -137,6 +147,35 @@ class Handler(BaseHTTPRequestHandler):
             self._send(HTTPStatus.OK, CACHE.snapshot())
         else:
             self._send(HTTPStatus.NOT_FOUND, {"error": f"no route {url.path}"})
+
+    def do_POST(self) -> None:
+        path = urlparse(self.path).path
+        if path != "/api/remove":
+            self._send(HTTPStatus.NOT_FOUND, {"error": f"no route {path}"})
+            return
+        try:
+            ids = self._read_ids()
+        except ValueError as err:
+            self._send(HTTPStatus.BAD_REQUEST, {"error": str(err)})
+            return
+        self._send(HTTPStatus.OK, CACHE.removes(ids))
+
+    def _read_ids(self) -> list[str]:
+        """The `ids` of a JSON body `{"ids": [str, ...]}`; ValueError says what is wrong."""
+        try:
+            length = int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            length = -1
+        if not 0 <= length <= MAX_BODY:
+            raise ValueError(f"body missing or too large (limit {MAX_BODY} bytes)")
+        try:
+            body = json.loads(self.rfile.read(length))
+        except ValueError as err:  # a UnicodeDecodeError is one
+            raise ValueError(f"body is not JSON: {err}") from err
+        ids = body.get("ids") if isinstance(body, dict) else None
+        if not isinstance(ids, list) or not all(isinstance(item, str) for item in ids):
+            raise ValueError('body must be {"ids": [string, ...]}')
+        return ids
 
     def _send(self, status: HTTPStatus, body: dict[str, Any]) -> None:
         self._respond(status, (json.dumps(body).encode(),), zipped=False)
