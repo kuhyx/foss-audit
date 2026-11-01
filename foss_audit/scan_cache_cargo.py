@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from foss_audit import cache_common, cache_remove_cargo
+from foss_audit import cache_common, cache_remove_cargo, progress
 from foss_audit.cache_common import CachedArtifact, CachedVersion, project_files, project_of, to_items
 from foss_audit.model import Item
 from foss_audit.own_license import LICENSE_FILE, identify
@@ -172,12 +172,22 @@ def manifests() -> Iterator[Manifest]:
     """Every cached crate copy: src dirs first, then .crates, then git checkouts."""
     registry = CARGO / "registry"
     extracted = {(p.parent.name, p.name) for p in registry.glob("src/*/*") if p.is_dir()}
+    crates = [
+        c
+        for c in sorted(registry.glob("cache/*/*.crate"))
+        if (c.parent.name, c.name.removesuffix(".crate")) not in extracted
+    ]
+    tomls = sorted(CARGO.glob("git/checkouts/*/*/Cargo.toml"))
+    shared = progress.counter("cargo-cache")
+    shared.add_total(len(extracted) + len(crates) + len(tomls))
     for index, stem in sorted(extracted):
+        shared.advance()
         yield read_dir(registry / "src" / index / stem, "src dir")
-    for crate in sorted(registry.glob("cache/*/*.crate")):
-        if (crate.parent.name, crate.name.removesuffix(".crate")) not in extracted:
-            yield read_crate(crate)
-    for toml in sorted(CARGO.glob("git/checkouts/*/*/Cargo.toml")):
+    for crate in crates:
+        shared.advance()
+        yield read_crate(crate)
+    for toml in tomls:
+        shared.advance()
         m = read_dir(toml.parent, f"git checkout {toml.parent.parent.name}/{toml.parent.name}")
         if m.package or m.error:  # a workspace-only root has no [package]
             m.git = (toml.parent.parent.name, toml.parent.name)

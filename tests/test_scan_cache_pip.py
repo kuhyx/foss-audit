@@ -180,7 +180,9 @@ def test_best_copy_of_a_version() -> None:
     assert scan_cache_pip.best([rec(license_from="a"), rec()]).license_from == "a"
 
 
-def test_scan_pip_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scan_pip_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ticks: dict[str, tuple[int, int | None]]
+) -> None:
     pip, uv = tmp_path / "pip", tmp_path / "uv"
     body = pip / "http-v2/a/b/c/d/e/0001.body"
     body.parent.mkdir(parents=True)
@@ -203,6 +205,7 @@ def test_scan_pip_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
     records, bad = scan_cache_pip.all_records()
     assert (len(records), bad) == (5, 1)
     items = {i.name: i for i in scan_cache_pip.scan_pip_cache()}
+    assert ticks["pip-cache"][0] == ticks["pip-cache"][1] > 0
     assert sorted(items) == ["closed", "demo-pkg", "freeware"]
     demo = items["demo-pkg"]
     assert (demo.source, demo.verdict, demo.version, demo.license) == (

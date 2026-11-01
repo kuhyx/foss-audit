@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from foss_audit import cache_common
+from foss_audit import cache_common, progress
 from foss_audit.licenses import classify_text
 from foss_audit.own_license import identify
 from foss_audit.scan_cache_maven_jar import archive_license
@@ -28,6 +28,7 @@ from foss_audit.scan_cache_maven_source import Upstream
 
 FETCH_WORKERS = 24
 MAX_ROUNDS = 8
+SOURCE = "maven-cache"
 MAX_MARKER_HOPS = 3
 FETCH_ERRORS = (OSError, http.client.HTTPException, ValueError)
 # One fetch job: candidate URLs for the same file, tried in order.
@@ -198,13 +199,16 @@ def _fetch(want: Want) -> list[tuple[str, bytes | None, str]]:
             tried.append((url, None, str(exc) or type(exc).__name__))
             continue
         break
+    progress.counter(SOURCE).advance()
     return tried
 
 
 def fetch_all(store: Store, wants: Iterable[Want]) -> None:
     """Run the fetch jobs in parallel into the store."""
+    jobs = sorted(set(wants))
+    progress.counter(SOURCE).add_total(len(jobs))
     with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as pool:
-        for tried in pool.map(_fetch, sorted(set(wants))):
+        for tried in pool.map(_fetch, jobs):
             for url, data, error in tried:
                 if data is None:
                     store.failed[url] = error
@@ -216,15 +220,15 @@ def resolve_all(store: Store, gavs: Iterable[Gav]) -> dict[Gav, Found]:
     """Every version's license, fetching missing POMs only for unresolved ones;
     the source-repository lookups are collected, run in parallel, then used."""
     store.upstream.collecting = True
-    results = {gav: resolve(store, gav) for gav in gavs}
+    results = {gav: resolve(store, gav) for gav in progress.counted(SOURCE, gavs)}
     for _ in range(MAX_ROUNDS):
         pending = {gav: found.wants for gav, found in results.items() if found.wants}
         if not pending:
             break
         fetch_all(store, (url for wants in pending.values() for url in wants))
         store.forget_missing()
-        results.update({gav: resolve(store, gav) for gav in pending})
+        results.update({gav: resolve(store, gav) for gav in progress.counted(SOURCE, pending)})
     store.upstream.collecting = False
     if store.upstream.run_queued():  # POMs and archives are memoised: resolving again is cheap
-        results = {gav: resolve(store, gav) for gav in results}
+        results = {gav: resolve(store, gav) for gav in progress.counted(SOURCE, list(results))}
     return results

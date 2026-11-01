@@ -19,7 +19,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from foss_audit import cache_common, upstream_license
+from foss_audit import cache_common, progress, upstream_license
 from foss_audit.own_license import declared_license, repo_root
 from foss_audit.scan_cache_pip_meta import Record, classifier_license, known
 from foss_audit.scan_cache_pip_read import records_from
@@ -105,6 +105,12 @@ def from_pypi(record: Record) -> Record:
     return replace(record, license_from="; ".join(tried))
 
 
+def _from_pypi_counted(record: Record) -> Record:
+    fixed = from_pypi(record)
+    progress.counter("pip-cache").advance()
+    return fixed
+
+
 def resolve(records: list[Record], checkouts: dict[str, list[Path]]) -> list[Record]:
     """Records that found no license string at all, filled from a checkout or PyPI.
 
@@ -117,7 +123,8 @@ def resolve(records: list[Record], checkouts: dict[str, list[Path]]) -> list[Rec
         for r, b in zip(records, blank, strict=True)
     ]
     todo = [i for i, r in enumerate(local) if blank[i] and not r.local and r.name not in checkouts]
+    progress.counter("pip-cache").add_total(len(todo))
     with ThreadPoolExecutor(WORKERS) as pool:
-        for i, fixed in zip(todo, pool.map(from_pypi, [local[i] for i in todo]), strict=True):
+        for i, fixed in zip(todo, pool.map(_from_pypi_counted, [local[i] for i in todo]), strict=True):
             local[i] = fixed
     return local

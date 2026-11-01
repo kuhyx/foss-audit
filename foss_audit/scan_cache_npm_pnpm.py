@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from foss_audit import progress
 from foss_audit.scan_cache_npm_manifest import Files, Found, found, unreadable
 from foss_audit.scan_cache_npm_msgpack import unpackb
 
@@ -31,6 +32,7 @@ STORE = Path.home() / ".local/share/pnpm/store"
 TEXT_LIMIT = 256 * 1024
 EXEC_BITS = 0o111
 READ_WORKERS = 16
+SOURCE = "npm-cache"
 
 
 def content_path(store: Path, hex_digest: str, mode: int) -> Path:
@@ -122,7 +124,9 @@ def _db_entries(store: Path) -> Iterator[dict[str, Any]]:
 
 def _read(job: tuple[Path, dict[str, Any]]) -> Found | None:
     store, doc = job
-    return package(store, doc["files"], str(doc.get("name") or ""), str(doc.get("version") or ""))
+    read = package(store, doc["files"], str(doc.get("name") or ""), str(doc.get("version") or ""))
+    progress.counter(SOURCE).advance()
+    return read
 
 
 def scan_pnpm_store(root: Path | None = None) -> list[Found]:
@@ -132,5 +136,6 @@ def scan_pnpm_store(root: Path | None = None) -> list[Found]:
         for store in sorted(p for p in (root or STORE).glob("v*") if p.is_dir())
         for doc in [*_json_entries(store), *_db_entries(store)]
     ]
+    progress.counter(SOURCE).add_total(len(jobs))
     with ThreadPoolExecutor(READ_WORKERS) as pool:
         return [item for item in pool.map(_read, jobs) if item is not None]

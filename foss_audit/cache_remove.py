@@ -14,9 +14,8 @@ pulls it in, so deleting the cache alone is not removal. For one package:
   and removeVia names the apps;
 - its own cache entries are deleted last, once.
 
-Nothing reaches it: it is stale and only its cache entries go. Steps are
-subshells joined by "; ", so a failed `cd` never runs a removal elsewhere and
-one failing step never hides the others. The UI only copies the command.
+Nothing reaches it: it is stale and only its cache entries go. Steps are subshells joined by "; ",
+so a failed `cd` never runs a removal elsewhere and no failing step hides the others. The UI only copies it.
 """
 
 from __future__ import annotations
@@ -27,6 +26,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from foss_audit import progress
 from foss_audit.cache_common import CachedArtifact, project_files
 from foss_audit.model import Item
 
@@ -244,6 +244,7 @@ class Planner:
 
 def apply(items: Iterable[Item], planner: Planner, cache_step: CacheStep) -> None:
     """Fill removeCommand and removeVia of every item in place."""
-    for item in items:
+    todo = list(items)
+    for item in progress.counted(todo[0].source if todo else "", todo):
         step, note = cache_step(item.name)
         item.removeCommand, item.removeVia = planner.plan(item.name, step, note)

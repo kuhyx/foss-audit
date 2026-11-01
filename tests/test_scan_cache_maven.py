@@ -74,7 +74,9 @@ def test_catalog_module_and_group_name() -> None:
     assert build_file_names(toml) == {"org.x:lib", "org.z:zed"}
 
 
-def test_scan_end_to_end(caches: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scan_end_to_end(
+    caches: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch, ticks: dict[str, tuple[int, int | None]]
+) -> None:
     gradle, m2, src = caches
     offline(monkeypatch)
     nonfree = ("com.google.android.gms", "play-services-base", "18.0.0")
@@ -103,6 +105,7 @@ def test_scan_end_to_end(caches: tuple[Path, Path, Path], monkeypatch: pytest.Mo
     assert (lib.verdict, lib.version, lib.license) == ("foss-partial", "1.0, 0.9", "MIT")
     assert lib.reason == "depends on non-free com.google.android.gms:play-services-base"
     assert lib.requiredBy == ["~/src/app"]
+    assert ticks["maven-cache"][0] == ticks["maven-cache"][1] > 0
     assert lib.url == "https://mvnrepository.com/artifact/org.x/lib"
     assert items["com.google.android.gms:play-services-base"].verdict == "nonfree"
     missing = items["org.x:bare"]

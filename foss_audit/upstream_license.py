@@ -15,18 +15,19 @@ Answers are kept 30 days in ~/.cache/foss-audit/upstream-license.json, keyed by
 the normalised URL (plus "@<ref>" for a ref). A repository the forge says is
 gone (deleted or private) is an answer too: no license, "repository gone",
 cached like any other. A failure (network down, DNS, timeout, a ref that cannot
-be fetched) is returned as text and never cached, so it is visible and retried
-next scan.
+be fetched) is returned as text and never cached: visible, retried next scan.
 """
 
 from __future__ import annotations
 
 import contextlib
+import fcntl
 import json
 import os
 import re
 import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -50,7 +51,7 @@ WEB_SEGMENTS = frozenset({"-", "tree", "blob", "src", "commit", "commits", "rele
 SCM_GIT = re.compile(r"(?i)^scm:git:")
 OWNER_REPO = 2
 README_BYTES = 1 << 20
-# pip and maven look up from worker threads; the cache file is read-modify-written.
+# Lookups run in worker threads of several processes; the cache file is read-modify-written.
 STORE_LOCK = threading.Lock()
 # "## License" + the next lines, or a "License: X" line; the license token comes after.
 README_SECTION = re.compile(
@@ -169,9 +170,24 @@ def _load() -> dict[str, dict[str, object]]:
     return data if isinstance(data, dict) else {}
 
 
+@contextlib.contextmanager
+def _file_lock() -> Iterator[None]:
+    """Exclusive across processes (the scanners run in one each); skipped when the dir is unwritable."""
+    lock = CACHE_FILE.with_suffix(".lock")
+    try:
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        handle = lock.open("a")
+    except OSError:
+        yield
+        return
+    with handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        yield
+
+
 def _store(key: str, license_id: str, checked: str) -> None:
     """Merge one answer into the cache file (atomic replace); a read-only cache dir is not an error."""
-    with STORE_LOCK:
+    with STORE_LOCK, _file_lock():
         data = _load()
         data[key] = {"license": license_id, "checked": checked, "fetched_at": _now()}
         tmp = CACHE_FILE.with_suffix(f".{os.getpid()}.tmp")

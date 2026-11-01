@@ -6,7 +6,7 @@
 #   scripts/e2e_selection.sh [scan.json]     default /tmp/fa_scan.json
 #
 # Make the inputs first, each its own (slow) step:
-#   .venv/bin/python -m foss_audit.scan > /tmp/fa_scan.json    (~45 s)
+#   .venv/bin/python -m foss_audit.scan > /tmp/fa_scan.json    (~30 s)
 #   pnpm run build                                             (dist/)
 #
 # Serves the scan file through the real backend (--scan-file, no live scan)
