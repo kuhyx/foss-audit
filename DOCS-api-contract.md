@@ -11,7 +11,7 @@ there and a background rescan begins. `refresh=1` starts a background rescan
 (`full` also discards per-package memo entries) unless one is running, and
 returns at once. A cold scan takes ~30 s (the scanners run in parallel worker processes; one at a time it was ~70 s).
 
-- `200`: the last complete result (body below) plus `"scanning": bool`.
+- `200`: the last complete result (body below) plus `"scanning": bool`. Encoded once per result and gzipped when `Accept-Encoding` allows (28 MB -> 2.3 MB, ~2 ms per request); `index.html` starts this request before the bundle loads.
 - `202` `{"scanning": true}`: no result yet (first run, no `scan.json`).
 
 ## `GET /api/scan/progress`
