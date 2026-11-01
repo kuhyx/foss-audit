@@ -25,7 +25,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from foss_audit import cache_remove_pub
+from foss_audit import cache_remove_pub, progress
 from foss_audit.cache_common import (
     SRC,
     CachedArtifact,
@@ -69,15 +69,15 @@ def _spec(directory: Path) -> Pubspec:
 
 def hosted_versions() -> Iterator[tuple[Pubspec, CachedVersion, str]]:
     """(pubspec, version, fallback url) for every hosted/<server>/<name>-<version>."""
-    for server in _dirs(PUB_CACHE / "hosted"):
-        for directory in _dirs(server):
-            spec = _spec(directory)
-            # Without a pubspec, split "<name>-<version>" at the first dash: names have none.
-            name, _, version = directory.name.partition("-")
-            spec.name, spec.version = spec.name or name, spec.version or version
-            lic, where = resolve(directory, directory)
-            fallback = f"https://{server.name}/packages/{spec.name}"
-            yield spec, CachedVersion(spec.version, lic, where, spec.deps), fallback
+    jobs = [(server, directory) for server in _dirs(PUB_CACHE / "hosted") for directory in _dirs(server)]
+    for server, directory in progress.counted("pub-cache", jobs):
+        spec = _spec(directory)
+        # Without a pubspec, split "<name>-<version>" at the first dash: names have none.
+        name, _, version = directory.name.partition("-")
+        spec.name, spec.version = spec.name or name, spec.version or version
+        lic, where = resolve(directory, directory)
+        fallback = f"https://{server.name}/packages/{spec.name}"
+        yield spec, CachedVersion(spec.version, lic, where, spec.deps), fallback
 
 
 def _origin(config: Path) -> str:
@@ -101,6 +101,12 @@ def _git_packages(checkout: Path) -> Iterator[Path]:
                 yield pubspec.parent
 
 
+def _with_upstream_counted(job: tuple[Pubspec, tuple[str, str], str]) -> tuple[str, str]:
+    answer = with_upstream(job[1][0], job[1][1], job[2])
+    progress.counter("pub-cache").advance()
+    return answer
+
+
 def git_versions() -> list[tuple[Pubspec, CachedVersion, str]]:
     """(pubspec, version, fallback url) for every package in git/<repo>-<sha>/ checkouts."""
     found: list[tuple[Pubspec, tuple[str, str], str]] = []
@@ -112,8 +118,9 @@ def git_versions() -> list[tuple[Pubspec, CachedVersion, str]]:
             spec = _spec(directory)
             if spec.name and spec.version:  # not a workspace root
                 found.append((spec, resolve(directory, checkout), remote))
+    progress.counter("pub-cache").add_total(len(found))
     with ThreadPoolExecutor(UPSTREAM_WORKERS) as pool:
-        licensed = list(pool.map(lambda job: with_upstream(job[1][0], job[1][1], job[2]), found))
+        licensed = list(pool.map(_with_upstream_counted, found))
     return [
         (
             spec,

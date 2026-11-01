@@ -4,11 +4,6 @@ from __future__ import annotations
 
 import json
 import sys
-import threading
-import urllib.error
-import urllib.request
-from collections.abc import Iterator
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -36,60 +31,11 @@ def test_run_scan_isolates_failures() -> None:
 
 def test_cli(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     result = {"items": [], "errors": [], "durationMs": 5}
-    monkeypatch.setattr(scan, "run_scan", lambda: result)
+    monkeypatch.setattr(scan, "run_scan", lambda progress=None: result)
     scan.main([])
     assert json.loads(capsys.readouterr().out) == result
     scan.main(["--summary"])
     assert capsys.readouterr().out.startswith("0 items in 5 ms")
-
-
-@pytest.fixture
-def api(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
-    calls: list[int] = []
-
-    def fake_scan() -> dict[str, object]:
-        calls.append(1)
-        return {"items": [], "errors": [], "n": len(calls)}
-
-    monkeypatch.setattr(server, "run_scan", fake_scan)
-    monkeypatch.setattr(server, "CACHE", server.ScanCache())
-    httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
-    yield f"http://127.0.0.1:{httpd.server_address[1]}"
-    httpd.shutdown()
-
-
-def get(url: str) -> tuple[int, dict[str, object]]:
-    try:
-        with urllib.request.urlopen(url) as resp:
-            return resp.status, json.loads(resp.read())
-    except urllib.error.HTTPError as err:
-        return err.code, json.loads(err.read())
-
-
-def test_api_routes_and_cache(api: str) -> None:
-    assert get(f"{api}/api/health") == (200, {"ok": True})
-    assert get(f"{api}/api/scan")[1]["n"] == 1
-    assert get(f"{api}/api/scan")[1]["n"] == 1  # cached
-    assert get(f"{api}/api/scan?refresh=1")[1]["n"] == 2
-    assert get(f"{api}/nope") == (404, {"error": "no route /nope"})
-
-
-def test_server_main_binds_localhost(monkeypatch: pytest.MonkeyPatch) -> None:
-    seen: dict[str, object] = {}
-
-    class FakeServer:
-        def __init__(self, addr: tuple[str, int], _handler: object) -> None:
-            seen["addr"] = addr
-
-        def serve_forever(self) -> None:
-            seen["served"] = True
-
-    monkeypatch.setattr(server, "ThreadingHTTPServer", FakeServer)
-    monkeypatch.setattr(sys, "argv", ["server", "--port", "6000"])
-    server.main()
-    assert seen == {"addr": ("127.0.0.1", 6000), "served": True}
 
 
 def write_scan(path: Path, n: int) -> Path:

@@ -21,7 +21,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
-from foss_audit import upstream_license
+from foss_audit import progress, upstream_license
 from foss_audit.scan_cache_maven_pom import Gav
 from foss_audit.upstream_license import SCM_GIT, repository
 
@@ -56,6 +56,12 @@ def source_repo(gav: Gav, source_urls: tuple[str, ...]) -> RepoRef:
     return f"https://github.com/{owner.group(1)}/{owner.group(2) or artifact}", ref
 
 
+def _lookup(key: RepoRef) -> tuple[str, str]:
+    answer = upstream_license.upstream_license(*key)
+    progress.counter("maven-cache").advance()
+    return answer
+
+
 @dataclass
 class Upstream:
     """The scan's source-repository answers, one lookup per (repo, ref)."""
@@ -85,8 +91,7 @@ class Upstream:
         """Answer every queued lookup in parallel; False when none was queued."""
         keys = sorted(self.queued - self.answers.keys())
         self.queued.clear()
+        progress.counter("maven-cache").add_total(len(keys))
         with ThreadPoolExecutor(max_workers=UPSTREAM_WORKERS) as pool:
-            self.answers.update(
-                zip(keys, pool.map(lambda key: upstream_license.upstream_license(*key), keys), strict=True)
-            )
+            self.answers.update(zip(keys, pool.map(_lookup, keys), strict=True))
         return bool(keys)

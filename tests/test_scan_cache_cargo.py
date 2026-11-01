@@ -99,7 +99,9 @@ def test_workspace_license_falls_back_to_license_files(home: Path) -> None:
     assert cargo.cached_artifacts()[0].url == "https://h.example"
 
 
-def test_no_license_anywhere_names_every_place_checked(home: Path) -> None:
+def test_no_license_anywhere_names_every_place_checked(
+    home: Path, ticks: dict[str, tuple[int, int | None]]
+) -> None:
     make_crate(home, "c-1.0.0", [("Cargo.toml", toml("c", "1.0.0", 'license-file = "missing.txt"'))])
     make_crate(home, "d-2.0.0", [("README.md", "hi")])
     found = versions(home)
@@ -110,6 +112,7 @@ def test_no_license_anywhere_names_every_place_checked(home: Path) -> None:
     # No Cargo.toml at all: name/version from the stem, still says where it looked.
     assert found["d"][0][:2] == ("2.0.0", "")
     [c, d] = cargo.scan_cargo_cache()
+    assert ticks["cargo-cache"][0] == ticks["cargo-cache"][1] > 0
     assert (c.verdict, d.verdict) == ("nonfree", "nonfree")
     assert "checked Cargo.toml license (.crate)" in c.reason
     assert c.url == "https://crates.io/crates/c"

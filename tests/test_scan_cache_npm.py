@@ -212,7 +212,9 @@ def test_merge_prefers_a_licensed_reading() -> None:
     assert [(v.version, v.license) for v in arts[0].versions] == [("1", "MIT"), ("2", "ISC")]
 
 
-def test_scan_npm_cache_end_to_end(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scan_npm_cache_end_to_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ticks: dict[str, tuple[int, int | None]]
+) -> None:
     store = tmp_path / "store"
     v10 = store / "v10"
     shared = json_files(v10, {"package.json": pkg_json(name="free", version="1.0.0", license="MIT")})
@@ -236,6 +238,7 @@ def test_scan_npm_cache_end_to_end(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "lib": "foss-partial",
     }
     assert items["lib"].requiredBy == ["~/src/proj"]
+    assert ticks["npm-cache"] == (6, 6)  # 1 pnpm package + 2 tarballs read + 3 removal plans
     assert items["lib"].source == "npm-cache"
     assert items["closed"].reason.startswith("no license")
     assert "npm _cacache tarball" in items["closed"].reason

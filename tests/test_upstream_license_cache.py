@@ -140,3 +140,44 @@ def test_with_upstream_adopts_license_or_appends_the_check(monkeypatch: pytest.M
 def test_real_clock_is_epoch_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.undo()
     assert ul._now() > 1_700_000_000
+
+
+# --- scanners run in separate processes: the cache file is locked across them ----------------
+
+
+def test_store_holds_an_exclusive_file_lock_while_it_merges(
+    cache_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[str, bool]] = []
+
+    def record(handle: object, op: int) -> None:
+        calls.append((Path(handle.name).name, cache_file.exists()))  # type: ignore[attr-defined]
+        assert op == ul.fcntl.LOCK_EX
+
+    monkeypatch.setattr(ul.fcntl, "flock", record)
+    ul._store("k", "MIT", "checked")
+    assert calls == [("upstream-license.lock", False)]  # taken before the file was read or written
+    assert json.loads(cache_file.read_text())["k"]["license"] == "MIT"
+
+
+def test_store_still_works_when_the_lock_file_cannot_be_created(
+    cache_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (cache_file.parent.parent / cache_file.parent.name).write_text("a file where the directory should be")
+    ul._store("k", "MIT", "checked")  # nothing raises: an unwritable cache is not an error
+    assert not cache_file.exists()
+
+
+def test_two_processes_storing_at_once_lose_no_entry(cache_file: Path) -> None:
+    import multiprocessing
+
+    import runner_helpers
+
+    context = multiprocessing.get_context("spawn")
+    workers = [context.Process(target=runner_helpers.store_many, args=(str(cache_file), tag)) for tag in "ab"]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(30)
+        assert worker.exitcode == 0
+    assert len(json.loads(cache_file.read_text())) == 2 * runner_helpers.STORES

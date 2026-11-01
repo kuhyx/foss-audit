@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
+from foss_audit import progress
 from foss_audit.scan_cache_npm_manifest import (
     LICENSE_NAME,
     README_FILE,
@@ -49,6 +50,7 @@ TARBALL_URL = re.compile(r"^https?://[^/]+/(?P<name>.+?)/-/(?:@[^/]+/)?(?P<file>
 TEXT_LIMIT = 256 * 1024
 WHERE = "npm _cacache tarball"
 READ_WORKERS = 16
+SOURCE = "npm-cache"
 READ_ERRORS = (OSError, EOFError, ValueError, tarfile.TarError, zlib.error)
 
 
@@ -156,6 +158,12 @@ def tarballs(cache: Path) -> Iterator[tuple[str, str, Path]]:
             yield spec[0], spec[1], path
 
 
+def _read_job(job: tuple[str, str, Path]) -> Found | None:
+    found = read_tarball(job[2], job[0], job[1])
+    progress.counter(SOURCE).advance()
+    return found
+
+
 def scan_cacache(skip: set[tuple[str, str]], cache: Path | None = None) -> list[Found]:
     """Every package tarball in `cache` (CACACHE) not already in `skip` (name, version) pairs."""
     todo: list[tuple[str, str, Path]] = []
@@ -165,8 +173,9 @@ def scan_cacache(skip: set[tuple[str, str]], cache: Path | None = None) -> list[
         if not (name and version and (spec in skip or spec in seen)):
             todo.append((name, version, path))
             seen.add(spec)
+    progress.counter(SOURCE).add_total(len(todo))
     with ThreadPoolExecutor(READ_WORKERS) as pool:
-        read = list(pool.map(lambda job: read_tarball(job[2], job[0], job[1]), todo))
+        read = list(pool.map(_read_job, todo))
     results: list[Found] = []
     for (name, version, _), item in zip(todo, read, strict=True):
         # As if read in order: a version an earlier tarball turned out to hold is skipped.

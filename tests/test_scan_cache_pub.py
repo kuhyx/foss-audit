@@ -128,7 +128,9 @@ def test_read_is_capped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 # --- whole scan ---------------------------------------------------------------
 
 
-def test_scan_hosted_and_git_merged_by_name(cache: Path, tmp_path: Path) -> None:
+def test_scan_hosted_and_git_merged_by_name(
+    cache: Path, tmp_path: Path, ticks: dict[str, tuple[int, int | None]]
+) -> None:
     hosted = cache / "hosted/pub.dev"
     pkg(hosted / "http-1.0.0", "http", "1.0.0", extra="dependencies:\n  meta: any\n")
     pkg(hosted / "http-1.2.0", "http", "1.2.0", BSD3, extra="repository: https://github.com/dart-lang/http\n")
@@ -154,6 +156,7 @@ def test_scan_hosted_and_git_merged_by_name(cache: Path, tmp_path: Path) -> None
     write(tmp_path / "src/other/sub/pubspec.lock", "packages:\n  http:\n    source: hosted\n")
 
     items = {i.name: i for i in scan_cache_pub.scan_pub_cache()}
+    assert ticks["pub-cache"][0] == ticks["pub-cache"][1] > 0
 
     assert set(items) == {"http", "meta", "junk", "pre_rel", "priv", "dio_cookie_manager"}
     assert items["pre_rel"].version == "1.0.0-dev.1"

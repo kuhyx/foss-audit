@@ -9,7 +9,7 @@ Never waits for a live scan. The last result is kept in memory and saved to
 `~/.cache/foss-audit/scan.json` (atomic rename); at startup it is loaded from
 there and a background rescan begins. `refresh=1` starts a background rescan
 (`full` also discards per-package memo entries) unless one is running, and
-returns at once. A cold scan takes ~70 s.
+returns at once. A cold scan takes ~30 s (the scanners run in parallel worker processes; one at a time it was ~70 s).
 
 - `200`: the last complete result (body below) plus `"scanning": bool`.
 - `202` `{"scanning": true}`: no result yet (first run, no `scan.json`).

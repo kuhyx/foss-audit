@@ -4,12 +4,15 @@ and upstream_license away from the network and the real cache."""
 from __future__ import annotations
 
 import os
+import threading
 from collections.abc import Iterator
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
+from server_helpers import FakeScan, Serve
 
-from foss_audit import own_license, upstream_git, upstream_license
+from foss_audit import own_license, progress, server, upstream_git, upstream_license
 
 MIT = "MIT License\n\nPermission is hereby granted, free of charge, to any person...\n"
 
@@ -59,3 +62,53 @@ def no_real_projects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     for module in (scan_cache_cargo, scan_cache_npm, scan_cache_pip, scan_cache_pub):
         monkeypatch.setattr(module, "SRC", tmp_path / "src")
+
+
+def _no_live_scan(progress: object = None) -> dict[str, object]:
+    raise AssertionError("a test reached the real run_scan: stub server.run_scan")
+
+
+@pytest.fixture(autouse=True)
+def server_off_the_machine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The API never scans this machine or writes the real ~/.cache in a test."""
+    monkeypatch.setattr(server, "DEFAULT_STORE", tmp_path / "default-store/scan.json")
+    monkeypatch.setattr(server, "run_scan", _no_live_scan)
+
+
+@pytest.fixture
+def fake(monkeypatch: pytest.MonkeyPatch) -> FakeScan:
+    scan = FakeScan()
+    monkeypatch.setattr(server, "run_scan", scan)
+    return scan
+
+
+@pytest.fixture
+def store(tmp_path: Path) -> Path:
+    return tmp_path / "cache" / "scan.json"
+
+
+@pytest.fixture
+def serve(monkeypatch: pytest.MonkeyPatch) -> Iterator[Serve]:
+    servers: list[ThreadingHTTPServer] = []
+
+    def start(cache: server.ScanCache) -> str:
+        monkeypatch.setattr(server, "CACHE", cache)
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        servers.append(httpd)
+        return f"http://127.0.0.1:{httpd.server_address[1]}"
+
+    yield start
+    for httpd in servers:
+        httpd.shutdown()
+
+
+@pytest.fixture
+def ticks() -> Iterator[dict[str, tuple[int, int | None]]]:
+    """The last (done, total) each source's counter reported."""
+    last: dict[str, tuple[int, int | None]] = {}
+    progress.reset()
+    progress.set_sink(lambda source, done, total: last.__setitem__(source, (done, total)))
+    yield last
+    progress.set_sink(None)
+    progress.reset()

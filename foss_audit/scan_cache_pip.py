@@ -13,7 +13,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
 
-from foss_audit import cache_remove_pip
+from foss_audit import cache_remove_pip, progress
 from foss_audit.cache_common import SRC, CachedArtifact, CachedVersion, to_items
 from foss_audit.model import Item
 from foss_audit.scan_cache_pip_meta import Record, known
@@ -59,7 +59,7 @@ def read_all() -> tuple[list[Record], int, Where]:
     records: list[Record] = []
     bad = 0
     where: Where = {}
-    for path, origin, reader in cache_files():
+    for path, origin, reader in progress.counted("pip-cache", list(cache_files())):
         found = reader(path, origin)
         if found is None:
             bad += 1

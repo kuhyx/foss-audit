@@ -17,7 +17,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from foss_audit import cache_common, upstream_license
+from foss_audit import cache_common, progress, upstream_license
 from foss_audit.cache_common import CachedArtifact, CachedVersion
 from foss_audit.scan_cache_maven_inherit import proven_blank
 from foss_audit.scan_cache_maven_pom import Gav
@@ -70,6 +70,12 @@ def portal_license(ids: list[str], version: str) -> tuple[str, str]:
     return "", "; ".join(tried)
 
 
+def _ask_portal(job: tuple[CachedVersion, list[str]]) -> tuple[str, str]:
+    answer = portal_license(job[1], job[0].version)
+    progress.counter("maven-cache").advance()
+    return answer
+
+
 def fill(arts: list[CachedArtifact], files: dict[Gav, VersionFiles]) -> None:
     """Blank versions of Gradle plugins take their portal source repository's license."""
     todo: list[tuple[CachedVersion, list[str]]] = []
@@ -80,8 +86,9 @@ def fill(arts: list[CachedArtifact], files: dict[Gav, VersionFiles]) -> None:
             ids = plugin_ids(files.get(gav, VersionFiles()).archives) if proven_blank(cv) else []
             if ids:
                 todo.append((cv, ids))
+    progress.counter("maven-cache").add_total(len(todo))
     with ThreadPoolExecutor(WORKERS) as pool:
-        answers = list(pool.map(lambda job: portal_license(job[1], job[0].version), todo))
+        answers = list(pool.map(_ask_portal, todo))
     for (cv, _), (found, where) in zip(todo, answers, strict=True):
         if found:
             cv.license, cv.license_from = found, f"{where}; {cv.version} itself: {cv.license_from}"
