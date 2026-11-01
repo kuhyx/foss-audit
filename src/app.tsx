@@ -19,6 +19,7 @@ import { ErrorBanner } from "./components/error-banner.tsx";
 import { FilterBar } from "./components/filter-bar.tsx";
 import { HelpOverlay } from "./components/help-overlay.tsx";
 import { ItemsTable } from "./components/items-table.tsx";
+import { LoadingProgress } from "./components/scan-progress.tsx";
 import { SelectionBar } from "./components/selection-bar.tsx";
 import { SummaryView } from "./components/summary-view.tsx";
 import { ViewTabs } from "./components/view-tabs.tsx";
@@ -52,7 +53,7 @@ function drill(verdicts: readonly Verdict[], sources: readonly Source[]): void {
 }
 
 export function App(): React.JSX.Element {
-  const { rescan, state } = useScan();
+  const { progress, rescan, state } = useScan();
   const url = useUrlState();
   const [showHelp, setShowHelp] = useState(false);
   const [dismissed, setDismissed] = useState<null | string>(null);
@@ -77,7 +78,7 @@ export function App(): React.JSX.Element {
   const deferredFilter = useDeferredValue(url.filter);
 
   if (state.kind === "loading") {
-    return <main className="app-msg">Scanning installed programs…</main>;
+    return <main className="app-msg">Scanning installed programs…<LoadingProgress progress={progress} /></main>;
   }
   if (state.kind === "error") {
     return (
@@ -116,6 +117,7 @@ export function App(): React.JSX.Element {
           });
         }}
         onRescan={rescan}
+        progress={progress}
         query={url.filter.query}
         refreshing={state.refreshing}
         scan={scan}

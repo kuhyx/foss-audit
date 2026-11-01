@@ -1,0 +1,55 @@
+.scan-bar {
+  width: 100%;
+  height: var(--space-2);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.scan-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--duration-fast) var(--ease-standard);
+}
+
+.scan-live-loading {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  width: min(24rem, 100%);
+  margin: 0 auto;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.scan-nums {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.scan-running {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  color: var(--text-muted);
+}
+
+.scan-live {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  max-width: 24rem;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.scan-live .scan-bar {
+  flex: 0 0 4rem;
+}
+
+.scan-live-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

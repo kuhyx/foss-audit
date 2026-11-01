@@ -3,13 +3,15 @@
  */
 import type { Ref } from "react";
 
-import type { Scan } from "../lib/schema.ts";
+import type { Scan, ScanProgress } from "../lib/schema.ts";
 
 import { numberFormat } from "../lib/verdict.ts";
+import { HeaderProgress } from "./scan-progress.tsx";
 
 export interface AppHeaderProps {
   readonly onQuery: (query: string) => void;
   readonly onRescan: () => void;
+  readonly progress: null | ScanProgress;
   readonly query: string;
   readonly refreshing: boolean;
   readonly scan: Scan;
@@ -28,6 +30,7 @@ function formatGeneratedAt(iso: string): string {
 export function AppHeader({
   onQuery,
   onRescan,
+  progress,
   query,
   refreshing,
   scan,
@@ -48,6 +51,7 @@ export function AppHeader({
           <span className="muted">took</span> {numberFormat.format(scan.durationMs)} ms
         </span>
       </p>
+      {refreshing && <HeaderProgress generatedAt={scan.generatedAt} progress={progress} />}
       <input
         aria-label="Search name or id (typos ok)"
         className="search"

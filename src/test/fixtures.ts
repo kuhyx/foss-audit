@@ -2,7 +2,7 @@
  * Hand-written test data. Never the recorded fixtures/scan.sample.json: that
  * is a real machine's package list and stays out of the repo.
  */
-import type { Alternative, Item, Scan } from "../lib/schema.ts";
+import type { Alternative, Item, Scan, ScanProgress } from "../lib/schema.ts";
 
 export function makeAlternative(overrides: Partial<Alternative> = {}): Alternative {
   return {
@@ -114,6 +114,20 @@ export function makeScan(overrides: Partial<Scan> = {}): Scan {
     generatedAt: "2026-10-11T14:02:11Z",
     host: "testhost",
     items: [...ITEMS],
+    scanning: false,
+    ...overrides,
+  };
+}
+
+export function makeProgress(overrides: Partial<ScanProgress> = {}): ScanProgress {
+  return {
+    error: null,
+    generatedAt: null,
+    itemsFound: 0,
+    running: [],
+    scanning: true,
+    sourcesDone: 0,
+    sourcesTotal: 26,
     ...overrides,
   };
 }
