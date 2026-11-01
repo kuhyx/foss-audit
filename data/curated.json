@@ -1066,39 +1066,71 @@
     },
     "com.google.android.gms:play-services-measurement*": {
       "names": [
-        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail; analytics simply dropped",
+        "Nothing needed: Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; it was reached only through firebase-analytics. If analytics or crash reporting is ever wanted again:",
+        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail",
         "Countly ly.count.android:sdk 26.1.6 (MIT, GitHub Countly/countly-sdk-android LICENSE, release 2026-09; fit good, effort M): analytics + crashes to a self-hosted Countly server",
         "Matomo matomo-sdk-android (BSD-3-Clause, GitHub matomo-org/matomo-sdk-android LICENSE, pushed 2026-09; fit partial, effort M): JitPack only, events to a self-hosted Matomo, no crash reports"
       ],
       "candidates": ["ch.acra:acra-core", "ch.acra:acra-http", "ly.count.android:sdk", "com.github.matomo-org:matomo-sdk-android"],
-      "fit": "good",
+      "fit": "drop-in",
       "effort": "S",
-      "effortReason": "Reached only via firebase-analytics in TachiyomiSY (Firebase (EH) block); FirebaseConfig already gates it behind a toggle, so swapping in ACRA is one dependency and one init call",
-      "lockIn": "None for a personal build; you lose the Firebase console dashboards and Crashlytics' deobfuscated stack grouping",
+      "effortReason": "Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; no replacement needed",
+      "lockIn": "None",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-ads-identifier": {
       "names": [
-        "Nothing: the advertising ID is only pulled in by firebase-analytics; dropping analytics removes it (no replacement needed)",
-        "microG org.microg.gms:play-services-ads-identifier 0.3.6.244735 (Apache-2.0 per its Maven pom and microg/GmsCore LICENSE; fit drop-in, effort S; last Maven release 2024-12)",
-        "ACRA ch.acra:acra-core (Apache-2.0) if crash reports are what you actually want from Firebase"
+        "Nothing needed: Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; the advertising ID was pulled in only by firebase-analytics. If analytics or crash reporting is ever wanted again:",
+        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail",
+        "Countly ly.count.android:sdk 26.1.6 (MIT, GitHub Countly/countly-sdk-android LICENSE, release 2026-09; fit good, effort M): analytics + crashes to a self-hosted Countly server",
+        "Matomo matomo-sdk-android (BSD-3-Clause, GitHub matomo-org/matomo-sdk-android LICENSE, pushed 2026-09; fit partial, effort M): JitPack only, events to a self-hosted Matomo, no crash reports"
       ],
-      "candidates": ["org.microg.gms:play-services-ads-identifier", "ch.acra:acra-core"],
+      "candidates": ["ch.acra:acra-core", "ch.acra:acra-http", "ly.count.android:sdk", "com.github.matomo-org:matomo-sdk-android"],
       "fit": "drop-in",
       "effort": "S",
-      "effortReason": "Transitive of firebase-analytics in TachiyomiSY; it goes away with analytics",
+      "effortReason": "Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; no replacement needed",
       "lockIn": "None",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-stats": {
       "names": [
-        "Nothing: internal stats helper of play-services-measurement, gone with firebase-analytics",
-        "ACRA ch.acra:acra-core (Apache-2.0) for crash reports"
+        "Nothing needed: Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; internal stats helper of play-services-measurement. If analytics or crash reporting is ever wanted again:",
+        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail",
+        "Countly ly.count.android:sdk 26.1.6 (MIT, GitHub Countly/countly-sdk-android LICENSE, release 2026-09; fit good, effort M): analytics + crashes to a self-hosted Countly server",
+        "Matomo matomo-sdk-android (BSD-3-Clause, GitHub matomo-org/matomo-sdk-android LICENSE, pushed 2026-09; fit partial, effort M): JitPack only, events to a self-hosted Matomo, no crash reports"
       ],
-      "candidates": ["ch.acra:acra-core"],
+      "candidates": ["ch.acra:acra-core", "ch.acra:acra-http", "ly.count.android:sdk", "com.github.matomo-org:matomo-sdk-android"],
       "fit": "drop-in",
       "effort": "S",
-      "effortReason": "Transitive of firebase-analytics in TachiyomiSY",
+      "effortReason": "Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; no replacement needed",
+      "lockIn": "None",
+      "onlySource": "maven-cache"
+    },
+    "com.google.firebase:firebase-analytics": {
+      "names": [
+        "Nothing needed: Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; the Firebase analytics SDK itself. If analytics or crash reporting is ever wanted again:",
+        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail",
+        "Countly ly.count.android:sdk 26.1.6 (MIT, GitHub Countly/countly-sdk-android LICENSE, release 2026-09; fit good, effort M): analytics + crashes to a self-hosted Countly server",
+        "Matomo matomo-sdk-android (BSD-3-Clause, GitHub matomo-org/matomo-sdk-android LICENSE, pushed 2026-09; fit partial, effort M): JitPack only, events to a self-hosted Matomo, no crash reports"
+      ],
+      "candidates": ["ch.acra:acra-core", "ch.acra:acra-http", "ly.count.android:sdk", "com.github.matomo-org:matomo-sdk-android"],
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; no replacement needed",
+      "lockIn": "None",
+      "onlySource": "maven-cache"
+    },
+    "com.google.firebase:firebase-measurement-connector": {
+      "names": [
+        "Nothing needed: Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; connector between firebase-analytics and other Firebase SDKs. If analytics or crash reporting is ever wanted again:",
+        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail",
+        "Countly ly.count.android:sdk 26.1.6 (MIT, GitHub Countly/countly-sdk-android LICENSE, release 2026-09; fit good, effort M): analytics + crashes to a self-hosted Countly server",
+        "Matomo matomo-sdk-android (BSD-3-Clause, GitHub matomo-org/matomo-sdk-android LICENSE, pushed 2026-09; fit partial, effort M): JitPack only, events to a self-hosted Matomo, no crash reports"
+      ],
+      "candidates": ["ch.acra:acra-core", "ch.acra:acra-http", "ly.count.android:sdk", "com.github.matomo-org:matomo-sdk-android"],
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "Only consumer was an Android project that was removed; its artifacts were deleted from the Gradle cache on 2026-11-01; no replacement needed",
       "lockIn": "None",
       "onlySource": "maven-cache"
     },
@@ -1149,6 +1181,19 @@
       "effort": "L",
       "effortReason": "Transitive of androidx.credentials:credentials-play-services-auth in google_sign_in_android; goes with the sign-in rewrite",
       "lockIn": "Same as play-services-auth",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.libraries.identity.googleid:googleid": {
+      "names": [
+        "Firebase Auth web flow, firebase_auth 7.0.1 (BSD-3-Clause, GitHub firebase/flutterfire LICENSE, release 2026-10-23) signInWithProvider(GoogleAuthProvider()): Custom Tab sign-in straight to a Firebase user, no Google ID token and no googleid; native firebase-auth 25.0.0 (Android SDK License, release 2026-10-07) has no googleid dependency in its Maven pom (fit good, effort M)",
+        "AppAuth flutter_appauth 13.0.0 (BSD-3-Clause, GitHub MaikuB/flutter_appauth LICENSE, release 2026-10-30) over net.openid:appauth 0.11.1 (Apache-2.0, Maven pom, last release 2021-12-22, repo pushed 2026-03-22): Google as OpenID provider, ID token into FirebaseAuth signInWithCredential (fit good, effort L)",
+        "flutter_web_auth_2 5.1.0 (MIT, GitHub ThexXTURBOXx/flutter_web_auth_2 LICENSE, release 2026-08-12): generic browser redirect, you write PKCE and the token exchange yourself (fit partial, effort L)"
+      ],
+      "candidates": ["firebase_auth", "net.openid:appauth", "flutter_appauth", "flutter_web_auth_2"],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Pulled by google_sign_in_android 7.2.18 in 10 Flutter apps (todo, tutor, diet-guard, home_inventory, kartka, home-guard, leetcode-guard, wake-alarm, crdt_sync_flutter); each swaps one sign-in call and needs a phone test. microG has no googleid or Credential Manager artifact (repo1.maven.org/maven2/org/microg/gms/), so it is no option",
+      "lockIn": "Firebase Auth stays proprietary, which your Firebase-only rule already accepts; you lose the native account chooser, one-tap and silent re-sign-in, and the browser Custom Tab opens for each login",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-fido": {

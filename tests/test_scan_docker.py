@@ -62,7 +62,7 @@ def test_groups_tags_batches_inspect_and_skips_own(docker: None, monkeypatch: py
         row("adguard/adguardhome", "stable", "ccc"),
         row("ghcr.io/kuhyx/thing", "1", "ddd"),
         row("kuhyx/thing", "1", "ddd"),
-        row("syncyomi-kuhy", "local", "eee"),
+        row("syncthing-kuhy", "local", "eee"),
         row("wintrchess-app", "latest", "fff"),
         row("flink-playground-taskmanager", "latest", "ggg"),
         row("redis", "8-alpine", "hhh"),
