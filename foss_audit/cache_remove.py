@@ -21,21 +21,16 @@ so a failed `cd` never runs a removal elsewhere and no failing step hides the ot
 from __future__ import annotations
 
 import shlex
-from collections import deque
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 
 from foss_audit import progress
 from foss_audit.cache_common import CachedArtifact, project_files
+from foss_audit.cache_remove_reach import Graph, Manifest, Reach
 from foss_audit.model import Item
 
 HOME = Path.home()
-Graph = dict[str, set[str]]
-# (kind, token): how a dependency is declared and the word its remove command takes.
-Decl = tuple[str, str]
-# (kind, tokens) -> the command that removes those tokens, run in the manifest's dir.
-Render = Callable[[str, list[str]], str]
 # (commands, removeVia parts) planned for one manifest.
 Found = tuple[list[str], list[str]]
 # Package name -> (cache delete step, note on what else it deletes).
@@ -47,18 +42,28 @@ PINNED = "\0pinned:"
 NOT_PROJECT = frozenset({"node_modules", "target", "build", "ephemeral", "flutter_assets"})
 
 
-def shell_path(path: Path) -> str:
-    """A path for a copied command: `~/...` stays expandable, the rest is quoted."""
+@cache
+def _shell_path(path: Path, home: Path) -> str:
     try:
-        rel = path.relative_to(HOME)
+        rel = path.relative_to(home)
     except ValueError:
         return shlex.quote(str(path))
     return "~/" + shlex.quote(str(rel)) if rel.parts else "~"
 
 
+def shell_path(path: Path) -> str:
+    """A path for a copied command: `~/...` stays expandable, the rest is quoted."""
+    return _shell_path(path, HOME)
+
+
+@cache
+def _shown(path: Path, home: Path) -> str:
+    return _shell_path(path, home) if path.is_relative_to(home) else str(path)
+
+
 def shown(path: Path) -> str:
     """A path for `removeVia`: under ~ when it is."""
-    return shell_path(path) if path.is_relative_to(HOME) else str(path)
+    return _shown(path, HOME)
 
 
 def rm(paths: Iterable[Path]) -> str:
@@ -117,72 +122,36 @@ def cache_graph(arts: Iterable[CachedArtifact]) -> Graph:
     return graph
 
 
-@dataclass
-class Manifest:
-    """One project directory and what it declares, plus the lockfile it resolves into."""
-
-    dir: Path
-    render: Render
-    direct: dict[str, list[Decl]] = field(default_factory=dict)
-    edges: Graph = field(default_factory=dict)
-    locked: frozenset[str] = frozenset()
-    # (directory, command) that rewrites the lockfile.
-    relock: tuple[Path, str] | None = None
-    fallback: tuple[str, ...] = ()
-    # Its workspace members and path dependencies, never blamed as a parent. Per
-    # manifest: a name that is local in one repo is a registry package in another.
-    local: frozenset[str] = frozenset()
-    # The package this manifest itself builds, when it has a name.
-    name: str = ""
-
-    def declare(self, name: str, kind: str, token: str | None = None) -> None:
-        """Record that this manifest declares `name` under `kind`."""
-        decls = self.direct.setdefault(name, [])
-        if (kind, token or name) not in decls:
-            decls.append((kind, token or name))
-
-
 class Planner:
     """Remove command and removeVia for each package of one ecosystem."""
 
     def __init__(self, manifests: Iterable[Manifest], cache_edges: Graph) -> None:
         self.manifests = sorted(manifests, key=lambda m: m.dir)
-        self.cache_edges = cache_edges
-        self._reach: dict[tuple[int, str], dict[str, str]] = {}
+        self._reach = Reach(cache_edges)
+        self._groups_of: dict[str, list[Path]] | None = None
+        # Manifests sharing one lockfile (a workspace) are planned together.
+        self._groups: dict[Path, list[Manifest]] = {}
+        for m in self.manifests:
+            self._groups.setdefault(m.relock[0] if m.relock else m.dir, []).append(m)
 
-    def _walk(self, m: Manifest, root: str) -> dict[str, str]:
-        """Node -> its predecessor on a shortest chain from `root` (breadth first)."""
-        key = (id(m), root)
-        if key not in self._reach:
-            prev = {root: ""}
-            queue = deque([root])
-            while queue:
-                node = queue.popleft()
-                # The lockfile is authoritative for what it lists; the cache's own
-                # dependency data (any version) fills in what it does not.
-                edges = m.edges[node] if node in m.edges else self.cache_edges.get(node, set())
-                for nxt in sorted(edges):
-                    if nxt not in prev and nxt not in m.local:
-                        prev[nxt] = node
-                        queue.append(nxt)
-            self._reach[key] = prev
-        return self._reach[key]
-
-    def _chain(self, m: Manifest, root: str, name: str) -> list[str]:
-        prev, chain = self._walk(m, root), [name]
-        while prev[chain[-1]]:
-            chain.append(prev[chain[-1]])
-        return chain[::-1]
-
-    def _parents(self, m: Manifest, name: str) -> list[tuple[str, str]]:
-        """(direct parent, how it reaches `name`) for every chain into `name`."""
-        # SDK packages (fallback) are never a parent to remove.
-        roots = [r for r in sorted(m.direct) if r != name and r not in m.local and r not in m.fallback]
-        return [(r, " → ".join(self._chain(m, r, name))) for r in roots if name in self._walk(m, r)]
+    def _groups_naming(self, name: str) -> list[Path]:
+        """The lockfile groups (in order) where a manifest declares or reaches `name`, or the
+        lockfile lists it; every other group has nothing to remove for it."""
+        if self._groups_of is None:
+            self._groups_of = {}
+            for key, group in self._groups.items():
+                names = set(group[0].locked)
+                for m in group:
+                    names |= m.direct.keys() | self._reach.roots_reaching(m).keys()
+                for each in names:
+                    self._groups_of.setdefault(each, []).append(key)
+        return self._groups_of.get(name, [])
 
     @staticmethod
     def _steps(m: Manifest, name: str, parents: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
         """(commands, removeVia parts) removing `name` and `parents` from one manifest."""
+        if name not in m.direct and not parents:
+            return [], []
         where = shown(m.dir)
         wanted: dict[str, list[str]] = {}
         via: list[str] = []
@@ -217,12 +186,9 @@ class Planner:
 
     def plan(self, name: str, cache_step: str, note: str = "") -> tuple[str, str]:
         """(removeCommand, removeVia) for package `name`."""
-        # Manifests sharing one lockfile (a workspace) are planned together.
-        groups: dict[Path, list[Manifest]] = {}
-        for m in self.manifests:
-            groups.setdefault(m.relock[0] if m.relock else m.dir, []).append(m)
+        groups = {key: self._groups[key] for key in self._groups_naming(name)}
         reached = {
-            key: [self._steps(m, name, self._parents(m, name)) for m in g] for key, g in groups.items()
+            key: [self._steps(m, name, self._reach.parents(m, name)) for m in g] for key, g in groups.items()
         }
         covered = {m.name for k, g in groups.items() for m, (s, _) in zip(g, reached[k], strict=True) if s}
         steps: list[str] = []

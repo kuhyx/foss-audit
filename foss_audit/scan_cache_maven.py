@@ -16,6 +16,7 @@ from pathlib import Path
 
 from foss_audit import cache_common
 from foss_audit.cache_common import CachedArtifact, CachedVersion, to_items
+from foss_audit.memo import NO_MEMO, Memo
 from foss_audit.model import Item
 from foss_audit.scan_cache_maven_decl import declarations
 from foss_audit.scan_cache_maven_graph import dependency_graph
@@ -76,10 +77,11 @@ def cached_versions() -> dict[Gav, VersionFiles]:
     return {gav: files for gav, files in found.items() if files.poms or files.archives}
 
 
-def artifacts(versions: dict[Gav, VersionFiles]) -> list[CachedArtifact]:
+def artifacts(versions: dict[Gav, VersionFiles], readings: Memo = NO_MEMO) -> list[CachedArtifact]:
     """One CachedArtifact per group:artifact, licenses resolved per version."""
     repos = recorded_repos(GRADLE.parent, {(g, a) for g, a, _ in versions})
-    results = resolve_all(Store(versions, repos), sorted(versions))
+    results = resolve_all(Store(versions, repos, readings=readings), sorted(versions))
+    readings.save()
     arts: dict[str, CachedArtifact] = {}
     for (group, artifact, version), found in sorted(results.items()):
         name = f"{group}:{artifact}"
@@ -96,7 +98,7 @@ def artifacts(versions: dict[Gav, VersionFiles]) -> list[CachedArtifact]:
 def scan_maven_cache() -> list[Item]:
     """One Item per group:artifact cached by Gradle or Maven, each with a removal for good."""
     versions = cached_versions()
-    arts = artifacts(versions)
+    arts = artifacts(versions, Memo.for_source("maven-cache"))
     decls = declarations(SRC)
     items = to_items("maven-cache", arts, {name: {d.project for d in found} for name, found in decls.items()})
     add_removals(items, decls, dependency_graph(arts, versions), cache_dirs(versions, GRADLE, M2))

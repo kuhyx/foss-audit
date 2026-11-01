@@ -18,12 +18,14 @@ class FakeScan:
 
     def __init__(self) -> None:
         self.calls = 0
+        self.fulls: list[bool] = []
         self.started = threading.Event()
         self.release = threading.Event()
         self.failure: Exception | None = None
 
-    def __call__(self, progress: progress.ScanProgress) -> dict[str, object]:
+    def __call__(self, progress: progress.ScanProgress, full: bool = False) -> dict[str, object]:
         self.calls += 1
+        self.fulls.append(full)
         self.started.set()
         progress.begin(2)
         progress.started("a")

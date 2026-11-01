@@ -6,7 +6,7 @@ import os
 import time
 from pathlib import Path
 
-from foss_audit import progress
+from foss_audit import memo, progress
 from foss_audit.model import Item
 
 
@@ -54,3 +54,8 @@ def store_many(cache_file: str, tag: str) -> None:
     upstream_license.CACHE_FILE = Path(cache_file)
     for n in range(STORES):
         upstream_license._store(f"{tag}{n}", "MIT", "checked")
+
+
+def bypass_flag() -> list[Item]:
+    """One item named after the memo bypass this worker was started with."""
+    return [item(str(memo._bypass))]

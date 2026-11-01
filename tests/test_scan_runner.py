@@ -37,6 +37,12 @@ def test_results_keep_the_scanners_order_and_failures_become_errors() -> None:
     assert state.snapshot() == {"sourcesDone": 3, "sourcesTotal": 3, "itemsFound": 2, "running": []}
 
 
+@pytest.mark.parametrize("full", [False, True])
+def test_a_full_scan_starts_its_workers_with_the_memo_bypassed(full: bool) -> None:
+    items, _ = scan_runner.run_sources({"x": helpers.bypass_flag}, progress.ScanProgress(), full=full)
+    assert [i.name for i in items] == [str(full)]
+
+
 def test_a_worker_that_dies_is_an_error_entry() -> None:
     items, errors = scan_runner.run_sources({"dead": helpers.crashing}, progress.ScanProgress())
     assert items == []
@@ -76,7 +82,7 @@ def test_worker_side_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
     queue = FakeQueue()
     monkeypatch.setattr(scan_runner, "_queue", queue)
     monkeypatch.setattr(progress, "_sink", None)
-    scan_runner._init_worker(queue)  # type: ignore[arg-type]
+    scan_runner._init_worker(queue, False)  # type: ignore[arg-type]
     items = scan_runner._run_one("ticker", partial(helpers.ticker, str(Path(__file__))))
     assert [i.name for i in items] == ["tick-a", "tick-b"]
     assert list(queue.messages)[0] == ("start", "ticker")

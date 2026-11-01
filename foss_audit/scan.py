@@ -2,8 +2,9 @@
 
 The scanners run concurrently in worker processes (`scan_runner`), so a cold
 scan takes as long as the slowest one (npm-cache, ~30 s), not their sum (~70 s).
-CLI: `python -m foss_audit.scan [--summary] [--progress]` prints the JSON (or
-just counts); --progress reports sources done and inner counts on stderr.
+CLI: `python -m foss_audit.scan [--summary] [--progress] [--full]` prints the JSON (or
+just counts); --progress reports sources done and inner counts on stderr; --full
+ignores the license memo (memo.py).
 """
 
 from __future__ import annotations
@@ -74,12 +75,15 @@ SCANNERS: dict[str, Callable[[], list[Item]]] = {
 def run_scan(
     scanners: dict[str, Callable[[], list[Item]]] = SCANNERS,
     progress: ScanProgress | None = None,
+    full: bool = False,
 ) -> dict[str, Any]:
-    """Scan everything; one failing source becomes an error entry, not a crash."""
+    """Scan everything; one failing source becomes an error entry, not a crash.
+
+    `full` re-reads every artifact instead of trusting the license memo."""
     start = time.monotonic()
     state = progress or ScanProgress()
     state.begin(len(scanners))
-    items, errors = run_sources(scanners, state)
+    items, errors = run_sources(scanners, state, full)
     apply(items, Curated.load())
     return {
         "generatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -130,7 +134,7 @@ def main(argv: list[str]) -> None:
     if "--progress" in argv:
         reporter.start()
     try:
-        result = run_scan(progress=state)
+        result = run_scan(progress=state, full="--full" in argv)
     finally:
         stop.set()
         if reporter.is_alive():

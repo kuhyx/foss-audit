@@ -21,11 +21,13 @@ import json
 import sqlite3
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any
 
-from foss_audit import progress
+from foss_audit import memo, progress
 from foss_audit.scan_cache_npm_manifest import Files, Found, found, unreadable
+from foss_audit.scan_cache_npm_memo import memoised
 from foss_audit.scan_cache_npm_msgpack import unpackb
 
 STORE = Path.home() / ".local/share/pnpm/store"
@@ -33,6 +35,7 @@ TEXT_LIMIT = 256 * 1024
 EXEC_BITS = 0o111
 READ_WORKERS = 16
 SOURCE = "npm-cache"
+Job = tuple[Path, str, Callable[[], dict[str, Any] | None]]
 
 
 def content_path(store: Path, hex_digest: str, mode: int) -> Path:
@@ -86,19 +89,35 @@ def package(store: Path, files: dict[str, Any], name: str, version: str) -> Foun
     return result
 
 
-def _json_entries(store: Path) -> Iterator[dict[str, Any]]:
-    patterns = ("index/*/*.json", "files/*/*-index.json", "*/integrity.json")
-    for pattern in patterns:
+def _json_doc(path: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(path.read_bytes())
+    except OSError, ValueError:
+        return None
+    return doc if isinstance(doc, dict) and isinstance(doc.get("files"), dict) else None
+
+
+def _row_doc(key: str, blob: bytes) -> dict[str, Any] | None:
+    try:
+        doc = unpackb(blob)
+    except ValueError:
+        return None
+    if not (isinstance(doc, dict) and isinstance(doc.get("files"), dict)):
+        return None
+    # The key is "<integrity>\t<name>@<version>" (or a remote URL).
+    manifest = doc.get("manifest")
+    meta: dict[str, Any] = manifest if isinstance(manifest, dict) else {}
+    spec = key.rpartition("\t")[2]
+    at = spec.rfind("@")
+    guess = spec[:at] if at > 0 and "://" not in spec else ""
+    return {"name": meta.get("name") or guess, "version": meta.get("version") or "", **doc}
+
+
+def _jobs(store: Path) -> Iterator[Job]:
+    """One job per index entry; the memo key is the content-addressed file (or db row key)."""
+    for pattern in ("index/*/*.json", "files/*/*-index.json", "*/integrity.json"):
         for path in sorted(store.glob(pattern)):
-            try:
-                doc = json.loads(path.read_bytes())
-            except OSError, ValueError:
-                continue
-            if isinstance(doc, dict) and isinstance(doc.get("files"), dict):
-                yield doc
-
-
-def _db_entries(store: Path) -> Iterator[dict[str, Any]]:
+            yield store, f"{store.name}|{memo.stat_key(path)}", partial(_json_doc, path)
     db = store / "index.db"
     if not db.is_file():
         return
@@ -108,34 +127,28 @@ def _db_entries(store: Path) -> Iterator[dict[str, Any]]:
     finally:
         conn.close()
     for key, blob in rows:
-        try:
-            doc = unpackb(bytes(blob))
-        except ValueError:
-            continue
-        if isinstance(doc, dict) and isinstance(doc.get("files"), dict):
-            # The key is "<integrity>\t<name>@<version>" (or a git URL).
-            manifest = doc.get("manifest")
-            meta: dict[str, Any] = manifest if isinstance(manifest, dict) else {}
-            spec = str(key).rpartition("\t")[2]
-            at = spec.rfind("@")
-            guess = spec[:at] if at > 0 and "://" not in spec else ""
-            yield {"name": meta.get("name") or guess, "version": meta.get("version") or "", **doc}
+        yield store, f"{store.name}|db|{key}", partial(_row_doc, str(key), bytes(blob))
 
 
-def _read(job: tuple[Path, dict[str, Any]]) -> Found | None:
-    store, doc = job
-    read = package(store, doc["files"], str(doc.get("name") or ""), str(doc.get("version") or ""))
+def _read(job: Job, store_memo: memo.Memo) -> Found | None:
+    store, key, load = job
+
+    def read() -> Found | None:
+        doc = load()
+        if doc is None:
+            return None
+        return package(store, doc["files"], str(doc.get("name") or ""), str(doc.get("version") or ""))
+
+    found = memoised(store_memo, key, read)
     progress.counter(SOURCE).advance()
-    return read
+    return found
 
 
-def scan_pnpm_store(root: Path | None = None) -> list[Found]:
+def scan_pnpm_store(root: Path | None = None, store_memo: memo.Memo = memo.NO_MEMO) -> list[Found]:
     """Every package version in every pnpm store version under `root` (STORE)."""
     jobs = [
-        (store, doc)
-        for store in sorted(p for p in (root or STORE).glob("v*") if p.is_dir())
-        for doc in [*_json_entries(store), *_db_entries(store)]
+        job for store in sorted(p for p in (root or STORE).glob("v*") if p.is_dir()) for job in _jobs(store)
     ]
     progress.counter(SOURCE).add_total(len(jobs))
     with ThreadPoolExecutor(READ_WORKERS) as pool:
-        return [item for item in pool.map(_read, jobs) if item is not None]
+        return [item for item in pool.map(partial(_read, store_memo=store_memo), jobs) if item is not None]

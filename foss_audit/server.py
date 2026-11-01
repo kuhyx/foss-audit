@@ -54,18 +54,18 @@ class ScanCache:
             self._served = None if saved is None else self._encode(saved)
             self._start_rescan()
 
-    def encoded(self, *, refresh: bool) -> tuple[EncodedScan, bool] | None:
+    def encoded(self, *, refresh: bool, full: bool = False) -> tuple[EncodedScan, bool] | None:
         """The result to serve now and whether a rescan runs (None before the first); `refresh` starts one."""
         with self._lock:
             if self._scan_file is not None:
                 if refresh or self._served is None:
                     self._serve(load_scan_file(self._scan_file))
             elif refresh:
-                self._start_rescan()
+                self._start_rescan(full)
             return None if self._served is None else (self._served, self._scanning)
 
-    def get(self, *, refresh: bool) -> dict[str, Any] | None:
-        current = self.encoded(refresh=refresh)
+    def get(self, *, refresh: bool, full: bool = False) -> dict[str, Any] | None:
+        current = self.encoded(refresh=refresh, full=full)
         return None if current is None else {**current[0].result, "scanning": current[1]}
 
     @staticmethod
@@ -87,16 +87,16 @@ class ScanCache:
                 "error": self._error,
             }
 
-    def _start_rescan(self) -> None:
+    def _start_rescan(self, full: bool = False) -> None:
         if self._scanning:
             return
         self._scanning, self._error = True, None
         self.progress.begin(0)
-        threading.Thread(target=self._rescan, daemon=True).start()
+        threading.Thread(target=self._rescan, args=(full,), daemon=True).start()
 
-    def _rescan(self) -> None:
+    def _rescan(self, full: bool) -> None:
         try:
-            result = run_scan(progress=self.progress)
+            result = run_scan(progress=self.progress, full=full)
         except Exception as exc:  # noqa: BLE001 - a crashed rescan keeps the old result
             with self._lock:
                 self._scanning, self._error = False, f"{type(exc).__name__}: {exc}"
@@ -124,8 +124,8 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/api/health":
             self._send(HTTPStatus.OK, {"ok": True})
         elif url.path == "/api/scan":
-            refresh = parse_qs(url.query).get("refresh", ["0"])[0] in REFRESH_MODES
-            current = CACHE.encoded(refresh=refresh)
+            mode = parse_qs(url.query).get("refresh", ["0"])[0]
+            current = CACHE.encoded(refresh=mode in REFRESH_MODES, full=mode == "full")
             if current is None:
                 self._send(HTTPStatus.ACCEPTED, {"scanning": True})
             else:

@@ -1,7 +1,8 @@
 """npm packages in the pnpm store(s) and npm's _cacache, one Item per name.
 
 Every cached version gets the license its own files declare (see
-scan_cache_npm_manifest); a version found in several stores is read once.
+scan_cache_npm_manifest); a version found in several stores is read once. The
+readings are memoized (memo.py).
 `requiredBy` lists the ~/src projects whose pnpm-lock.yaml or
 package-lock.json names the package.
 """
@@ -15,8 +16,10 @@ from pathlib import Path
 
 from foss_audit import cache_remove_npm, scan_cache_npm_cacache, scan_cache_npm_pnpm
 from foss_audit.cache_common import SRC, CachedArtifact, project_files, project_of, to_items
+from foss_audit.cache_remove_npm_store import NpmCache
+from foss_audit.memo import Memo
 from foss_audit.model import Item, Source
-from foss_audit.scan_cache_npm_cacache import scan_cacache
+from foss_audit.scan_cache_npm_cacache import scan_cacache, tarballs
 from foss_audit.scan_cache_npm_manifest import Found
 from foss_audit.scan_cache_npm_pnpm import scan_pnpm_store
 
@@ -98,11 +101,17 @@ def merge(found: Iterable[Found]) -> list[CachedArtifact]:
 
 def scan_npm_cache() -> list[Item]:
     """Every npm package cached by pnpm or npm on this machine."""
-    found = scan_pnpm_store()
+    readings = Memo.for_source(SOURCE)
+    cached = list(tarballs(scan_cache_npm_cacache.CACACHE))
+    found = scan_pnpm_store(store_memo=readings)
     # A blank pnpm reading still lets npm's copy of the same version be read.
-    found += scan_cacache({(f.name, f.cached.version) for f in found if f.cached.license})
+    found += scan_cacache(
+        {(f.name, f.cached.version) for f in found if f.cached.license}, store_memo=readings, cached=cached
+    )
     used_by = lock_users(project_files(LOCKFILES, SRC), SRC)
     arts = merge(found)
     items = to_items(SOURCE, arts, used_by)
-    cache_remove_npm.fill(items, arts, SRC, scan_cache_npm_cacache.CACACHE, scan_cache_npm_pnpm.STORE)
+    npm = NpmCache(scan_cache_npm_cacache.CACACHE, scan_cache_npm_pnpm.STORE, readings, cached)
+    readings.save()
+    cache_remove_npm.fill(items, arts, SRC, npm)
     return items

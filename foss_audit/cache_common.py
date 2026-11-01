@@ -17,7 +17,9 @@ looked (`license_from`), never a bare blank: no silent stops.
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
+import os
 import re
 from collections import Counter
 from collections.abc import Iterable
@@ -87,11 +89,29 @@ def classify_version(cv: CachedVersion) -> tuple[Verdict, str]:
 
 
 def project_files(names: Iterable[str], root: Path = SRC, depth: int = PROJECT_DEPTH) -> list[Path]:
-    """Files named `names` at most `depth` levels under ~/src (bounded globs, no walk)."""
+    """Files matching the glob patterns `names` at most `depth` levels under ~/src (bounded, no deep walk).
+
+    A pattern without a slash is matched during one pass over the directories (a
+    per-pattern glob would list them all again); node_modules is never entered.
+    """
+    wanted = list(names)
+    plain = [n for n in wanted if "/" not in n]
     found: list[Path] = []
-    for name in names:
+    for name in (n for n in wanted if "/" in n):
         for level in range(1, depth + 1):
             found += root.glob("/".join(["*"] * level) + "/" + name)
+    pending = [(str(root), 0)] if plain else []
+    while pending:
+        folder, level = pending.pop()
+        try:
+            entries = list(os.scandir(folder))
+        except OSError:
+            continue
+        for entry in entries:
+            if level and any(fnmatch.fnmatchcase(entry.name, pattern) for pattern in plain):
+                found.append(Path(entry.path))
+            if level < depth and entry.name != "node_modules" and entry.is_dir():
+                pending.append((entry.path, level + 1))
     return sorted(p for p in set(found) if p.is_file() and "node_modules" not in p.parts)
 
 
