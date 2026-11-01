@@ -31,7 +31,7 @@ def test_run_scan_isolates_failures() -> None:
 
 def test_cli(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     result = {"items": [], "errors": [], "durationMs": 5}
-    monkeypatch.setattr(scan, "run_scan", lambda progress=None: result)
+    monkeypatch.setattr(scan, "run_scan", lambda progress=None, full=False: result)
     scan.main([])
     assert json.loads(capsys.readouterr().out) == result
     scan.main(["--summary"])
@@ -83,3 +83,16 @@ def test_server_main_rejects_bad_scan_file(
         server.main()
     assert exc.value.code == 2
     assert "--scan-file" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("full", [False, True])
+def test_run_scan_hands_the_full_flag_to_the_workers(monkeypatch: pytest.MonkeyPatch, full: bool) -> None:
+    seen: list[bool] = []
+
+    def run_sources(scanners: object, state: object, flag: bool) -> tuple[list[Item], list[object]]:
+        seen.append(flag)
+        return [], []
+
+    monkeypatch.setattr(scan, "run_sources", run_sources)
+    scan.run_scan({"aur": ok}, full=full)
+    assert seen == [full]

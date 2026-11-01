@@ -8,7 +8,8 @@ import pytest
 
 from foss_audit import cache_remove
 from foss_audit.cache_common import CachedArtifact, CachedVersion
-from foss_audit.cache_remove import Manifest, Planner, joined, nearest, rm, shell_path
+from foss_audit.cache_remove import Planner, joined, nearest, rm, shell_path
+from foss_audit.cache_remove_reach import Manifest
 from foss_audit.model import Item
 
 

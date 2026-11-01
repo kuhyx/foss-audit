@@ -13,8 +13,9 @@ from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
 
-from foss_audit import cache_remove_pip, progress
+from foss_audit import cache_remove_pip, memo, progress
 from foss_audit.cache_common import SRC, CachedArtifact, CachedVersion, to_items
+from foss_audit.memo import NO_MEMO, Memo
 from foss_audit.model import Item
 from foss_audit.scan_cache_pip_meta import Record, known
 from foss_audit.scan_cache_pip_net import resolve
@@ -53,14 +54,28 @@ def cache_files() -> Iterator[tuple[Path, str, Reader]]:
                 yield path, origin, reader
 
 
-def read_all() -> tuple[list[Record], int, Where]:
+def read_cached(path: Path, origin: str, reader: Reader, readings: Memo) -> list[Record] | None:
+    """`reader(path, origin)`, remembered by the file's size and mtime. An unpacked dist-info
+    is read afresh: its license files and editable sources lie outside the one file."""
+    if reader is read_dist_dir:
+        return reader(path, origin)
+    key = f"{origin}|{memo.stat_key(path)}"
+    hit = readings.get(key)
+    if hit is not None:
+        return None if hit["records"] is None else [Record.from_json(r) for r in hit["records"]]
+    found = reader(path, origin)
+    readings.put(key, {"records": None if found is None else [r.to_json() for r in found]})
+    return found
+
+
+def read_all(readings: Memo = NO_MEMO) -> tuple[list[Record], int, Where]:
     """Records of every cached distribution, how many bodies were unreadable, and
     the (origin, file) each distribution was read from (for its remove command)."""
     records: list[Record] = []
     bad = 0
     where: Where = {}
     for path, origin, reader in progress.counted("pip-cache", list(cache_files())):
-        found = reader(path, origin)
+        found = read_cached(path, origin, reader, readings)
         if found is None:
             bad += 1
         for record in found or []:
@@ -103,7 +118,9 @@ def artifacts(records: list[Record]) -> list[CachedArtifact]:
 
 def scan_pip_cache() -> list[Item]:
     """One Item per distribution in ~/.cache/pip and ~/.cache/uv, each with its remove command."""
-    records, _bad, where = read_all()
+    readings = Memo.for_source("pip-cache")
+    records, _bad, where = read_all(readings)
+    readings.save()
     arts = artifacts(resolve(per_version(records), checkouts()))
     items = to_items("pip-cache", arts, used_by())
     cache_remove_pip.fill(items, arts, where, UV_CACHE, SRC)

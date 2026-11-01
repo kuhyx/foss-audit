@@ -26,8 +26,6 @@ from typing import Any
 
 from foss_audit.cache_common import CachedArtifact
 from foss_audit.cache_remove import (
-    Graph,
-    Manifest,
     Planner,
     apply,
     cache_graph,
@@ -38,6 +36,7 @@ from foss_audit.cache_remove import (
     rm,
     shell_path,
 )
+from foss_audit.cache_remove_reach import Graph, Manifest
 from foss_audit.model import Item
 from foss_audit.scan_cache_pip_meta import REQ_NAME, norm
 

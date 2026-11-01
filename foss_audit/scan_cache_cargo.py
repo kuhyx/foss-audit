@@ -15,114 +15,34 @@ repository for its current one (scan_cache_cargo_git, upstream_license).
 from __future__ import annotations
 
 import re
-import tarfile
 import tomllib
-import zlib
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 from typing import Any
 
-from foss_audit import cache_common, cache_remove_cargo, progress
+from foss_audit import cache_common, cache_remove_cargo, memo, progress
 from foss_audit.cache_common import CachedArtifact, CachedVersion, project_files, project_of, to_items
+from foss_audit.memo import NO_MEMO, Memo
 from foss_audit.model import Item
-from foss_audit.own_license import LICENSE_FILE, identify
+from foss_audit.own_license import identify
 from foss_audit.scan_cache_cargo_git import GitUrls
+from foss_audit.scan_cache_cargo_read import (
+    READ_ERRORS,
+    Manifest,
+    read_crate,
+    read_dir,
+    read_git_checkout,
+    table,
+)
 from foss_audit.upstream_license import with_upstream
 
 CARGO = Path.home() / ".cargo"
 SRC = cache_common.SRC
-# Manifests and license texts are small; anything bigger is not read whole.
-MAX_READ = 512 * 1024
 # Fallback only (unreadable manifest): "<name>-<semver...>" with dashes in names.
+# A memo key (None: never memoized) and the reader of one copy (None: no package in it).
+Copy = tuple[str | None, Callable[[], Manifest | None]]
 STEM = re.compile(r"^(?P<name>.+?)-(?P<version>\d+\.\d+\.\d+.*)$")
-READ_ERRORS = (OSError, EOFError, tarfile.TarError, zlib.error, UnicodeDecodeError, tomllib.TOMLDecodeError)
-
-
-@dataclass
-class Manifest:
-    """What one crate copy says about itself, plus the license texts it holds."""
-
-    where: str
-    stem: str
-    package: dict[str, Any] = field(default_factory=dict)
-    deps: dict[str, Any] = field(default_factory=dict)
-    texts: dict[str, str] = field(default_factory=dict)
-    error: str = ""
-    # (db dir, rev dir) of a git checkout under ~/.cargo/git/checkouts, else None.
-    git: tuple[str, str] | None = None
-
-
-def _decode(data: bytes) -> str:
-    return data[:MAX_READ].decode("utf-8", errors="replace")
-
-
-def _table(value: object) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
-def _parse(m: Manifest, text: str) -> None:
-    data = tomllib.loads(text)
-    m.package = _table(data.get("package"))
-    m.deps = _table(data.get("dependencies"))
-
-
-def _needs_files(m: Manifest) -> bool:
-    return not isinstance(m.package.get("license"), str)
-
-
-def _wanted(m: Manifest) -> Callable[[str], bool]:
-    """Relative paths whose text the license fallback reads."""
-    named = m.package.get("license-file")
-    return lambda rel: rel == named or ("/" not in rel and bool(LICENSE_FILE.match(rel)))
-
-
-def _members(path: Path) -> Iterator[tuple[str, tarfile.TarFile, tarfile.TarInfo]]:
-    """(path below the crate's top dir, archive, member) for each regular file."""
-    with tarfile.open(path, "r|gz") as tf:
-        for member in tf:
-            top, _, rel = member.name.partition("/")
-            if member.isfile() and top == path.name.removesuffix(".crate"):
-                yield rel, tf, member
-
-
-def _read(tf: tarfile.TarFile, member: tarfile.TarInfo) -> str:
-    handle = tf.extractfile(member)
-    return _decode(handle.read(MAX_READ)) if handle else ""
-
-
-def read_crate(path: Path) -> Manifest:
-    """Cargo.toml (stream stops there), then license texts only when needed."""
-    m = Manifest(".crate", path.name.removesuffix(".crate"))
-    try:
-        for rel, tf, member in _members(path):
-            if rel == "Cargo.toml":
-                _parse(m, _read(tf, member))
-                break
-        if _needs_files(m):
-            # A second pass: COPYING/LICENSE may sit before Cargo.toml in the tar.
-            wanted = _wanted(m)
-            m.texts = {rel: _read(tf, member) for rel, tf, member in _members(path) if wanted(rel)}
-    except READ_ERRORS as exc:
-        m.error = f"unreadable {path.name}: {type(exc).__name__}: {exc}"
-    return m
-
-
-def read_dir(path: Path, where: str) -> Manifest:
-    """An extracted crate or git checkout (read-only, no path escapes)."""
-    m = Manifest(where, path.name)
-    try:
-        _parse(m, _decode((path / "Cargo.toml").read_bytes()))
-        if _needs_files(m):
-            wanted = _wanted(m)
-            names = [p.name for p in path.iterdir()] + [str(m.package.get("license-file", ""))]
-            for rel in filter(wanted, names):
-                file = (path / rel).resolve()
-                if file.is_file() and file.is_relative_to(path.resolve()):
-                    m.texts[rel] = _decode(file.read_bytes())
-    except READ_ERRORS as exc:
-        m.error = f"unreadable {path}/Cargo.toml: {type(exc).__name__}: {exc}"
-    return m
 
 
 def license_of(m: Manifest) -> tuple[str, str]:
@@ -150,9 +70,9 @@ def runtime_deps(deps: dict[str, Any]) -> tuple[str, ...]:
     """`[dependencies]` crate names: renames resolved, optional ones dropped."""
     names: set[str] = set()
     for key, spec in deps.items():
-        table = _table(spec)
-        if table.get("optional") is not True:
-            names.add(str(table.get("package", key)))
+        fields = table(spec)
+        if fields.get("optional") is not True:
+            names.add(str(fields.get("package", key)))
     return tuple(sorted(names))
 
 
@@ -168,7 +88,7 @@ def identity(m: Manifest) -> tuple[str, str]:
     return name, version
 
 
-def manifests() -> Iterator[Manifest]:
+def copies() -> Iterator[Copy]:
     """Every cached crate copy: src dirs first, then .crates, then git checkouts."""
     registry = CARGO / "registry"
     extracted = {(p.parent.name, p.name) for p in registry.glob("src/*/*") if p.is_dir()}
@@ -182,37 +102,55 @@ def manifests() -> Iterator[Manifest]:
     shared.add_total(len(extracted) + len(crates) + len(tomls))
     for index, stem in sorted(extracted):
         shared.advance()
-        yield read_dir(registry / "src" / index / stem, "src dir")
+        folder = registry / "src" / index / stem
+        yield (
+            f"{memo.stat_key(folder)}|{memo.stat_key(folder / 'Cargo.toml')}",
+            partial(read_dir, folder, "src dir"),
+        )
     for crate in crates:
         shared.advance()
-        yield read_crate(crate)
+        yield memo.stat_key(crate), partial(read_crate, crate)
     for toml in tomls:
         shared.advance()
-        m = read_dir(toml.parent, f"git checkout {toml.parent.parent.name}/{toml.parent.name}")
-        if m.package or m.error:  # a workspace-only root has no [package]
-            m.git = (toml.parent.parent.name, toml.parent.name)
-            yield m
+        yield None, partial(read_git_checkout, toml)
 
 
-def cached_artifacts() -> list[CachedArtifact]:
-    """One artifact per crate name; the first copy of each version wins."""
+def cached_artifacts(readings: Memo = NO_MEMO) -> list[CachedArtifact]:
+    """One artifact per crate name; the first copy of each version wins.
+
+    A registry copy's reading (name, version, license, deps, home page) is memoized; a git
+    checkout is always read, since its license may come from its upstream repository.
+    """
     arts: dict[str, CachedArtifact] = {}
     seen: set[tuple[str, str]] = set()
     git_urls = GitUrls(CARGO, SRC)
-    for m in manifests():
-        name, version = identity(m)
-        if (name, version) in seen:
+    for key, load in copies():
+        stored = readings.get(key) if key else None
+        manifest = None if stored else load()
+        if stored:
+            head = (stored[0], stored[1])
+        elif manifest:
+            head = identity(manifest)
+        else:  # a workspace-only git root
             continue
-        seen.add((name, version))
-        lic, where = license_of(m)
-        if m.git:  # last fallback: the upstream repository's current license
-            lic, where = with_upstream(lic, where, git_urls.find(*m.git, m.package))
+        if head in seen:
+            continue
+        seen.add(head)
+        name, version = head
+        if stored is None:
+            assert manifest is not None
+            lic, where = license_of(manifest)
+            if manifest.git:  # last fallback: the upstream repository's current license
+                lic, where = with_upstream(lic, where, git_urls.find(*manifest.git, manifest.package))
+            home = _text(manifest.package.get("repository")) or _text(manifest.package.get("homepage"))
+            stored = [name, version, lic, where, list(runtime_deps(manifest.deps)), home or ""]
+            if key:
+                readings.put(key, stored)
         art = arts.setdefault(name, CachedArtifact(name, url=f"https://crates.io/crates/{name}"))
-        art.versions.append(CachedVersion(version, lic, where, runtime_deps(m.deps)))
+        art.versions.append(CachedVersion(version, stored[2], stored[3], tuple(stored[4])))
         newest = max(art.versions, key=lambda v: cache_common.version_key(v.version))
         if newest.version == version:
-            home = _text(m.package.get("repository")) or _text(m.package.get("homepage"))
-            art.url = home or f"https://crates.io/crates/{name}"
+            art.url = stored[5] or f"https://crates.io/crates/{name}"
     return [arts[n] for n in sorted(arts)]
 
 
@@ -231,7 +169,9 @@ def lock_users() -> dict[str, set[str]]:
 
 def scan_cargo_cache() -> list[Item]:
     """Every crate in ~/.cargo's registry cache and git checkouts, each with its remove command."""
-    arts = cached_artifacts()
+    readings = Memo.for_source("cargo-cache")
+    arts = cached_artifacts(readings)
+    readings.save()
     items = to_items("cargo-cache", arts, lock_users())
     cache_remove_cargo.fill(items, arts, CARGO, SRC)
     return items

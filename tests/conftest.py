@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from server_helpers import FakeScan, Serve
 
-from foss_audit import own_license, progress, server, upstream_git, upstream_license
+from foss_audit import memo, own_license, progress, server, upstream_git, upstream_license
 
 MIT = "MIT License\n\nPermission is hereby granted, free of charge, to any person...\n"
 
@@ -62,6 +62,12 @@ def no_real_projects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     for module in (scan_cache_cargo, scan_cache_npm, scan_cache_pip, scan_cache_pub):
         monkeypatch.setattr(module, "SRC", tmp_path / "src")
+
+
+@pytest.fixture(autouse=True)
+def memo_off_the_machine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads or writes the real ~/.cache/foss-audit/memo (workers inherit the env)."""
+    monkeypatch.setenv(memo.ENV_DIR, str(tmp_path / "memo-dir"))
 
 
 def _no_live_scan(progress: object = None) -> dict[str, object]:

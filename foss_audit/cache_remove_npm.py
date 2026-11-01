@@ -21,8 +21,9 @@ from typing import Any
 
 from foss_audit import scan_cache_npm
 from foss_audit.cache_common import CachedArtifact
-from foss_audit.cache_remove import Graph, Manifest, Planner, apply, cache_graph, projects
+from foss_audit.cache_remove import Planner, apply, cache_graph, projects
 from foss_audit.cache_remove_npm_store import NpmCache
+from foss_audit.cache_remove_reach import Graph, Manifest
 from foss_audit.model import Item
 
 # Importer sections and the kind of remove command each takes.
@@ -163,6 +164,11 @@ def manifests(root: Path) -> list[Manifest]:
     return found
 
 
-def fill(items: list[Item], arts: list[CachedArtifact], root: Path, cacache: Path, store: Path) -> None:
+def fill(
+    items: list[Item],
+    arts: list[CachedArtifact],
+    root: Path,
+    cache: NpmCache,
+) -> None:
     """Set removeCommand and removeVia on every npm-cache item."""
-    apply(items, Planner(manifests(root), cache_graph(arts)), NpmCache(cacache, store).step)
+    apply(items, Planner(manifests(root), cache_graph(arts)), cache.step)

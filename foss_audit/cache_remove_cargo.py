@@ -19,7 +19,8 @@ from pathlib import Path
 from typing import Any
 
 from foss_audit.cache_common import CachedArtifact
-from foss_audit.cache_remove import Manifest, Planner, apply, cache_graph, nearest, projects, repo_of, rm
+from foss_audit.cache_remove import Planner, apply, cache_graph, nearest, projects, repo_of, rm
+from foss_audit.cache_remove_reach import Manifest
 from foss_audit.model import Item
 
 SECTIONS = {"dependencies": "", "dev-dependencies": "--dev", "build-dependencies": "--build"}

@@ -20,11 +20,14 @@ import hashlib
 import json
 import shlex
 import sqlite3
+from functools import partial
 from pathlib import Path
 from typing import Any
 
+from foss_audit import memo
 from foss_audit.cache_remove import joined, rm, shell_path
-from foss_audit.scan_cache_npm_cacache import content_path, index_entries, key_spec, read_tarball
+from foss_audit.scan_cache_npm_cacache import Tarball, read_tarball, tarballs
+from foss_audit.scan_cache_npm_memo import memoised
 from foss_audit.scan_cache_npm_msgpack import unpackb
 
 
@@ -40,6 +43,15 @@ def _json_name(path: Path) -> str:
     except OSError, ValueError:
         return ""
     return str(doc.get("name") or "") if isinstance(doc, dict) else ""
+
+
+def _remembered_name(readings: memo.Memo, path: Path) -> str:
+    key = f"name|{memo.stat_key(path)}"
+    hit = readings.get(key)
+    if hit is None:
+        hit = _json_name(path)
+        readings.put(key, hit)
+    return str(hit)
 
 
 def _row_name(key: str, blob: bytes) -> str:
@@ -64,24 +76,31 @@ def _literal(key: str) -> str:
 class NpmCache:
     """Every cache entry per package name, built once per scan."""
 
-    def __init__(self, cacache: Path, store: Path) -> None:
+    def __init__(
+        self,
+        cacache: Path,
+        store: Path,
+        readings: memo.Memo = memo.NO_MEMO,
+        tarballs_: list[Tarball] | None = None,
+    ) -> None:
         self.clean: dict[str, list[str]] = {}
         self.paths: dict[str, list[Path]] = {}
         self.rows: dict[str, dict[Path, list[str]]] = {}
-        self._cacache(cacache)
+        self._readings = readings
+        self._cacache(cacache, list(tarballs(cacache)) if tarballs_ is None else tarballs_)
         for version in sorted(p for p in store.glob("v*") if p.is_dir()):
             self._store(version)
 
-    def _cacache(self, cache: Path) -> None:
+    def _cacache(self, cache: Path, cached: list[Tarball]) -> None:
         shared: dict[tuple[str, str], list[str]] = {}
-        for key, entry in sorted(index_entries(cache).items()):
-            spec, content = key_spec(key), content_path(cache, str(entry["integrity"]))
-            if spec is None or content is None or not content.is_file():
-                continue
-            found = None if spec[0] else read_tarball(content, "", "")
-            name = spec[0] or (found.name if found else "")
+        for tarball in cached:
+            name = tarball.name
+            if not name:  # a git archive: the name is in its package.json (read once, memoized)
+                key = f"cacache|{tarball.integrity}||"
+                found = memoised(self._readings, key, partial(read_tarball, tarball.path, "", ""))
+                name = found.name if found else ""
             if name:
-                shared.setdefault((name, str(entry["integrity"])), []).append(key)
+                shared.setdefault((name, tarball.integrity), []).append(tarball.key)
         where = shell_path(cache.parent)
         for (name, _), (first, *rest) in shared.items():
             self.clean.setdefault(name, []).append(f"npm cache clean --cache {where} {shlex.quote(first)}")
@@ -94,9 +113,9 @@ class NpmCache:
     def _store(self, store: Path) -> None:
         for pattern in ("index/*/*.json", "files/*/*-index.json"):
             for path in sorted(store.glob(pattern)):
-                self._add(_json_name(path), path)
+                self._add(_remembered_name(self._readings, path), path)
         for path in sorted(store.glob("*/integrity.json")):
-            self._add(_json_name(path), path.parent)
+            self._add(_remembered_name(self._readings, path), path.parent)
         for scope in sorted((store / "links").glob("*")):
             names = sorted(scope.glob("*")) if scope.name.startswith("@") else [scope]
             for folder in names:

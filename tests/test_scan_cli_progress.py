@@ -49,7 +49,7 @@ def test_report_progress_prints_changes_only_then_a_final_line(monkeypatch: pyte
 def test_main_with_progress_writes_to_stderr(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_scan(progress: progress.ScanProgress) -> dict[str, object]:
+    def fake_scan(progress: progress.ScanProgress, full: bool = False) -> dict[str, object]:
         progress.begin(1)
         return {"items": [], "errors": [], "durationMs": 1}
 
@@ -58,3 +58,19 @@ def test_main_with_progress_writes_to_stderr(
     captured = capsys.readouterr()
     assert captured.out.startswith("0 items in 1 ms")
     assert captured.err.strip() == "[0/1] 0 items"
+
+
+def test_main_passes_full_to_the_scan(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fulls: list[bool] = []
+
+    def fake_scan(progress: progress.ScanProgress, full: bool = False) -> dict[str, object]:
+        fulls.append(full)
+        return {"items": [], "errors": [], "durationMs": 1}
+
+    monkeypatch.setattr(scan, "run_scan", fake_scan)
+    scan.main(["--summary"])
+    scan.main(["--summary", "--full"])
+    capsys.readouterr()
+    assert fulls == [False, True]

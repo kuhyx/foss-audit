@@ -68,6 +68,19 @@ def test_refresh_starts_one_rescan_only(fake: FakeScan, store: Path, serve: Serv
     assert fake.calls == 1
     assert get(f"{base}/api/scan?refresh=full")[1]["scanning"] is True
     wait_until(lambda: fake.calls == 2)
+    assert fake.fulls == [False, True]  # the startup rescan is incremental, refresh=full is not
+
+
+def test_refresh_one_rescans_incrementally(fake: FakeScan, store: Path, serve: Serve) -> None:
+    saved(store, 7)
+    cache = server.ScanCache(store=store)
+    cache.start()
+    base = serve(cache)
+    fake.release.set()
+    wait_until(lambda: get(f"{base}/api/scan")[1]["scanning"] is False)
+    get(f"{base}/api/scan?refresh=1")
+    wait_until(lambda: fake.calls == 2)
+    assert fake.fulls == [False, False]
 
 
 def test_a_crashed_rescan_keeps_the_old_result_and_reports_the_error(

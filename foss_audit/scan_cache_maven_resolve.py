@@ -18,10 +18,10 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from foss_audit import cache_common, progress
+from foss_audit import cache_common, memo, progress
 from foss_audit.licenses import classify_text
 from foss_audit.own_license import identify
-from foss_audit.scan_cache_maven_jar import archive_license
+from foss_audit.scan_cache_maven_memo import memoised_archive_license
 from foss_audit.scan_cache_maven_pom import KNOWN_IDS, Gav, Pom, gav_name, parse_pom, pom_path
 from foss_audit.scan_cache_maven_repos import repo_order
 from foss_audit.scan_cache_maven_source import Upstream
@@ -65,6 +65,7 @@ class Store:
     upstream: Upstream = field(default_factory=Upstream)
     fetched: dict[str, bytes] = field(default_factory=dict)
     failed: dict[str, str] = field(default_factory=dict)
+    readings: memo.Memo = memo.NO_MEMO
     _parsed: dict[Gav, tuple[Pom | None, str]] = field(default_factory=dict)
     _archive: dict[Gav, tuple[str, str]] = field(default_factory=dict)
 
@@ -88,7 +89,8 @@ class Store:
     def archive(self, gav: Gav) -> tuple[str, str]:
         """The JAR/AAR lookup, done once per version."""
         if gav not in self._archive:
-            self._archive[gav] = archive_license(self.files.get(gav, VersionFiles()).archives, gav[0], gav[1])
+            archives = self.files.get(gav, VersionFiles()).archives
+            self._archive[gav] = memoised_archive_license(self.readings, archives, gav[0], gav[1])
         return self._archive[gav]
 
     def urls(self, gav: Gav) -> Want:

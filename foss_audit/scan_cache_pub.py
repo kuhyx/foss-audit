@@ -25,7 +25,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from foss_audit import cache_remove_pub, progress
+from foss_audit import cache_remove_pub, memo, progress
 from foss_audit.cache_common import (
     SRC,
     CachedArtifact,
@@ -35,6 +35,7 @@ from foss_audit.cache_common import (
     to_items,
     version_key,
 )
+from foss_audit.memo import NO_MEMO, Memo
 from foss_audit.model import Item
 from foss_audit.scan_cache_pub_license import read, resolve
 from foss_audit.scan_cache_pub_parse import Pubspec, lock_packages, parse_pubspec
@@ -67,7 +68,20 @@ def _spec(directory: Path) -> Pubspec:
     return parse_pubspec(read(pubspec)) if pubspec.is_file() else Pubspec()
 
 
-def hosted_versions() -> Iterator[tuple[Pubspec, CachedVersion, str]]:
+def cached_license(readings: Memo, package: Path, stop: Path) -> tuple[str, str]:
+    """`resolve(package, stop)`, remembered by the size and mtime of the directories it lists."""
+    key = "|".join(
+        memo.stat_key(d) for d in [package, *package.parents][: len(package.relative_to(stop).parts) + 1]
+    )
+    hit = readings.get(key)
+    if hit is not None:
+        return hit[0], hit[1]
+    found = resolve(package, stop)
+    readings.put(key, list(found))
+    return found
+
+
+def hosted_versions(readings: Memo = NO_MEMO) -> Iterator[tuple[Pubspec, CachedVersion, str]]:
     """(pubspec, version, fallback url) for every hosted/<server>/<name>-<version>."""
     jobs = [(server, directory) for server in _dirs(PUB_CACHE / "hosted") for directory in _dirs(server)]
     for server, directory in progress.counted("pub-cache", jobs):
@@ -75,7 +89,7 @@ def hosted_versions() -> Iterator[tuple[Pubspec, CachedVersion, str]]:
         # Without a pubspec, split "<name>-<version>" at the first dash: names have none.
         name, _, version = directory.name.partition("-")
         spec.name, spec.version = spec.name or name, spec.version or version
-        lic, where = resolve(directory, directory)
+        lic, where = cached_license(readings, directory, directory)
         fallback = f"https://{server.name}/packages/{spec.name}"
         yield spec, CachedVersion(spec.version, lic, where, spec.deps), fallback
 
@@ -107,7 +121,7 @@ def _with_upstream_counted(job: tuple[Pubspec, tuple[str, str], str]) -> tuple[s
     return answer
 
 
-def git_versions() -> list[tuple[Pubspec, CachedVersion, str]]:
+def git_versions(readings: Memo = NO_MEMO) -> list[tuple[Pubspec, CachedVersion, str]]:
     """(pubspec, version, fallback url) for every package in git/<repo>-<sha>/ checkouts."""
     found: list[tuple[Pubspec, tuple[str, str], str]] = []
     for checkout in _dirs(PUB_CACHE / "git"):
@@ -117,7 +131,7 @@ def git_versions() -> list[tuple[Pubspec, CachedVersion, str]]:
         for directory in _git_packages(checkout):
             spec = _spec(directory)
             if spec.name and spec.version:  # not a workspace root
-                found.append((spec, resolve(directory, checkout), remote))
+                found.append((spec, cached_license(readings, directory, checkout), remote))
     progress.counter("pub-cache").add_total(len(found))
     with ThreadPoolExecutor(UPSTREAM_WORKERS) as pool:
         licensed = list(pool.map(_with_upstream_counted, found))
@@ -131,7 +145,7 @@ def git_versions() -> list[tuple[Pubspec, CachedVersion, str]]:
     ]
 
 
-def artifacts() -> list[CachedArtifact]:
+def artifacts(readings: Memo = NO_MEMO) -> list[CachedArtifact]:
     """One artifact per package name across hosted servers and git checkouts.
 
     Git checkouts of the same version and license (kuhyx/utils at 30 refs) are
@@ -140,7 +154,7 @@ def artifacts() -> list[CachedArtifact]:
     """
     by_name: dict[str, CachedArtifact] = {}
     urls: dict[str, list[tuple[str, str, str]]] = {}
-    for spec, version, fallback in [*hosted_versions(), *git_versions()]:
+    for spec, version, fallback in [*hosted_versions(readings), *git_versions(readings)]:
         art = by_name.setdefault(spec.name, CachedArtifact(spec.name))
         if all((v.version, v.license) != (version.version, version.license) for v in art.versions):
             art.versions.append(version)
@@ -174,7 +188,9 @@ def git_packages() -> dict[Path, list[str]]:
 
 def scan_pub_cache() -> list[Item]:
     """One Item per cached Dart/Flutter package (worst license over its versions) with its remove command."""
-    arts = artifacts()
+    readings = Memo.for_source("pub-cache")
+    arts = artifacts(readings)
+    readings.save()
     items = to_items("pub-cache", arts, used_by())
     cache_remove_pub.fill(items, arts, PUB_CACHE, SRC, git_packages())
     return items

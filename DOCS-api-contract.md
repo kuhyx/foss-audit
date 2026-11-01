@@ -200,7 +200,9 @@ has a runtime dependency on a non-free package of the same cache is `foss-partia
 (`depends on non-free <name>`). `requiredBy` is filled from `~/src` lockfiles/build files at most
 four levels deep; empty means no project names it (transitive or stale), and the note says so.
 `scripts/check_cache_licenses.py` runs them on the real caches and fails while any package's
-license is unknown.
+license is unknown. Raw per-artifact license readings (never items, verdicts, `requiredBy` or remove
+commands) are memoized per source in `~/.cache/foss-audit/memo/`, keyed on content ids or path, size
+and mtime plus `MEMO_VERSION`, so an unchanged rescan takes under 5 s; `?refresh=full` rebuilds them.
 
 Every `*-cache` `removeCommand` removes the package for good, from each `~/src` project that
 reaches it and then from the cache; see `DOCS-remove-commands.md`.

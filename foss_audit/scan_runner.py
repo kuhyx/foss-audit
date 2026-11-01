@@ -13,7 +13,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing.queues import SimpleQueue
 from typing import Any
 
-from foss_audit import progress
+from foss_audit import memo, progress
 from foss_audit.model import Item, ScanError
 
 Scanner = Callable[[], list[Item]]
@@ -29,9 +29,10 @@ def _emit(source: str, done: int, total: int | None) -> None:
     _queue.put(("tick", source, done, total))
 
 
-def _init_worker(queue: SimpleQueue[Any]) -> None:
+def _init_worker(queue: SimpleQueue[Any], full: bool) -> None:
     global _queue  # noqa: PLW0603 - the worker's one channel to the parent
     _queue = queue
+    memo.set_bypass(full)
     progress.set_sink(_emit)
 
 
@@ -57,9 +58,11 @@ def submit_order(scanners: dict[str, Scanner]) -> list[str]:
 
 
 def run_sources(
-    scanners: dict[str, Scanner], state: progress.ScanProgress
+    scanners: dict[str, Scanner], state: progress.ScanProgress, full: bool = False
 ) -> tuple[list[Item], list[ScanError]]:
-    """Every scanner's items (in `scanners` order) and one error per failed scanner."""
+    """Every scanner's items (in `scanners` order) and one error per failed scanner.
+
+    `full` makes the workers ignore the license memo (see memo.py)."""
     context = multiprocessing.get_context("spawn")
     queue = context.SimpleQueue()
     drain = threading.Thread(target=_drain, args=(queue, state), daemon=True)
@@ -71,7 +74,7 @@ def run_sources(
             max_workers=min(MAX_WORKERS, len(scanners)),
             mp_context=context,
             initializer=_init_worker,
-            initargs=(queue,),
+            initargs=(queue, full),
         ) as pool:
             futures = {
                 pool.submit(_run_one, source, scanners[source]): source for source in submit_order(scanners)

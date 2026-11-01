@@ -52,14 +52,14 @@ class ScanCache:
             self._result = load_saved(self._store) if self._store is not None else None
             self._start_rescan()
 
-    def get(self, *, refresh: bool) -> dict[str, Any] | None:
+    def get(self, *, refresh: bool, full: bool = False) -> dict[str, Any] | None:
         """The result to serve now (None before the first); `refresh` starts a rescan."""
         with self._lock:
             if self._scan_file is not None:
                 if refresh or self._result is None:
                     self._result = load_scan_file(self._scan_file)
             elif refresh:
-                self._start_rescan()
+                self._start_rescan(full)
             return None if self._result is None else {**self._result, "scanning": self._scanning}
 
     def snapshot(self) -> dict[str, Any]:
@@ -72,16 +72,16 @@ class ScanCache:
                 "error": self._error,
             }
 
-    def _start_rescan(self) -> None:
+    def _start_rescan(self, full: bool = False) -> None:
         if self._scanning:
             return
         self._scanning, self._error = True, None
         self.progress.begin(0)
-        threading.Thread(target=self._rescan, daemon=True).start()
+        threading.Thread(target=self._rescan, args=(full,), daemon=True).start()
 
-    def _rescan(self) -> None:
+    def _rescan(self, full: bool) -> None:
         try:
-            result = run_scan(progress=self.progress)
+            result = run_scan(progress=self.progress, full=full)
         except Exception as exc:  # noqa: BLE001 - a crashed rescan keeps the old result
             with self._lock:
                 self._scanning, self._error = False, f"{type(exc).__name__}: {exc}"
@@ -108,8 +108,8 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/api/health":
             self._send(HTTPStatus.OK, {"ok": True})
         elif url.path == "/api/scan":
-            refresh = parse_qs(url.query).get("refresh", ["0"])[0] in REFRESH_MODES
-            body = CACHE.get(refresh=refresh)
+            mode = parse_qs(url.query).get("refresh", ["0"])[0]
+            body = CACHE.get(refresh=mode in REFRESH_MODES, full=mode == "full")
             if body is None:
                 self._send(HTTPStatus.ACCEPTED, {"scanning": True})
             else:

@@ -24,11 +24,12 @@ import tarfile
 import zlib
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 from urllib.parse import unquote
 
-from foss_audit import progress
+from foss_audit import memo, progress
 from foss_audit.scan_cache_npm_manifest import (
     LICENSE_NAME,
     README_FILE,
@@ -38,6 +39,7 @@ from foss_audit.scan_cache_npm_manifest import (
     manifest_license,
     unreadable,
 )
+from foss_audit.scan_cache_npm_memo import memoised
 
 CACACHE = Path.home() / ".npm/_cacache"
 REQUEST_CACHE = "make-fetch-happen:request-cache:"
@@ -149,35 +151,52 @@ def read_tarball(path: Path, name: str, version: str) -> Found | None:
     return found(data, files, name, version, WHERE)
 
 
-def tarballs(cache: Path) -> Iterator[tuple[str, str, Path]]:
-    """(name, version, content path) of each cached tarball, by index key."""
+class Tarball(NamedTuple):
+    """One index key that points at a tarball present in the cache."""
+
+    key: str
+    name: str
+    version: str
+    path: Path
+    integrity: str
+
+
+def tarballs(cache: Path) -> Iterator[Tarball]:
+    """Each cached tarball, by index key."""
     for key, entry in sorted(index_entries(cache).items()):
         spec = key_spec(key)
         path = content_path(cache, str(entry["integrity"]))
         if spec is not None and path is not None and path.is_file():
-            yield spec[0], spec[1], path
+            yield Tarball(key, spec[0], spec[1], path, str(entry["integrity"]))
 
 
-def _read_job(job: tuple[str, str, Path]) -> Found | None:
-    found = read_tarball(job[2], job[0], job[1])
+def _read_job(job: Tarball, store_memo: memo.Memo) -> Found | None:
+    # The content is addressed by its integrity; name and version are the index key's.
+    key = f"cacache|{job.integrity}|{job.name}|{job.version}"
+    found = memoised(store_memo, key, lambda: read_tarball(job.path, job.name, job.version))
     progress.counter(SOURCE).advance()
     return found
 
 
-def scan_cacache(skip: set[tuple[str, str]], cache: Path | None = None) -> list[Found]:
-    """Every package tarball in `cache` (CACACHE) not already in `skip` (name, version) pairs."""
-    todo: list[tuple[str, str, Path]] = []
+def scan_cacache(
+    skip: set[tuple[str, str]],
+    cache: Path | None = None,
+    store_memo: memo.Memo = memo.NO_MEMO,
+    cached: list[Tarball] | None = None,
+) -> list[Found]:
+    """Every package tarball in `cache` (CACACHE, or the listing `cached`) not in `skip` (name, version)."""
+    todo: list[Tarball] = []
     seen: set[tuple[str, str]] = set()
-    for name, version, path in tarballs(cache or CACACHE):
-        spec = (name, version)
-        if not (name and version and (spec in skip or spec in seen)):
-            todo.append((name, version, path))
+    for tarball in tarballs(cache or CACACHE) if cached is None else cached:
+        spec = (tarball.name, tarball.version)
+        if not (tarball.name and tarball.version and (spec in skip or spec in seen)):
+            todo.append(tarball)
             seen.add(spec)
     progress.counter(SOURCE).add_total(len(todo))
     with ThreadPoolExecutor(READ_WORKERS) as pool:
-        read = list(pool.map(_read_job, todo))
+        read = list(pool.map(partial(_read_job, store_memo=store_memo), todo))
     results: list[Found] = []
-    for (name, version, _), item in zip(todo, read, strict=True):
+    for (_, name, version, _, _), item in zip(todo, read, strict=True):
         # As if read in order: a version an earlier tarball turned out to hold is skipped.
         if item is None or (name and version and (name, version) in skip):
             continue

@@ -20,7 +20,8 @@ from functools import partial
 from pathlib import Path
 
 from foss_audit.cache_common import CachedArtifact
-from foss_audit.cache_remove import Manifest, Planner, apply, cache_graph, nearest, projects, repo_of, rm
+from foss_audit.cache_remove import Planner, apply, cache_graph, nearest, projects, repo_of, rm
+from foss_audit.cache_remove_reach import Manifest
 from foss_audit.model import Item
 from foss_audit.scan_cache_pub_parse import declared_deps, lock_packages, parse_pubspec
 
