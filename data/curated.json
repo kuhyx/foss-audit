@@ -1234,6 +1234,29 @@
       "lockIn": "None; ML Kit's model quality on photos is the loss with Tesseract",
       "onlySource": "maven-cache"
     },
+    "com.google.android.odml:image": {
+      "names": [
+        "Nothing on its own: ML Kit's MlImage wrapper, pulled only by com.google.mlkit:vision-common 17.3.0 via google_mlkit_commons 0.13.0 in book-guard; it leaves with the com.google.mlkit:* swap (fit good, effort S)"
+      ],
+      "candidates": [],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "No code uses it directly; replacing ML Kit in book-guard removes it",
+      "lockIn": "None",
+      "onlySource": "maven-cache"
+    },
+    "com.google.mlkit:*": {
+      "names": [
+        "Tesseract4Android 4.9.0 (Apache-2.0, GitHub adaptech-cz/Tesseract4Android LICENSE, release 2025-06-11) with tessdata_fast eng.traineddata (Apache-2.0) in assets: word boxes and per-word confidence via ResultIterator, so page_reader_mlkit.dart's SeenLine maps 1:1; the existing four-turn loop covers rotation (fit good, effort M)",
+        "RapidOCR PP-OCRv5 ONNX models (Apache-2.0, RapidAI/RapidOCR pushed 2026-11-01) on com.microsoft.onnxruntime:onnxruntime-android 1.31.1 (MIT): better on curved or dim photos, line boxes only (no per-word boxes), larger APK (fit partial, effort L)"
+      ],
+      "candidates": ["cz.adaptech.tesseract4android:tesseract4android", "com.github.adaptech-cz:tesseract4android", "com.microsoft.onnxruntime:onnxruntime-android"],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "google_mlkit_text_recognition 0.17.1 in book-guard only, Latin script only (CJK and Devanagari models are compileOnly); one new PageReader behind createPageReader() plus a Kotlin channel",
+      "lockIn": "None; Tesseract reads phone photos of book pages worse than ML Kit, so page-number hits need re-checking on real photos",
+      "onlySource": "maven-cache"
+    },
     "*": {
       "names": [
         "FOSS games: OpenTTD, 0 A.D., Luanti, Xonotic, Wesnoth, Mindustry"
