@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from foss_audit import upstream_git
+from foss_audit import upstream_git, upstream_readme
 from foss_audit import upstream_license as ul
 from tests.upstream_helpers import APACHE, MIT, TODO, cache_file, git, make_repo  # noqa: F401
 
@@ -131,17 +131,17 @@ def test_readme_is_the_last_resort(tmp_path: Path, readme: str, expected: str) -
 
 
 def test_local_readme_license(tmp_path: Path) -> None:
-    assert ul.local_readme_license(tmp_path) == ("", "")
+    assert upstream_readme.local_readme_license(tmp_path) == ("", "")
     (tmp_path / "readme").mkdir()
     (tmp_path / "README.md").write_text(
         "[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)]\n"
     )
-    assert ul.local_readme_license(tmp_path) == (
+    assert upstream_readme.local_readme_license(tmp_path) == (
         "MIT",
         f"README.md of {tmp_path} names the license (no license file)",
     )
     (tmp_path / "README.md").write_text("## License\nAll rights reserved.\n")
-    assert ul.local_readme_license(tmp_path) == ("", "")
+    assert upstream_readme.local_readme_license(tmp_path) == ("", "")
 
 
 def test_license_file_beats_readme(tmp_path: Path) -> None:

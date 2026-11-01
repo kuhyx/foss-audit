@@ -14,8 +14,11 @@ answer, labelled "(default branch, not <ref>)".
 Answers are kept 30 days in ~/.cache/foss-audit/upstream-license.json, keyed by
 the normalised URL (plus "@<ref>" for a ref). A repository the forge says is
 gone (deleted or private) is an answer too: no license, "repository gone",
-cached like any other. A failure (network down, DNS, timeout, a ref that cannot
-be fetched) is returned as text and never cached: visible, retried next scan.
+cached like any other. A ref that cannot be fetched but whose default branch can
+is answered from the default branch and that answer is cached under the ref key
+too (else every scan would retry the doomed fetch). A total failure (network
+down, DNS, timeout) is returned as text and never cached: visible, retried next
+scan.
 """
 
 from __future__ import annotations
@@ -32,7 +35,8 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from foss_audit.scan_cache_pub_license import recognise
-from foss_audit.upstream_git import README_FILE, RootFiles, UpstreamError, UpstreamGoneError, read_root_files
+from foss_audit.upstream_git import RootFiles, UpstreamError, UpstreamGoneError, read_root_files
+from foss_audit.upstream_readme import readme_license
 
 CACHE_FILE = Path.home() / ".cache/foss-audit/upstream-license.json"
 TTL_S = 30 * 24 * 3600
@@ -50,23 +54,8 @@ FORGE_HOST = re.compile(r"^(?:git|gitlab|gitea|forgejo)\.")
 WEB_SEGMENTS = frozenset({"-", "tree", "blob", "src", "commit", "commits", "releases", "issues", "wiki"})
 SCM_GIT = re.compile(r"(?i)^scm:git:")
 OWNER_REPO = 2
-README_BYTES = 1 << 20
 # Lookups run in worker threads of several processes; the cache file is read-modify-written.
 STORE_LOCK = threading.Lock()
-# "## License" + the next lines, or a "License: X" line; the license token comes after.
-README_SECTION = re.compile(
-    r"(?im)^(?:#{1,6}[ \t]*|\W*)licen[cs]e(?:[ \t]*:\W*|[ \t]*\n)(.{0,300})", re.DOTALL
-)
-README_IDS = (
-    (re.compile(r"(?i)\bapache(?: licen[cs]e)?,? (?:version |v)?2(?:\.0)?"), lambda m: "Apache-2.0"),
-    (re.compile(r"(?i)\bbsd[- ]([234])[- ]clause"), lambda m: f"BSD-{m[1]}-Clause"),
-    (re.compile(r"(?i)\bmpl[- ]?2(?:\.0)?\b"), lambda m: "MPL-2.0"),
-    (
-        re.compile(r"\b(A?L?GPL)[- ]?v?(\d(?:\.\d)?)"),
-        lambda m: f"{m[1]}-{m[2] if '.' in m[2] else m[2] + '.0'}",
-    ),
-    (re.compile(r"\b(MIT|ISC|Unlicense)\b"), lambda m: m[1]),
-)
 
 
 def _now() -> float:
@@ -124,25 +113,6 @@ def repository(link: str) -> str:
     return f"{parts.scheme}://{parts.netloc}/{'/'.join(keep)}" if len(keep) >= OWNER_REPO else ""
 
 
-def _readme_license(text: str) -> str:
-    """A license named in the README's License section or `License: X` line, else ""."""
-    section = README_SECTION.search(text)
-    if not section:
-        return ""
-    hits = [(m.start(), build(m)) for pattern, build in README_IDS if (m := pattern.search(section.group(1)))]
-    return min(hits)[1] if hits else ""
-
-
-def local_readme_license(root: Path) -> tuple[str, str]:
-    """(license, where) a local checkout's README names, as upstream READMEs are read
-    (first README only, its License section or `License: X` line); ("", "") if none."""
-    readme = next((p for p in sorted(root.glob("*")) if README_FILE.match(p.name) and p.is_file()), None)
-    if readme is None:
-        return "", ""
-    named = _readme_license(readme.read_bytes()[:README_BYTES].decode("utf-8", errors="replace"))
-    return (named, f"{readme.name} of {root} names the license (no license file)") if named else ("", "")
-
-
 def _decide(files: RootFiles, key: str, ref: str) -> tuple[str, str]:
     """(license, where checked) from the root files of `ref` (HEAD when "")."""
     where = f"upstream {key} {ref or 'HEAD'}"
@@ -156,7 +126,7 @@ def _decide(files: RootFiles, key: str, ref: str) -> tuple[str, str]:
             skipped = f" (placeholder {name} skipped)"
     if ids:
         return " AND ".join(sorted(ids)), f"{where}: {', '.join(dict.fromkeys(ids.values()))} file"
-    named = _readme_license(files.readme)
+    named = readme_license(files.readme)
     if named:
         return named, f"{where}: {files.readme_name} names the license (no license file)"
     return "", f"{where}: no license file{skipped}"
@@ -209,26 +179,37 @@ def _fresh(entry: object) -> tuple[str, str] | None:
     return None
 
 
+def _lookup(key: str, ref: str) -> tuple[str, str, bool]:
+    """(license, where checked, answered): from the cache, else the network; only an answer is stored."""
+    store_key = f"{key}@{ref}" if ref else key
+    cached = _fresh(_load().get(store_key))
+    if cached:
+        return (*cached, True)
+    try:
+        found, checked = _decide(read_root_files(key, ref), key, ref)
+    except UpstreamGoneError as exc:  # no tree at any ref: the default branch is gone too
+        found, checked = "", f"upstream {key}: repository gone ({exc})"
+    except UpstreamError as exc:
+        return "", f"upstream {key}: fetch failed: {exc}", False
+    _store(store_key, found, checked)
+    return found, checked, True
+
+
 def upstream_license(url: str, ref: str = "") -> tuple[str, str]:
     """(license, where checked) of the repository at `ref`, else its default
     branch (labelled as such when `ref` was asked for); license "" when none."""
     key = normalise(url)
     if not key:
         return "", f"upstream {url!r}: not a fetchable git URL"
-    store_key = f"{key}@{ref}" if ref else key
-    cached = _fresh(_load().get(store_key))
-    if cached:
-        return cached
-    try:
-        found, checked = _decide(read_root_files(key, ref), key, ref)
-    except UpstreamGoneError as exc:  # no tree at any ref: the default branch is gone too
-        found, checked = "", f"upstream {key}: repository gone ({exc})"
-    except UpstreamError as exc:
-        if ref:  # a missing tag, an unfetchable sha: the default branch, said so
-            found, checked = upstream_license(key)
-            return found, f"{checked}{not_this_version(ref)}"
-        return "", f"upstream {key}: fetch failed: {exc}"
-    _store(store_key, found, checked)
+    found, checked, answered = _lookup(key, ref)
+    if answered or not ref:
+        return found, checked
+    # A missing tag, an unfetchable sha: the default branch answers, said so. That answer is
+    # kept under the ref key too, or every rescan would retry the doomed ref fetch (up to 20 s).
+    found, checked, answered = _lookup(key, "")
+    checked += not_this_version(ref)
+    if answered:
+        _store(f"{key}@{ref}", found, checked)
     return found, checked
 
 

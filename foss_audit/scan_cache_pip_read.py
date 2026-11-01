@@ -19,7 +19,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import IO, Any
 
-from foss_audit import upstream_license
+from foss_audit import upstream_readme
 from foss_audit.own_license import LICENSE_FILE, declared_license, repo_root
 from foss_audit.scan_cache_pip_meta import Record, known, license_file_names, norm, parse
 
@@ -167,7 +167,7 @@ def from_editable(record: Record, root: Path) -> Record:
     if not sources:
         return record
     for checkout in dict.fromkeys(r for r in map(repo_root, sources) if r is not None):
-        lic, where = upstream_license.local_readme_license(checkout)
+        lic, where = upstream_readme.local_readme_license(checkout)
         if lic:
             return replace(record, license=lic, license_from=where, local=True)
     tried = ", ".join(map(str, sources))

@@ -19,7 +19,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from foss_audit import cache_common, progress, upstream_license
+from foss_audit import cache_common, progress, upstream_license, upstream_readme
 from foss_audit.own_license import declared_license, repo_root
 from foss_audit.scan_cache_pip_meta import Record, classifier_license, known
 from foss_audit.scan_cache_pip_read import records_from
@@ -43,7 +43,7 @@ def from_checkout(record: Record, dirs: list[Path]) -> Record:
                 record, license=lic, license_from=f"LICENSE/pyproject of ~/src checkout {directory}"
             )
     for root in dict.fromkeys(r for r in map(repo_root, dirs) if r is not None):
-        lic, where = upstream_license.local_readme_license(root)
+        lic, where = upstream_readme.local_readme_license(root)
         if lic:
             return replace(record, license=lic, license_from=where)
     tried = ", ".join(str(d) for d in dirs)

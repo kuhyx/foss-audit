@@ -52,7 +52,41 @@ def test_missing_ref_falls_back_to_head_labelled(tmp_path: Path, cache_file: Pat
         "Apache-2.0",
         f"upstream {url} HEAD: LICENSE file (default branch, not v9)",
     )
-    assert sorted(json.loads(cache_file.read_text())) == [url]  # the failed ref is not cached
+    assert sorted(json.loads(cache_file.read_text())) == [url, f"{url}@v9"]  # the fallback answer is cached
+
+
+def test_fallback_answer_is_cached_under_the_ref_key(
+    tmp_path: Path, cache_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    url, _ = tagged_repo(tmp_path)
+    first = ul.upstream_license(url, "v9")
+    calls: list[tuple[str, str]] = []
+
+    def no_git(key: str, ref: str = "") -> upstream_git.RootFiles:
+        calls.append((key, ref))
+        raise AssertionError("git was called")
+
+    monkeypatch.setattr(ul, "read_root_files", no_git)
+    assert ul.upstream_license(url, "v9") == first
+    assert calls == []
+    assert json.loads(cache_file.read_text())[f"{url}@v9"]["checked"] == first[1]
+
+
+def test_total_failure_stays_uncached_and_is_retried(
+    tmp_path: Path, cache_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+
+    def down(key: str, ref: str = "") -> upstream_git.RootFiles:
+        calls.append(ref)
+        raise upstream_git.UpstreamError("network down")
+
+    monkeypatch.setattr(ul, "read_root_files", down)
+    url = f"file://{tmp_path}/nope"
+    assert ul.upstream_license(url, "v9")[0] == ""
+    assert ul.upstream_license(url, "v9")[0] == ""
+    assert calls == ["v9", "", "v9", ""]
+    assert not cache_file.exists()
 
 
 @pytest.mark.parametrize("ref", ["--upload-pack=touch pwned", "a:b", "+v1", "v1^", "a b", "x..y", "v1~1"])
