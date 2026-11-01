@@ -8,6 +8,11 @@
          homepage inside #root. -->
   </head>
   <body>
+    <script>
+      window.__scanPreload = fetch("/api/scan")
+        .then(async (r) => ({ status: r.status, body: r.status === 200 ? await r.json() : null }))
+        .catch(() => null);
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -25,6 +25,7 @@ from urllib.parse import parse_qs, urlparse
 from foss_audit.progress import ScanProgress
 from foss_audit.scan import run_scan
 from foss_audit.scan_store import load_saved, load_scan_file, save_atomic
+from foss_audit.server_body import EncodedScan, accepts_gzip
 
 DEFAULT_PORT = 5191
 DEFAULT_STORE = Path.home() / ".cache/foss-audit/scan.json"
@@ -36,7 +37,7 @@ class ScanCache:
 
     def __init__(self, scan_file: Path | None = None, store: Path | None = None) -> None:
         self._lock = threading.Lock()
-        self._result: dict[str, Any] | None = None
+        self._served: EncodedScan | None = None
         self._scanning = False
         self._error: str | None = None
         self._scan_file = scan_file
@@ -47,24 +48,38 @@ class ScanCache:
         """Load the scan file (OSError/ValueError if bad), else the saved result and rescan."""
         with self._lock:
             if self._scan_file is not None:
-                self._result = load_scan_file(self._scan_file)
+                self._serve(load_scan_file(self._scan_file))
                 return
-            self._result = load_saved(self._store) if self._store is not None else None
+            saved = load_saved(self._store) if self._store is not None else None
+            self._served = None if saved is None else self._encode(saved)
             self._start_rescan()
 
-    def get(self, *, refresh: bool) -> dict[str, Any] | None:
-        """The result to serve now (None before the first); `refresh` starts a rescan."""
+    def encoded(self, *, refresh: bool) -> tuple[EncodedScan, bool] | None:
+        """The result to serve now and whether a rescan runs (None before the first); `refresh` starts one."""
         with self._lock:
             if self._scan_file is not None:
-                if refresh or self._result is None:
-                    self._result = load_scan_file(self._scan_file)
+                if refresh or self._served is None:
+                    self._serve(load_scan_file(self._scan_file))
             elif refresh:
                 self._start_rescan()
-            return None if self._result is None else {**self._result, "scanning": self._scanning}
+            return None if self._served is None else (self._served, self._scanning)
+
+    def get(self, *, refresh: bool) -> dict[str, Any] | None:
+        current = self.encoded(refresh=refresh)
+        return None if current is None else {**current[0].result, "scanning": current[1]}
+
+    @staticmethod
+    def _encode(result: dict[str, Any]) -> EncodedScan:
+        encoded = EncodedScan(result)
+        encoded.prewarm()
+        return encoded
+
+    def _serve(self, result: dict[str, Any]) -> None:
+        self._served = self._encode(result)
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
-            generated = None if self._result is None else self._result.get("generatedAt")
+            generated = None if self._served is None else self._served.result.get("generatedAt")
             return {
                 "scanning": self._scanning,
                 "generatedAt": generated,
@@ -88,7 +103,8 @@ class ScanCache:
             return
         self._save(result)
         with self._lock:
-            self._result, self._scanning = result, False
+            self._serve(result)
+            self._scanning = False
 
     def _save(self, result: dict[str, Any]) -> None:
         if self._store is None:
@@ -109,24 +125,33 @@ class Handler(BaseHTTPRequestHandler):
             self._send(HTTPStatus.OK, {"ok": True})
         elif url.path == "/api/scan":
             refresh = parse_qs(url.query).get("refresh", ["0"])[0] in REFRESH_MODES
-            body = CACHE.get(refresh=refresh)
-            if body is None:
+            current = CACHE.encoded(refresh=refresh)
+            if current is None:
                 self._send(HTTPStatus.ACCEPTED, {"scanning": True})
             else:
-                self._send(HTTPStatus.OK, body)
+                zipped = accepts_gzip(self.headers.get("Accept-Encoding"))
+                self._respond(
+                    HTTPStatus.OK, current[0].parts(scanning=current[1], zipped=zipped), zipped=zipped
+                )
         elif url.path == "/api/scan/progress":
             self._send(HTTPStatus.OK, CACHE.snapshot())
         else:
             self._send(HTTPStatus.NOT_FOUND, {"error": f"no route {url.path}"})
 
     def _send(self, status: HTTPStatus, body: dict[str, Any]) -> None:
-        payload = json.dumps(body).encode()
+        self._respond(status, (json.dumps(body).encode(),), zipped=False)
+
+    def _respond(self, status: HTTPStatus, parts: tuple[bytes, ...], *, zipped: bool) -> None:
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Content-Length", str(sum(len(part) for part in parts)))
         self.send_header("Cache-Control", "no-store")
+        if zipped:
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
         self.end_headers()
-        self.wfile.write(payload)
+        for part in parts:
+            self.wfile.write(part)
 
     def log_message(self, fmt: str, *args: object) -> None:
         """Quiet per-request logging; run.sh prints its own status lines."""
