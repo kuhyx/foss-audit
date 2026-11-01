@@ -1064,6 +1064,130 @@
       "effortReason": "The scripts assemble platforms, build-tools and an NDK from free sources in minutes; armv7/x86_64 NDK targets and each new API level are still manual",
       "lockIn": "Play Store targetSdk rules track Google's SDK releases; F-Droid's AGPL sdkmanager only fetches the same Google binaries"
     },
+    "com.google.android.gms:play-services-measurement*": {
+      "names": [
+        "ACRA ch.acra:acra-core 5.14.2 (Apache-2.0, GitHub ACRA/acra LICENSE, release 2026-10; fit good, effort S): crash reports only, posts to your own endpoint or mail; analytics simply dropped",
+        "Countly ly.count.android:sdk 26.1.6 (MIT, GitHub Countly/countly-sdk-android LICENSE, release 2026-09; fit good, effort M): analytics + crashes to a self-hosted Countly server",
+        "Matomo matomo-sdk-android (BSD-3-Clause, GitHub matomo-org/matomo-sdk-android LICENSE, pushed 2026-09; fit partial, effort M): JitPack only, events to a self-hosted Matomo, no crash reports"
+      ],
+      "candidates": ["ch.acra:acra-core", "ch.acra:acra-http", "ly.count.android:sdk", "com.github.matomo-org:matomo-sdk-android"],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Reached only via firebase-analytics in TachiyomiSY (Firebase (EH) block); FirebaseConfig already gates it behind a toggle, so swapping in ACRA is one dependency and one init call",
+      "lockIn": "None for a personal build; you lose the Firebase console dashboards and Crashlytics' deobfuscated stack grouping",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-ads-identifier": {
+      "names": [
+        "Nothing: the advertising ID is only pulled in by firebase-analytics; dropping analytics removes it (no replacement needed)",
+        "microG org.microg.gms:play-services-ads-identifier 0.3.6.244735 (Apache-2.0 per its Maven pom and microg/GmsCore LICENSE; fit drop-in, effort S; last Maven release 2024-12)",
+        "ACRA ch.acra:acra-core (Apache-2.0) if crash reports are what you actually want from Firebase"
+      ],
+      "candidates": ["org.microg.gms:play-services-ads-identifier", "ch.acra:acra-core"],
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "Transitive of firebase-analytics in TachiyomiSY; it goes away with analytics",
+      "lockIn": "None",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-stats": {
+      "names": [
+        "Nothing: internal stats helper of play-services-measurement, gone with firebase-analytics",
+        "ACRA ch.acra:acra-core (Apache-2.0) for crash reports"
+      ],
+      "candidates": ["ch.acra:acra-core"],
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "Transitive of firebase-analytics in TachiyomiSY",
+      "lockIn": "None",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-base*": {
+      "names": [
+        "microG client libs org.microg.gms:play-services-base / -basement 0.3.6.244735 (Apache-2.0 per Maven pom; microg/GmsCore pushed 2026-10; fit partial, effort L): Gradle dependencySubstitution, but the API is frozen near GMS 17.x so firebase-bom 34 / google_sign_in 7 may not compile",
+        "Nothing: pulled in only by firebase-* and the google_sign_in / geolocator / mlkit Flutter plugins; replacing those removes it"
+      ],
+      "candidates": ["org.microg.gms:play-services-base", "org.microg.gms:play-services-basement"],
+      "fit": "partial",
+      "effort": "L",
+      "effortReason": "Runtime glue for every GMS/Firebase library; only goes away once its callers (Firebase, google_sign_in, geolocator, mlkit) are replaced",
+      "lockIn": "Every Firebase SDK and Google sign-in depends on it",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-tasks": {
+      "names": [
+        "microG org.microg.gms:play-services-tasks 0.3.6.244735 (Apache-2.0 per Maven pom; fit drop-in, effort M): same Task API, via dependencySubstitution",
+        "kotlinx-coroutines (Apache-2.0) in own code; Firebase itself still needs the Task API"
+      ],
+      "candidates": ["org.microg.gms:play-services-tasks"],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Small, stable API that microG reimplements; substitution has to hold for every Firebase artifact",
+      "lockIn": "Firebase's public API returns Task objects",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-auth*": {
+      "names": [
+        "AppAuth (net.openid:appauth 0.11.1, Apache-2.0, GitHub openid/AppAuth-Android LICENSE; last release 2021-12, repo pushed 2026-03) via flutter_appauth (BSD-3-Clause, LICENSE in MaikuB/flutter_appauth, pushed 2026-10): browser OAuth with Google as IdP, ID token then fed to FirebaseAuth signInWithCredential (fit good, effort L)",
+        "microG org.microg.gms:play-services-auth / -auth-base / -auth-api-phone 0.3.6.244735 (Apache-2.0 per Maven pom; fit partial, effort L): old GoogleSignIn API only, no Credential Manager, google_sign_in_android 7.x will not build against it",
+        "Firebase Auth email/password (drops Google sign-in; firebase-auth itself is still non-free, fit partial, effort M)"
+      ],
+      "candidates": ["net.openid:appauth", "flutter_appauth", "org.microg.gms:play-services-auth"],
+      "fit": "partial",
+      "effort": "L",
+      "effortReason": "Pulled by google_sign_in_android 7.2.18 in 10 Flutter apps (todo, tutor, diet-guard, home_inventory, kartka, home-guard, leetcode-guard, wake-alarm, crdt_sync_flutter); each needs a new sign-in flow, OAuth client and phone test",
+      "lockIn": "Your Firebase-only sync rule assumes Google sign-in; AppAuth keeps the Google account but loses one-tap/Credential Manager UX",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-identity-credentials": {
+      "names": [
+        "AppAuth net.openid:appauth via flutter_appauth (Apache-2.0 / BSD-3-Clause): replaces the Credential Manager Google flow that pulls this in",
+        "androidx.credentials without the play-services-auth bridge (Apache-2.0) for passkeys/passwords only; no Google ID token"
+      ],
+      "candidates": ["net.openid:appauth", "flutter_appauth"],
+      "fit": "partial",
+      "effort": "L",
+      "effortReason": "Transitive of androidx.credentials:credentials-play-services-auth in google_sign_in_android; goes with the sign-in rewrite",
+      "lockIn": "Same as play-services-auth",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-fido": {
+      "names": [
+        "microG org.microg.gms:play-services-fido 0.3.6.244735 (Apache-2.0 per Maven pom; fit drop-in, effort M)",
+        "Nothing if Google sign-in moves to AppAuth: only the Credential Manager bridge pulls it in"
+      ],
+      "candidates": ["org.microg.gms:play-services-fido", "net.openid:appauth"],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Transitive of the google_sign_in Credential Manager bridge",
+      "lockIn": "Passkey sync lives in Google Password Manager",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-location": {
+      "names": [
+        "AOSP android.location.LocationManager / androidx.core LocationManagerCompat (Apache-2.0, part of the platform): GPS + network provider, no fused provider (fit good, effort M)",
+        "microG org.microg.gms:play-services-location 0.3.6.244735 (Apache-2.0 per Maven pom; fit partial, effort M): FusedLocationProviderClient API that needs microG GmsCore on the phone to return fixes",
+        "geolocator forceLocationManager: true (MIT, Baseflow/flutter-geolocator): uses LocationManager at runtime but still links play-services-location (fit partial, effort S)"
+      ],
+      "candidates": ["org.microg.gms:play-services-location"],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Pulled by geolocator_android 5.1.0 in umbrella only; a small platform channel over LocationManager replaces it",
+      "lockIn": "Fused provider battery/accuracy tuning; Wi-Fi/cell fixes need a network provider (Pixel ships Google's)",
+      "onlySource": "maven-cache"
+    },
+    "com.google.android.gms:play-services-mlkit-text-recognition*": {
+      "names": [
+        "Tesseract4Android 4.9.0 (Apache-2.0, GitHub adaptech-cz/Tesseract4Android LICENSE, release 2025-06): on-device OCR, Latin + CJK + Devanagari traineddata (fit good, effort M)",
+        "RapidOCR / PaddleOCR PP-OCR models (Apache-2.0, RapidAI/RapidOCR pushed 2026-11) on ONNX Runtime com.microsoft.onnxruntime:onnxruntime-android 1.31.1 (MIT): better on photos, bigger APK (fit good, effort L)"
+      ],
+      "candidates": ["cz.adaptech.tesseract4android:tesseract4android", "com.github.adaptech-cz:tesseract4android", "com.microsoft.onnxruntime:onnxruntime-android"],
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Pulled by google_mlkit_text_recognition 0.17.1 in book-guard only; swap the recognizer behind one platform channel",
+      "lockIn": "None; ML Kit's model quality on photos is the loss with Tesseract",
+      "onlySource": "maven-cache"
+    },
     "*": {
       "names": [
         "FOSS games: OpenTTD, 0 A.D., Luanti, Xonotic, Wesnoth, Mindustry"
