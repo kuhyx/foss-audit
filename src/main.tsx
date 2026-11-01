@@ -9,6 +9,7 @@ import "./styles/controls.css";
 import "./styles/summary.css";
 import "./styles/table.css";
 import "./styles/panel.css";
+import "./styles/progress.css";
 
 const root = document.querySelector("#root");
 if (root !== null) {

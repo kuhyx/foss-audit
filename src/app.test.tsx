@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 
 import { App } from "./app.tsx";
-import { makeScan } from "./test/fixtures.ts";
+import { makeProgress, makeScan } from "./test/fixtures.ts";
+import { respond as fakeResponse, route } from "./test/route.ts";
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -20,6 +21,7 @@ async function renderApp(url = "/", scan = makeScan()) {
 }
 
 beforeEach(() => {
+  fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -34,6 +36,43 @@ describe("App", () => {
     render(<App />);
     expect(screen.getByText("Scanning installed programs…")).toBeInTheDocument();
     expect(await screen.findByText("44.4% free")).toBeInTheDocument();
+  });
+
+  it("shows live progress while the first scan runs, then the summary", async () => {
+    globalThis.history.replaceState(null, "", "/");
+    const progress = [
+      makeProgress({ itemsFound: 120, running: [{ done: 40, source: "npm-cache", total: 100 }], sourcesDone: 14 }),
+      makeProgress({ generatedAt: "2026-10-11T14:02:11Z", scanning: false, sourcesDone: 26 }),
+    ];
+    route(fetchMock, {
+      "/api/scan": [fakeResponse({ scanning: true }, 202), fakeResponse(makeScan())],
+      "/api/scan/progress": progress.map((body) => fakeResponse(body)),
+    });
+    render(<App />);
+    expect(await screen.findByText("14/26")).toBeInTheDocument();
+    expect(screen.getByText("npm-cache 40/100")).toBeInTheDocument();
+    expect(screen.getByText("120 items")).toBeInTheDocument();
+    expect(await screen.findByText("44.4% free")).toBeInTheDocument();
+  });
+
+  it("shows a compact progress in the header while a rescan runs", async () => {
+    const user = await renderApp();
+    const scanning = makeScan({ scanning: true });
+    const progress = makeProgress({
+      generatedAt: scanning.generatedAt,
+      running: [{ done: 3400, source: "npm-cache", total: 12_000 }],
+      sourcesDone: 14,
+    });
+    route(fetchMock, {
+      "/api/scan": [fakeResponse(scanning)],
+      "/api/scan/progress": [fakeResponse(progress)],
+      "/api/scan?refresh=1": [fakeResponse(scanning)],
+    });
+    await user.click(screen.getByRole("button", { name: "Rescan" }));
+    expect(await screen.findByLabelText("Rescan progress")).toHaveTextContent("14/26 · npm-cache 3400/12000");
+    expect(screen.getByLabelText("Scan age")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rescanning…" })).toBeDisabled();
+    expect(screen.getByText("44.4% free")).toBeInTheDocument();
   });
 
   it("explains a failed first load", async () => {

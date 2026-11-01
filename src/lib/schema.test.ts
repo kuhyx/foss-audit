@@ -1,5 +1,5 @@
-import { makeScan } from "../test/fixtures.ts";
-import { parseScan } from "./schema.ts";
+import { makeProgress, makeScan } from "../test/fixtures.ts";
+import { parseProgress, parseScan } from "./schema.ts";
 
 describe("parseScan", () => {
   it("accepts a well-formed response and returns it typed", () => {
@@ -61,5 +61,35 @@ describe("parseScan", () => {
     const scan = makeScan();
     const item = { ...scan.items[1], alternative: { ...scan.items[1]?.alternative, fit: "great" } };
     expect(() => parseScan({ ...scan, items: [item] })).toThrow(/alternative\.fit/u);
+  });
+});
+
+describe("scanning flag", () => {
+  it("defaults to false when a saved scan file lacks it", () => {
+    const saved: Partial<ReturnType<typeof makeScan>> = makeScan();
+    delete saved.scanning;
+    expect(parseScan(saved).scanning).toBe(false);
+  });
+
+  it("keeps scanning: true", () => {
+    expect(parseScan({ ...makeScan(), scanning: true }).scanning).toBe(true);
+  });
+});
+
+describe("parseProgress", () => {
+  it("accepts a running progress with an unknown total", () => {
+    const progress = makeProgress({
+      generatedAt: "2026-10-11T14:02:11Z",
+      itemsFound: 9120,
+      running: [{ done: 3400, source: "npm-cache", total: null }],
+      sourcesDone: 14,
+    });
+    expect(parseProgress(structuredClone(progress))).toEqual(progress);
+  });
+
+  it("names the offending path", () => {
+    expect(() => parseProgress({ ...makeProgress(), sourcesDone: "x" })).toThrow(
+      /\/api\/scan\/progress response failed validation at "sourcesDone"/u,
+    );
   });
 });

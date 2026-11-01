@@ -97,6 +97,27 @@ export const scanSchema = z.object({
   generatedAt: z.string(),
   host: z.string(),
   items: z.array(itemSchema),
+  // Absent in saved scan files (and older backends): nothing is scanning.
+  scanning: z.boolean().default(false),
+});
+
+export const runningSourceSchema = z.object({
+  done: z.number(),
+  source: z.string(),
+  total: z.number().nullable(),
+});
+
+/**
+ * `/api/scan/progress`: how far the backend's background scan has got.
+ */
+export const progressSchema = z.object({
+  error: z.string().nullable(),
+  generatedAt: z.string().nullable(),
+  itemsFound: z.number(),
+  running: z.array(runningSourceSchema),
+  scanning: z.boolean(),
+  sourcesDone: z.number(),
+  sourcesTotal: z.number(),
 });
 
 export type Alternative = z.infer<typeof alternativeSchema>;
@@ -104,6 +125,8 @@ export type Effort = (typeof EFFORTS)[number];
 export type Fit = (typeof FITS)[number];
 export type Item = z.infer<typeof itemSchema>;
 export type Scan = z.infer<typeof scanSchema>;
+export type RunningSource = z.infer<typeof runningSourceSchema>;
+export type ScanProgress = z.infer<typeof progressSchema>;
 export type ScanError = z.infer<typeof scanErrorSchema>;
 export type Source = z.infer<typeof sourceSchema>;
 export type Verdict = z.infer<typeof verdictSchema>;
@@ -114,13 +137,21 @@ export type Verdict = z.infer<typeof verdictSchema>;
  * One unexpected enum value (a new Source added to the backend, say) must not
  * blank the app silently: the message says exactly which field to look at.
  */
-export function parseScan(body: unknown): Scan {
-  const result = scanSchema.safeParse(body);
+function parseWith<T>(schema: z.ZodType<T>, body: unknown, endpoint: string): T {
+  const result = schema.safeParse(body);
   if (result.success) return result.data;
   // zod reports at least one issue on failure; listing all of them avoids a
   // branch for an "empty issues" case that cannot happen.
   const detail = result.error.issues
     .map((issue) => `"${issue.path.join(".")}": ${issue.message}`)
     .join("; ");
-  throw new Error(`/api/scan response failed validation at ${detail}`);
+  throw new Error(`${endpoint} response failed validation at ${detail}`);
+}
+
+export function parseScan(body: unknown): Scan {
+  return parseWith(scanSchema, body, "/api/scan");
+}
+
+export function parseProgress(body: unknown): ScanProgress {
+  return parseWith(progressSchema, body, "/api/scan/progress");
 }
