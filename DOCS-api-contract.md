@@ -3,16 +3,38 @@
 The Python backend (`foss_audit/server.py`) binds `127.0.0.1:5191`. The Vite
 dev/preview server proxies `/api` to it, so the UI always fetches same-origin.
 
-## `GET /api/scan[?refresh=1]`
+## `GET /api/scan[?refresh=1|full]`
 
-Scans the machine live. The result is cached in memory; `refresh=1` forces a
-rescan (a full scan takes ~45 s).
+Never waits for a live scan. The last result is kept in memory and saved to
+`~/.cache/foss-audit/scan.json` (atomic rename); at startup it is loaded from
+there and a background rescan begins. `refresh=1` starts a background rescan
+(`full` also discards per-package memo entries) unless one is running, and
+returns at once. A cold scan takes ~70 s.
+
+- `200`: the last complete result (body below) plus `"scanning": bool`.
+- `202` `{"scanning": true}`: no result yet (first run, no `scan.json`).
+
+## `GET /api/scan/progress`
+
+```jsonc
+{
+  "scanning": true,
+  "generatedAt": "2026-10-11T14:02:11Z", // of the result /api/scan serves; null before the first
+  "sourcesDone": 14, "sourcesTotal": 26, "itemsFound": 9120,
+  "running": [{ "source": "npm-cache", "done": 3400, "total": 12000 }], // total may be null
+  "error": null // message of a rescan that crashed, else null
+}
+```
+
+The UI polls it every 250 ms while `scanning`, and refetches `/api/scan` when
+`generatedAt` changes.
 
 Started with `--scan-file PATH` (`python3 -m foss_audit.server --scan-file
 /tmp/fa_scan.json`, or `./run.sh --scan-file PATH`), the backend never scans:
 it serves that saved `python -m foss_audit.scan` output, loaded once at startup
 (a missing file, bad JSON or an object without `items` exits with a usage
-error), and `refresh=1` re-reads the same file from disk. The E2E flow
+error), `refresh=1` re-reads the same file from disk, `scanning` is always
+`false` and nothing is written to `~/.cache`. The E2E flow
 (`scripts/e2e_selection.sh`) relies on this to start in about a second.
 `./run.sh --scan-file` only applies to a fresh start: an instance already
 running is reused as it is.
