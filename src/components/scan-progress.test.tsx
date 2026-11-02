@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 
 import { makeProgress } from "../test/fixtures.ts";
 import { HeaderProgress, LoadingProgress } from "./scan-progress.tsx";
@@ -23,6 +24,33 @@ describe("LoadingProgress", () => {
     expect(screen.getByText("9120 items")).toBeInTheDocument();
     expect(screen.getByText("npm-cache 3400/12000")).toBeInTheDocument();
     expect(screen.getByText("pip-cache 57")).toBeInTheDocument();
+  });
+
+  it("hides a running source until it has counted something or knows its total", () => {
+    const running = [
+      { done: 0, source: "npm-cache", total: null },
+      { done: 0, source: "user-app", total: 40 },
+      { done: 5, source: "pip-cache", total: null },
+    ];
+    render(<LoadingProgress progress={makeProgress({ running })} />);
+    expect(screen.queryByText("npm-cache 0")).toBeNull();
+    expect(screen.getByText("user-app 0/40")).toBeInTheDocument();
+    expect(screen.getByText("pip-cache 5")).toBeInTheDocument();
+  });
+
+  it("keeps the running list's own fixed-height box, empty or full, so nothing moves", () => {
+    const { rerender } = render(<LoadingProgress progress={makeProgress({ running: [] })} />);
+    expect(screen.getByRole("list")).toHaveClass("scan-running");
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    rerender(<LoadingProgress progress={makeProgress({ running: RUNNING })} />);
+    expect(screen.getByRole("list")).toHaveClass("scan-running");
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("reserves a fixed height for the running list in the stylesheet", () => {
+    // jsdom applies no stylesheet, so read the rule itself.
+    const progressCss = readFileSync("src/styles/progress.css", "utf8");
+    expect(/\.scan-running\s*\{[^}]*(?<![-\w])height:/.exec(progressCss)).not.toBeNull();
   });
 
   it("fills the bar in proportion to the sources done", () => {
@@ -60,6 +88,12 @@ describe("HeaderProgress", () => {
     );
     expect(screen.getByLabelText("Rescan progress")).toHaveTextContent("14/26 · npm-cache 3400/12000");
     expect(screen.getByLabelText("Scan age")).toHaveTextContent("5m");
+  });
+
+  it("leaves a running source out until it has counted something", () => {
+    const running = [{ done: 0, source: "npm-cache", total: null }, ...RUNNING.slice(1)];
+    render(<HeaderProgress generatedAt="2026-10-11T14:00:00Z" progress={makeProgress({ running })} />);
+    expect(screen.getByLabelText("Rescan progress")).toHaveTextContent("0/26 · pip-cache 57");
   });
 
   it("keeps the age current as time passes", () => {

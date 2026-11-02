@@ -1,6 +1,6 @@
 .scan-bar {
   width: 100%;
-  height: var(--space-2);
+  height: var(--space-3);
   overflow: hidden;
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -23,14 +23,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The two numbers are what the eye should land on: large, the sources count largest. */
 .scan-nums {
   display: flex;
   gap: var(--space-3);
+  align-items: baseline;
+  font-size: var(--text-title);
+  font-weight: 600;
 }
 
+.scan-nums > span:first-child {
+  font-size: var(--text-display);
+}
+
+/* Room for the most sources the scan runs at once (12 workers) so the block
+   above, centred on the page, never shifts as sources start and finish. */
 .scan-running {
   display: grid;
   gap: var(--space-1);
+  align-content: start;
+  height: calc(12 * 1lh + 11 * var(--space-1));
+  margin: 0;
+  padding: 0;
   list-style: none;
   color: var(--text-muted);
 }
@@ -46,6 +60,7 @@
 
 .scan-live .scan-bar {
   flex: 0 0 4rem;
+  height: var(--space-2);
 }
 
 .scan-live-text {

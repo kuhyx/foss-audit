@@ -8,6 +8,11 @@ function runningLabel({ done, source, total }: RunningSource): string {
   return total === null ? `${source} ${done}` : `${source} ${done}/${total}`;
 }
 
+// A source that has not counted anything yet reads "npm-cache 0": noise, so it waits.
+function visibleRunning(progress: ScanProgress): readonly RunningSource[] {
+  return progress.running.filter(({ done, total }) => done > 0 || total !== null);
+}
+
 function percent({ sourcesDone, sourcesTotal }: ScanProgress): number {
   return sourcesTotal > 0 ? Math.min(100, (sourcesDone / sourcesTotal) * 100) : 0;
 }
@@ -56,11 +61,7 @@ export function LoadingProgress({
         <span>{progress.itemsFound} items</span>
       </p>
       <ul className="scan-running">
-        {progress.running.map((source) => {
-          return (
-            <li key={source.source}>{runningLabel(source)}</li>
-          );
-        })}
+        {visibleRunning(progress).map((source) => <li key={source.source}>{runningLabel(source)}</li>)}
       </ul>
     </div>
   );
@@ -80,7 +81,7 @@ export function HeaderProgress({
         <>
           <Bar progress={progress} />
           <span aria-label="Rescan progress" className="scan-live-text">
-            {[`${progress.sourcesDone}/${progress.sourcesTotal}`, ...progress.running.map((source) => runningLabel(source))].join(" · ")}
+            {[`${progress.sourcesDone}/${progress.sourcesTotal}`, ...visibleRunning(progress).map((source) => runningLabel(source))].join(" · ")}
           </span>
         </>
       )}
