@@ -2,10 +2,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CHROME, DEAD_LAUNCHER, makeAlternative, MYSTERY, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
+import { postedIds, stubRemove } from "../test/remove-stub.ts";
 import { DetailPanel } from "./detail-panel.tsx";
 
+const VIA = { ...CHROME, id: "aur:via", removeVia: "~/src/sufler via torch" };
+
 describe("DetailPanel", () => {
-  it("shows every field, the alternative and the copyable remove command", () => {
+  beforeEach(() => {
+    stubRemove([CHROME, UNRAR, STEAM_GAME, OWN_SCRIPT, MYSTERY, DEAD_LAUNCHER, VIA]);
+  });
+
+  it("shows every field, the alternative and the copyable remove command", async () => {
     render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "google-chrome" })).toBeInTheDocument();
     expect(screen.getByText("Non-free")).toBeInTheDocument();
@@ -19,7 +26,43 @@ describe("DetailPanel", () => {
     expect(screen.getByText("Drop-in")).toBeInTheDocument();
     expect(screen.getByText("XL · infeasible")).toBeInTheDocument();
     expect(screen.getByText("Google Sync")).toBeInTheDocument();
-    expect(screen.getByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
+    expect(await screen.findByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
+  });
+
+  it("fetches the remove command of its one item only, with a placeholder meanwhile", async () => {
+    const mock = stubRemove([CHROME]);
+    render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    expect(screen.getByTestId("remove-loading")).toBeInTheDocument();
+    await screen.findByText("sudo pacman -Rns google-chrome");
+    expect(screen.queryByTestId("remove-loading")).toBeNull();
+    expect(postedIds(mock)).toEqual([[CHROME.id]]);
+  });
+
+  it("shows an error line when the remove command cannot be loaded", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockRejectedValue(new Error("backend down")));
+    render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the remove command: backend down");
+    expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
+  });
+
+  it("stringifies a non-Error failure", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockRejectedValue("offline"));
+    render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("offline");
+  });
+
+  it("says there is no command when the backend no longer knows the item", async () => {
+    stubRemove([]);
+    render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    expect(await screen.findByText("No remove command")).toBeInTheDocument();
+  });
+
+  it("fetches again for the next item and shows loading, not the old command", async () => {
+    const view = render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    await screen.findByText("sudo pacman -Rns google-chrome");
+    view.rerender(<DetailPanel item={UNRAR} onClose={vi.fn()} />);
+    expect(screen.queryByText("sudo pacman -Rns google-chrome")).toBeNull();
+    expect(await screen.findByText("sudo pacman -Rns unrar")).toBeInTheDocument();
   });
 
   it("copies a Claude prompt for a non-FOSS item", async () => {
@@ -27,7 +70,10 @@ describe("DetailPanel", () => {
     const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Copy Claude prompt" }));
-    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^Replace google-chrome with a FOSS alternative\n/u));
+    await screen.findByText("Copied");
+    const prompt = String(writeText.mock.calls[0]?.[0]);
+    expect(prompt).toMatch(/^Replace google-chrome with a FOSS alternative\n/u);
+    expect(prompt).toContain("`sudo pacman -Rns google-chrome` (do not run it)");
   });
 
   it("offers no Claude prompt for FOSS items", () => {
@@ -63,19 +109,20 @@ describe("DetailPanel", () => {
     expect(screen.getByText(/Not tracked: .* not steam\./u)).toBeInTheDocument();
   });
 
-  it("handles absent values: no alternative, url, version, licence or command", () => {
+  it("handles absent values: no alternative, url, version, licence or command", async () => {
     render(<DetailPanel item={{ ...OWN_SCRIPT, license: "", orphan: true, version: null }} onClose={vi.fn()} />);
     expect(screen.queryByRole("heading", { name: "FOSS alternative" })).toBeNull();
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText(/yes — nothing requires it/u)).toBeInTheDocument();
-    expect(screen.getByText("No remove command")).toBeInTheDocument();
+    expect(await screen.findByText("No remove command")).toBeInTheDocument();
   });
 
-  it("explains the remove command's shape under it when removeVia is set", () => {
-    const view = render(<DetailPanel item={{ ...CHROME, removeVia: "~/src/sufler via torch" }} onClose={vi.fn()} />);
-    expect(screen.getByTestId("remove-via")).toHaveTextContent("~/src/sufler via torch");
+  it("explains the remove command's shape under it when removeVia is set", async () => {
+    const view = render(<DetailPanel item={VIA} onClose={vi.fn()} />);
+    expect(await screen.findByTestId("remove-via")).toHaveTextContent("~/src/sufler via torch");
     view.unmount();
     render(<DetailPanel item={CHROME} onClose={vi.fn()} />);
+    await screen.findByText("sudo pacman -Rns google-chrome");
     expect(screen.queryByTestId("remove-via")).toBeNull();
   });
 

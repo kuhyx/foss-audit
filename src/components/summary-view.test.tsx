@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ITEMS } from "../test/fixtures.ts";
+import { postedIds, stubRemove } from "../test/remove-stub.ts";
 import { SummaryView } from "./summary-view.tsx";
 
 // The chart sizes itself from a ResizeObserver; report a real width at once.
@@ -95,9 +96,13 @@ describe("SummaryView", () => {
 
   it("copies one Claude prompt covering every non-FOSS item", async () => {
     const user = userEvent.setup();
+    const mock = stubRemove(ITEMS);
     const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     render(<SummaryView items={ITEMS} onDrill={vi.fn()} />);
+    expect(mock).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Copy Claude prompt for all 6" }));
+    await screen.findByText("Copied");
+    expect(postedIds(mock)[0]).toHaveLength(6);
     expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^Replace 6 non-FOSS items with FOSS alternatives\n/u));
   });
 

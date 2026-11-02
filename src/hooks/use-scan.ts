@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Scan, ScanProgress } from "../lib/schema.ts";
 import type { Fetched } from "./scan-api.ts";
 
+import { invalidateRemoveCache } from "./remove-api.ts";
 import { fetchProgress, fetchScan } from "./scan-api.ts";
 
 export type ScanState =
@@ -57,6 +58,7 @@ export function useScan(): ScanHandle {
 
   const show = useCallback((fetched: Fetched) => {
     if (fetched.scan !== null) {
+      if (fetched.scan.generatedAt !== shown.current) invalidateRemoveCache();
       shown.current = fetched.scan.generatedAt;
       setState(ready(fetched.scan));
     }

@@ -7,9 +7,11 @@
  */
 import type { Alternative, Item } from "../lib/schema.ts";
 
+import { withRemove } from "../hooks/remove-api.ts";
+import { useRemoveInfos } from "../hooks/use-remove.ts";
 import { buildItemPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
 import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants, isCacheSource } from "../lib/verdict.ts";
-import { CopyButton } from "./copy-button.tsx";
+import { AsyncCopyButton, CopyButton } from "./copy-button.tsx";
 import { VerdictBadge } from "./verdict-badge.tsx";
 
 export interface DetailPanelProps {
@@ -79,6 +81,27 @@ function dependantNoun(isCached: boolean, count: number): string {
   return count === 1 ? noun : `${noun}s`;
 }
 
+function RemoveBlock({ id }: { readonly id: string }): React.JSX.Element {
+  const fetched = useRemoveInfos([id]);
+  if (fetched.kind === "loading") {
+    return <p className="muted" data-testid="remove-loading">Loading the remove command…</p>;
+  }
+  if (fetched.kind === "error") {
+    return <p className="warning-line" role="alert">Could not load the remove command: {fetched.message}</p>;
+  }
+  const info = fetched.infos.get(id);
+  return (
+    <>
+      <CopyButton command={info?.removeCommand ?? null} />
+      {info !== undefined && info.removeVia !== "" && (
+        <p className="muted" data-testid="remove-via">
+          {info.removeVia}
+        </p>
+      )}
+    </>
+  );
+}
+
 export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Element {
   const isCached = isCacheSource(item);
   return (
@@ -123,12 +146,7 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
 
         <section aria-labelledby="remove-heading" className="panel-section">
           <h3 id="remove-heading">Remove</h3>
-          <CopyButton command={item.removeCommand} />
-          {item.removeVia !== "" && (
-            <p className="muted" data-testid="remove-via">
-              {item.removeVia}
-            </p>
-          )}
+          <RemoveBlock id={item.id} />
         </section>
 
         <section aria-labelledby="req-heading" className="panel-section">
@@ -162,11 +180,10 @@ export function DetailPanel({ item, onClose }: DetailPanelProps): React.JSX.Elem
             <p className="muted">
               A prompt to research, suggest and install a FOSS alternative. It never removes {item.name}.
             </p>
-            <CopyButton
+            <AsyncCopyButton
+              build={async (): Promise<string> => buildItemPrompt(await withRemove(item))}
               buttonText="Copy Claude prompt"
-              command={buildItemPrompt(item)}
               label="Copy a Claude prompt for this item"
-              showText={false}
             />
           </section>
         )}

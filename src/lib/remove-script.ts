@@ -7,7 +7,7 @@
  * stood; everything else keeps its own line in selection order. There is no
  * `set -e`: one package that refuses to go must not stop the rest.
  */
-import type { Item } from "./schema.ts";
+import type { RemovableItem } from "./schema.ts";
 
 /**
  * Managers known to accept several names per call. pipx, `dotnet tool`,
@@ -47,14 +47,14 @@ function splitMergeable(command: string): null | { arg: string; prefix: string }
   return null;
 }
 
-function viaComment(item: Item): string[] {
+function viaComment(item: RemovableItem): string[] {
   return item.removeVia === "" ? [] : [`# ${item.id}: ${item.removeVia}`];
 }
 
 /**
 The script for `items`, in their order; see the module comment.
 */
-export function buildRemoveScript(items: readonly Item[]): string {
+export function buildRemoveScript(items: readonly RemovableItem[]): string {
   const lines: Line[] = [];
   const merged = new Map<string, Line>();
   for (const item of items) {

@@ -11,7 +11,7 @@ there and a background rescan begins. `refresh=1` starts a background rescan
 (`full` also discards per-package memo entries) unless one is running, and
 returns at once. A cold scan takes ~30 s (the scanners run in parallel worker processes; one at a time it was ~70 s).
 
-- `200`: the last complete result (body below) plus `"scanning": bool`. Encoded once per result and gzipped when `Accept-Encoding` allows (28 MB -> 2.3 MB, ~2 ms per request); `index.html` starts this request before the bundle loads.
+- `200`: the last complete result (body below) plus `"scanning": bool`. Encoded once per result and gzipped when `Accept-Encoding` allows (items leave out `removeCommand` and `removeVia`, see `POST /api/remove`; 28 MB -> 5.5 MB, 2.3 MB -> 0.43 MB gzipped, ~2 ms per request); `index.html` starts this request before the bundle loads.
 - `202` `{"scanning": true}`: no result yet (first run, no `scan.json`).
 
 ## `GET /api/scan/progress`
@@ -27,6 +27,14 @@ returns at once. A cold scan takes ~30 s (the scanners run in parallel worker pr
 ```
 
 The UI polls it every 250 ms while `scanning`, and refetches `/api/scan` when
+`generatedAt` changes.
+
+## `POST /api/remove`
+
+Body `{"ids": ["pacman:bash", ...]}`; reply `200 {"<id>": {"removeCommand": string | null, "removeVia": string}, ...}`
+for the result `/api/scan` serves now (also with `--scan-file`). Unknown ids are left out; before the first
+result the reply is `{}`. A body that is not JSON of that shape, or is over 16 MiB, is `400 {"error": "..."}`.
+The UI asks only for the item it shows or the items a copy button acts on, and drops its cache when
 `generatedAt` changes.
 
 Started with `--scan-file PATH` (`python3 -m foss_audit.server --scan-file
@@ -70,8 +78,8 @@ Response body:
 | `url` | string \| null | upstream homepage |
 | `requiredBy` | string[] | pacman reverse deps; `*-cache` sources: the `~/src/<repo>` projects whose lockfile or build file names it; else `[]` |
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
-| `removeCommand` | string \| null | e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it. Every scanner sets it: `null` is a bug (a test enforces it) |
-| `removeVia` | string | why the command has its shape, e.g. `~/src/sufler via torch → nvidia-cudnn-cu13`; `""` when plain (UI schema tolerates its absence) |
+| `removeCommand` | string \| null | only in the saved scan and `POST /api/remove`, not in `GET /api/scan`; e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it. Every scanner sets it: `null` is a bug (a test enforces it) |
+| `removeVia` | string | same as `removeCommand`; why the command has its shape, e.g. `~/src/sufler via torch → nvidia-cudnn-cu13`; `""` when plain (UI schema tolerates its absence) |
 
 `Source` = `"pacman" | "aur" | "pip-user" | "pipx" | "uv-tool" | "npm-global" | "cargo" | "flatpak" | "appimage" | "opt" | "local-bin" | "conda" | "steam" | "wine" | "waydroid" | "unowned" | "app-home" | "toolchain" | "desktop" | "docker" | "user-app" | "maven-cache" | "pub-cache" | "npm-cache" | "cargo-cache" | "pip-cache"`
 

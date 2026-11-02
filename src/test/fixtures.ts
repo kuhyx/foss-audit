@@ -2,7 +2,7 @@
  * Hand-written test data. Never the recorded fixtures/scan.sample.json: that
  * is a real machine's package list and stays out of the repo.
  */
-import type { Alternative, Item, Scan, ScanProgress } from "../lib/schema.ts";
+import type { Alternative, RemovableItem, Scan, ScanProgress } from "../lib/schema.ts";
 
 export function makeAlternative(overrides: Partial<Alternative> = {}): Alternative {
   return {
@@ -16,7 +16,7 @@ export function makeAlternative(overrides: Partial<Alternative> = {}): Alternati
   };
 }
 
-export function makeItem(overrides: Partial<Item> = {}): Item {
+export function makeItem(overrides: Partial<RemovableItem> = {}): RemovableItem {
   const name = overrides.name ?? "bash";
   const source = overrides.source ?? "pacman";
   return {
@@ -95,7 +95,7 @@ export const DEAD_LAUNCHER = makeItem({
   verdict: "nonfree",
 });
 
-export const ITEMS: readonly Item[] = [
+export const ITEMS: readonly RemovableItem[] = [
   makeItem(),
   CHROME,
   UNRAR,

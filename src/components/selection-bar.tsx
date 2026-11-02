@@ -6,9 +6,10 @@
  */
 import type { Item } from "../lib/schema.ts";
 
+import { withRemoves } from "../hooks/remove-api.ts";
 import { buildRemoveScript } from "../lib/remove-script.ts";
 import { buildSelectionPrompt } from "../lib/selection-prompt.ts";
-import { CopyButton } from "./copy-button.tsx";
+import { AsyncCopyButton } from "./copy-button.tsx";
 
 export interface SelectionBarProps {
   readonly items: readonly Item[];
@@ -28,17 +29,15 @@ export function SelectionBar({ items, onClear }: SelectionBarProps): null | Reac
           Clear
         </button>
       </span>
-      <CopyButton
+      <AsyncCopyButton
+        build={async (): Promise<string> => buildSelectionPrompt(await withRemoves(items))}
         buttonText={`Copy Claude prompt (${count})`}
-        command={buildSelectionPrompt(items)}
         label="Copy one Claude prompt for every selected item: replace the non-FOSS ones, confirm the FOSS ones"
-        showText={false}
       />
-      <CopyButton
+      <AsyncCopyButton
+        build={async (): Promise<string> => buildRemoveScript(await withRemoves(items))}
         buttonText={`Copy remove commands (${count})`}
-        command={buildRemoveScript(items)}
         label="Copy a shell script with the remove command of every selected item (it is not run)"
-        showText={false}
       />
     </section>
   );
