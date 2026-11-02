@@ -1160,11 +1160,12 @@
     },
     "com.google.android.gms:play-services-auth*": {
       "names": [
+        "Own plugin google_account_token 0.1.0 in ~/src/utils (AccountManager, one-tap, no browser); replaces google_sign_in in 9 apps since 2026-11-02 (fit good, effort M)",
         "AppAuth (net.openid:appauth 0.11.1, Apache-2.0, GitHub openid/AppAuth-Android LICENSE; last release 2021-12, repo pushed 2026-03) via flutter_appauth (BSD-3-Clause, LICENSE in MaikuB/flutter_appauth, pushed 2026-10): browser OAuth with Google as IdP, ID token then fed to FirebaseAuth signInWithCredential (fit good, effort L)",
         "microG org.microg.gms:play-services-auth / -auth-base / -auth-api-phone 0.3.6.244735 (Apache-2.0 per Maven pom; fit partial, effort L): old GoogleSignIn API only, no Credential Manager, google_sign_in_android 7.x will not build against it",
         "Firebase Auth email/password (drops Google sign-in; firebase-auth itself is still non-free, fit partial, effort M)"
       ],
-      "candidates": ["net.openid:appauth", "flutter_appauth", "org.microg.gms:play-services-auth"],
+      "candidates": ["google_account_token", "net.openid:appauth", "flutter_appauth", "org.microg.gms:play-services-auth"],
       "fit": "partial",
       "effort": "L",
       "effortReason": "Pulled by google_sign_in_android 7.2.18 in 10 Flutter apps (todo, tutor, diet-guard, home_inventory, kartka, home-guard, leetcode-guard, wake-alarm, crdt_sync_flutter); each needs a new sign-in flow, OAuth client and phone test",
@@ -1185,16 +1186,15 @@
     },
     "com.google.android.libraries.identity.googleid:googleid": {
       "names": [
-        "Own PKCE loopback OAuth flow already in ~/src/utils/crdt_sync_flutter (google_desktop_sign_in.dart), reused on Android: no new dependency, returns the same id_token for signInWithIdp; fit good, effort M; pilot on todo 2026-11-01",
-        "flutter_web_auth_2 5.1.0 (MIT, GitHub ThexXTURBOXx/flutter_web_auth_2 LICENSE, release 2026-08-12) as the redirect fallback (fit good, effort M)",
-        "flutter_appauth 13.0.0 (BSD-3-Clause, release 2026-10-30) over net.openid:appauth 0.11.1 (Apache-2.0, last release 2021-12-22) (fit good, effort L)",
+        "Own plugin google_account_token 0.1.0 in ~/src/utils (framework AccountManager chooser + getAuthToken audience:server:client_id:<web id>): one-tap, one system chooser, no browser, same id_token for signInWithIdp; adopted in 9 apps 2026-11-02 (fit good, effort M)",
+        "Not chosen: browser OAuth (PKCE loopback, flutter_web_auth_2, flutter_appauth): kuhy rejected leaving the app to sign in",
         "Not recommended: firebase_auth, it adds non-free native firebase-auth and GMS deps to apps that use REST"
       ],
-      "candidates": ["crdt_sync_flutter", "flutter_web_auth_2", "flutter_appauth", "net.openid:appauth"],
+      "candidates": ["google_account_token"],
       "fit": "good",
       "effort": "M",
-      "effortReason": "One change in crdt_sync_flutter plus a dependency bump in ~10 apps, each needing a phone sign-in check",
-      "lockIn": "Google only officially supports loopback redirects for Desktop OAuth clients; a browser tab replaces the native account chooser",
+      "effortReason": "Done: crdt_sync_flutter 0.4.0 plus todo, tutor, diet-guard, home_inventory, kartka, leetcode-guard, wake-alarm, daily-limits; home-guard branch pending",
+      "lockIn": "The token still comes from the phone's Google account service (GMS on stock Android); only the app's own code is FOSS",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-fido": {
