@@ -4,6 +4,7 @@
  */
 import type { Item, Source, Verdict } from "../lib/schema.ts";
 
+import { withRemoves } from "../hooks/remove-api.ts";
 import { buildBulkPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
 import { VERDICTS } from "../lib/schema.ts";
 import { sourceRows } from "../lib/stack.ts";
@@ -17,7 +18,7 @@ import {
   VERDICT_HINTS,
   VERDICT_LABELS,
 } from "../lib/verdict.ts";
-import { CopyButton } from "./copy-button.tsx";
+import { AsyncCopyButton } from "./copy-button.tsx";
 import { SourceChart } from "./source-chart.tsx";
 
 export interface SummaryViewProps {
@@ -70,11 +71,11 @@ export function SummaryView({ items, onDrill }: SummaryViewProps): React.JSX.Ele
         </p>
         {promptCount > 0 && (
           <p className="headline-text">
-            <CopyButton
+            <AsyncCopyButton
+              build={async (): Promise<string> =>
+                buildBulkPrompt(await withRemoves(items.filter((item) => isPromptCandidate(item))))}
               buttonText={`Copy Claude prompt for all ${numberFormat.format(promptCount)}`}
-              command={buildBulkPrompt(items)}
               label="Copy one Claude prompt to research, suggest and install FOSS alternatives for every non-FOSS item"
-              showText={false}
             />
           </p>
         )}

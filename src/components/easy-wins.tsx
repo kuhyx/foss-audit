@@ -5,8 +5,10 @@
  * The list is ordered so the cleanest removals come first: known to have no
  * dependants, then untracked sources, then still-needed; then fit and name.
  */
+import type { RemoveFetch } from "../hooks/use-remove.ts";
 import type { Item } from "../lib/schema.ts";
 
+import { useRemoveInfos } from "../hooks/use-remove.ts";
 import { FITS } from "../lib/schema.ts";
 import { FIT_LABELS, hasTrackedDependants, numberFormat } from "../lib/verdict.ts";
 import { CopyButton } from "./copy-button.tsx";
@@ -41,7 +43,13 @@ export function orderWins(items: readonly Item[]): Item[] {
   });
 }
 
+function RemoveCell({ fetched, id }: { readonly fetched: RemoveFetch; readonly id: string }): React.JSX.Element {
+  if (fetched.kind === "loading") return <span className="muted">Loading the remove command…</span>;
+  return fetched.kind === "error" ? <span className="muted">Remove command unavailable: {fetched.message}</span> : <CopyButton command={fetched.infos.get(id)?.removeCommand ?? null} />;
+}
+
 export function EasyWins({ items, onSelect, selected }: EasyWinsProps): React.JSX.Element {
+  const fetched = useRemoveInfos(items.map((item) => item.id));
   if (items.length === 0) {
     return (
       <div className="table-empty">
@@ -101,7 +109,7 @@ export function EasyWins({ items, onSelect, selected }: EasyWinsProps): React.JS
                   one-command job.
                 </p>
               )}
-              <CopyButton command={item.removeCommand} />
+              <RemoveCell fetched={fetched} id={item.id} />
             </li>
           );
         })}

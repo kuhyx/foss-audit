@@ -8,7 +8,7 @@
  * Removing the original is always left to him: the prompt only quotes the
  * remove command, exactly like the UI.
  */
-import type { Item } from "./schema.ts";
+import type { Item, RemovableItem } from "./schema.ts";
 
 import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants, VERDICT_LABELS } from "./verdict.ts";
 
@@ -59,14 +59,14 @@ function requiredByLine(item: Item): string {
   return hasTrackedDependants(item) ? "nothing" : `not tracked for ${item.source}`;
 }
 
-function removeLine(item: Item): string {
+function removeLine(item: RemovableItem): string {
   return item.removeCommand === null ? "none known" : `\`${item.removeCommand}\` (do not run it)`;
 }
 
 /**
 The scan facts for one item, as `- ` bullet lines.
 */
-export function factLines(item: Item): string[] {
+export function factLines(item: RemovableItem): string[] {
   return [
     `- id: \`${item.id}\`, source: ${item.source}, version: ${orFallback(item.version, "unknown")}`,
     `- verdict: ${VERDICT_LABELS[item.verdict]}; evidence: ${orFallback(item.reason, "none recorded")}`,
@@ -91,7 +91,7 @@ export const INSTALL_STEP =
 /**
 Prompt for a single item; see the module comment for the format.
 */
-export function buildItemPrompt(item: Item): string {
+export function buildItemPrompt(item: RemovableItem): string {
   const isResearch = isResearchOnly(item);
   const title = isResearch
     ? `Research FOSS alternatives to ${item.name}`
@@ -131,7 +131,7 @@ export function buildItemPrompt(item: Item): string {
  * One prompt for every candidate in `items`, worked through one at a time so a
  * single session never installs a batch of things nobody picked.
  */
-export function buildBulkPrompt(items: readonly Item[]): string {
+export function buildBulkPrompt(items: readonly RemovableItem[]): string {
   const candidates = items.filter((item) => isPromptCandidate(item));
   const sections = candidates.flatMap((item) => {
     const mode = isResearchOnly(item) ? "research only" : "research, suggest, install";

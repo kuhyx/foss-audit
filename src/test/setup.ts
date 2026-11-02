@@ -1,8 +1,15 @@
 import "@testing-library/jest-dom/vitest";
-import { beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+
+import { invalidateRemoveCache } from "../hooks/remove-api.ts";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  invalidateRemoveCache();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 // jsdom has no layout engine and no ResizeObserver. @tanstack/react-virtual

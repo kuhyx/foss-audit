@@ -11,7 +11,7 @@
  * group: one decision for twelve com.google.android.gms artifacts, not twelve.
  * FOSS items only get a usage check and, if unused, a printed remove command.
  */
-import type { Item } from "./schema.ts";
+import type { Item, RemovableItem } from "./schema.ts";
 
 import {
   factLines,
@@ -24,8 +24,8 @@ import {
   suggestStep,
 } from "./claude-prompt.ts";
 
-export interface ItemGroup {
-  readonly items: Item[];
+export interface ItemGroup<T extends Item = Item> {
+  readonly items: T[];
   readonly label: string;
 }
 
@@ -65,19 +65,19 @@ function isShared(counts: Map<string, number>, value: null | string): value is s
  * Groups in order of first appearance. A shared alternative wins over a
  * shared namespace; a key only one item has is no group at all.
  */
-export function groupItems(items: readonly Item[]): ItemGroup[] {
+export function groupItems<T extends Item>(items: readonly T[]): ItemGroup<T>[] {
   const altCounts = countBy(items, alternativeKey);
   const rest = items.filter((item) => !isShared(altCounts, alternativeKey(item)));
   const nsCounts = countBy(rest, namespaceOf);
 
-  function keyOf(item: Item): [string, string] {
+  function keyOf(item: T): [string, string] {
     const alt = alternativeKey(item);
     if (isShared(altCounts, alt)) return [`alt:${alt}`, `shared alternative ${alt}`];
     const ns = namespaceOf(item);
     return isShared(nsCounts, ns) ? [`ns:${ns}`, `namespace ${ns}`] : [`item:${item.id}`, item.name];
   }
 
-  const groups = new Map<string, ItemGroup>();
+  const groups = new Map<string, ItemGroup<T>>();
   for (const item of items) {
     const [key, label] = keyOf(item);
     const group = groups.get(key) ?? { items: [], label };
@@ -87,13 +87,13 @@ export function groupItems(items: readonly Item[]): ItemGroup[] {
   return groups.values().toArray();
 }
 
-function itemLines(item: Item, mode: null | string): string[] {
+function itemLines(item: RemovableItem, mode: null | string): string[] {
   const suffix = mode === null ? "" : `: ${mode}`;
   const via = item.removeVia === "" ? [] : [`- remove via: ${item.removeVia}`];
   return ["", `#### ${item.name} (\`${item.id}\`)${suffix}`, ...factLines(item), ...via];
 }
 
-function groupSections(groups: readonly ItemGroup[]): string[] {
+function groupSections(groups: readonly ItemGroup<RemovableItem>[]): string[] {
   return groups.flatMap((group, index) => {
     const size = group.items.length;
     const count = size === 1 ? "" : ` (${String(size)} items)`;
@@ -108,7 +108,7 @@ function groupSections(groups: readonly ItemGroup[]): string[] {
 /**
 Prompt for every selected item; see the module comment for the format.
 */
-export function buildSelectionPrompt(items: readonly Item[]): string {
+export function buildSelectionPrompt(items: readonly RemovableItem[]): string {
   const candidates = items.filter((item) => isPromptCandidate(item));
   const foss = items.filter((item) => !isPromptCandidate(item));
   const groups = groupItems(candidates);

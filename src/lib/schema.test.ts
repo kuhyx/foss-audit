@@ -1,17 +1,23 @@
 import { makeProgress, makeScan } from "../test/fixtures.ts";
-import { parseProgress, parseScan } from "./schema.ts";
+import { parseProgress, parseRemove, parseScan } from "./schema.ts";
 
 describe("parseScan", () => {
   it("accepts a well-formed response and returns it typed", () => {
     const scan = makeScan();
-    expect(parseScan(structuredClone(scan))).toEqual(scan);
+    const parsed = parseScan(structuredClone(scan));
+    expect(parsed.items.map((item) => item.id)).toEqual(scan.items.map((item) => item.id));
+    expect(parsed.host).toBe(scan.host);
   });
 
-  it("accepts null alternative, version, url and removeCommand", () => {
-    const scan = makeScan();
-    const parsed = parseScan(scan);
+  it("leaves the remove fields off scan items, whether or not the body has them", () => {
+    const parsed = parseScan(makeScan());
+    expect(parsed.items.every((item) => !("removeCommand" in item) && !("removeVia" in item))).toBe(true);
+  });
+
+  it("accepts null alternative, version and url", () => {
+    const parsed = parseScan(makeScan());
     expect(parsed.items.some((item) => item.version === null)).toBe(true);
-    expect(parsed.items.some((item) => item.removeCommand === null)).toBe(true);
+    expect(parsed.items.some((item) => item.url === null)).toBe(true);
   });
 
   it("names the offending path when an enum value is unknown", () => {
@@ -91,5 +97,16 @@ describe("parseProgress", () => {
     expect(() => parseProgress({ ...makeProgress(), sourcesDone: "x" })).toThrow(
       /\/api\/scan\/progress response failed validation at "sourcesDone"/u,
     );
+  });
+});
+
+describe("parseRemove", () => {
+  it("accepts a map of id to remove fields, with a null command", () => {
+    const body = { "a:b": { removeCommand: null, removeVia: "" }, "c:d": { removeCommand: "rm x", removeVia: "why" } };
+    expect(parseRemove(body)).toEqual(body);
+  });
+
+  it("names the offending path", () => {
+    expect(() => parseRemove({ "a:b": { removeCommand: "x" } })).toThrow(/\/api\/remove response failed validation at "a:b\.removeVia"/u);
   });
 });

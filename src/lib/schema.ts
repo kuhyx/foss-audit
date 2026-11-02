@@ -77,14 +77,23 @@ export const itemSchema = z.object({
   orphan: z.boolean(),
   own: z.boolean(),
   reason: z.string(),
-  removeCommand: z.string().nullable(),
-  removeVia: z.string().default(""),
   requiredBy: z.array(z.string()),
   source: sourceSchema,
   url: z.string().nullable(),
   verdict: verdictSchema,
   version: z.string().nullable(),
 });
+
+/**
+ * The two fields `/api/scan` leaves out (they are most of its bytes); the
+ * `POST /api/remove` reply carries them per item id.
+ */
+export const itemRemoveSchema = z.object({
+  removeCommand: z.string().nullable(),
+  removeVia: z.string(),
+});
+
+export const itemRemoveReplySchema = z.record(z.string(), itemRemoveSchema);
 
 export const scanErrorSchema = z.object({
   message: z.string(),
@@ -125,6 +134,11 @@ export type Effort = (typeof EFFORTS)[number];
 export type Fit = (typeof FITS)[number];
 export type Item = z.infer<typeof itemSchema>;
 export type Scan = z.infer<typeof scanSchema>;
+export type RemoveInfo = z.infer<typeof itemRemoveSchema>;
+/**
+A scan item joined with its remove fields, fetched on demand.
+*/
+export type RemovableItem = Item & RemoveInfo;
 export type RunningSource = z.infer<typeof runningSourceSchema>;
 export type ScanProgress = z.infer<typeof progressSchema>;
 export type ScanError = z.infer<typeof scanErrorSchema>;
@@ -154,4 +168,8 @@ export function parseScan(body: unknown): Scan {
 
 export function parseProgress(body: unknown): ScanProgress {
   return parseWith(progressSchema, body, "/api/scan/progress");
+}
+
+export function parseRemove(body: unknown): Record<string, RemoveInfo> {
+  return parseWith(itemRemoveReplySchema, body, "/api/remove");
 }
