@@ -21,7 +21,7 @@ src=()
 for f in "${CHANGED[@]}"; do
     case "$f" in
         package.json | pnpm-lock.yaml) full=1 ;;
-        *.ts | *.tsx | *.js | *.mjs) src+=("$f") ;;
+        *.ts | *.astro | *.js | *.mjs) src+=("$f") ;;
         *.py | pyproject.toml | data/curated.json) python=1 ;;
     esac
 done

@@ -11,7 +11,7 @@
 
 # Paths the servers load: the scanner (foss_audit/, data/curated.json) and the
 # UI build inputs. Untracked files count too (a new module is a code change).
-readonly -a WATCHED_PATHS=(foss_audit data src index.html package.json pnpm-lock.yaml 'vite.config.*')
+readonly -a WATCHED_PATHS=(foss_audit data src package.json pnpm-lock.yaml 'astro.config.*')
 readonly STOP_GRACE_TENTHS=50
 
 # PID listening on TCP port $1 (empty when none).
@@ -27,11 +27,11 @@ is_our_api() {
     [[ "$(proc_cmdline "$1")" == *foss_audit.server* ]]
 }
 
-# The UI listener is vite itself (node), pnpm being its parent.
+# The UI listener is astro itself (node), pnpm being its parent.
 is_our_ui() {
     local cmd
     cmd="$(proc_cmdline "$1")"
-    [[ "$cmd" == *"${SCRIPT_DIR}"* && "$cmd" == *vite* ]]
+    [[ "$cmd" == *"${SCRIPT_DIR}"* && "$cmd" == *astro* ]]
 }
 
 # Epoch seconds at which process $1 started.
@@ -53,7 +53,7 @@ newest_source_mtime() {
     echo "${newest:-0}"
 }
 
-# Does the running UI match what this invocation asked for? vite serves either
+# Does the running UI match what this invocation asked for? astro serves either
 # dev or `preview`, and proxies /api to the port FOSS_AUDIT_API_PORT named.
 ui_matches_request() {
     local pid="$1" cmd env_port

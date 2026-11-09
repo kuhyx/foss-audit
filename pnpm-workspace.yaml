@@ -1,3 +1,2 @@
 minimumReleaseAgeExclude:
-  - '@tanstack/react-virtual@3.14.15'
-  - '@tanstack/virtual-core@3.19.0'
+  - astro@7.4.6

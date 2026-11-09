@@ -1,0 +1,30 @@
+---
+/**
+ * The real 404 page. A host serves it at whatever depth the missing path had,
+ * so its links are absolute rather than relative.
+ */
+import Base from "../layouts/Base.astro";
+import { absoluteUrl, SITE_NAME, SITE_URL } from "../lib/site/config.ts";
+import { PAGES } from "../lib/site/content.ts";
+import "../styles/doc.css";
+---
+
+<Base description="No page at this address." title={`Page not found · ${SITE_NAME}`}>
+  <main class="doc">
+    <h1>Page not found</h1>
+    <p class="lead">
+      There is no page at this address on the {SITE_NAME} site. It may have moved; these are the pages that exist:
+    </p>
+    <ul>
+      {
+        PAGES.map((page) => {
+          return (
+            <li>
+              <a href={absoluteUrl(page.path, SITE_URL)}>{page.title}</a>: {page.description}
+            </li>
+          );
+        })
+      }
+    </ul>
+  </main>
+</Base>

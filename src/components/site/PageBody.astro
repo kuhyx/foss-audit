@@ -1,0 +1,83 @@
+---
+/**
+ * A page's visible content from the page table: the homepage's no-JS body and
+ * each docs page's `<main class="doc">`. Links between pages are relative.
+ */
+import type { Page } from "../../lib/site/content.ts";
+
+import { relativeHref, SITE_NAME } from "../../lib/site/config.ts";
+
+interface Props {
+  readonly page: Page;
+}
+
+const { page } = Astro.props;
+const from = page.path;
+---
+
+<h1>{page.title}</h1>
+<p class="lead">{page.description}</p>
+{
+  page.blocks.map((block) => {
+    switch (block.kind) {
+      case "code": {
+        return (
+          <pre><code class={`language-${block.lang}`}>{block.code}</code></pre>
+        );
+      }
+      case "codes": {
+        return (
+          <ul class="codes">
+            {block.items.map((item) => {
+              return (
+                <li>
+                  <code>{item}</code>
+                </li>
+              );
+            })}
+          </ul>
+        );
+      }
+      case "heading": {
+        return <h2>{block.text}</h2>;
+      }
+      case "links": {
+        return (
+          <ul>
+            {block.items.map((item) => {
+              return (
+                <li>
+                  <a href={relativeHref(from, item.path)}>{item.title}</a>: {item.note}
+                </li>
+              );
+            })}
+          </ul>
+        );
+      }
+      case "paragraph": {
+        return <p>{block.text}</p>;
+      }
+      case "terms": {
+        return (
+          <dl>
+            {block.items.map(([term, text]) => {
+              return (
+                <div>
+                  <dt>{term}</dt>
+                  <dd>{text}</dd>
+                </div>
+              );
+            })}
+          </dl>
+        );
+      }
+    }
+  })
+}
+{
+  from !== "" && (
+    <p>
+      <a href={relativeHref(from, "")}>← {SITE_NAME} home</a>
+    </p>
+  )
+}

@@ -1,7 +1,7 @@
 /**
  * Filter + search over scan items.
  *
- * Filtering happens here, before rows reach TanStack Table, which only sorts.
+ * Filtering happens here, before rows reach the table, which only sorts (lib/sort.ts).
  * Keeping the predicate a plain function makes it the single definition used
  * by the table, the result count and the summary's click-through links.
  */

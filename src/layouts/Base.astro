@@ -1,0 +1,57 @@
+---
+/**
+ * The document shell every page shares: head meta, the design tokens and the
+ * app stylesheets, and the build stamp.
+ *
+ * Pages pass `title`, `description` and optionally `headTags` (raw HTML for
+ * the discovery links and JSON-LD from src/lib/site/head.ts). Anything
+ * that must run before first paint goes in the named `head` slot (index.astro
+ * starts the /api/scan fetch there; the 404 page must not).
+ */
+import { execFileSync } from "node:child_process";
+import "@kuhyx/web-ui/tokens.css";
+
+import "../styles/base.css";
+import "../styles/layout.css";
+import "../styles/controls.css";
+import "../styles/summary.css";
+import "../styles/table.css";
+import "../styles/panel.css";
+import "../styles/progress.css";
+import "../styles/elements.css";
+
+interface Props {
+  readonly description: string;
+  readonly headTags?: string;
+  readonly title: string;
+}
+
+const { description, headTags = "", title } = Astro.props;
+
+// The short commit the bundle was built from, stamped in a meta tag so a deploy
+// check can curl the live page and compare. "unknown" outside a Git checkout.
+function buildId(): string {
+  try {
+    // eslint-disable-next-line sonarjs/no-os-command-from-path -- build-time `git` lookup, no user input
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>{title}</title>
+    <meta content={description} name="description" />
+    <meta content={buildId()} name="build-id" />
+    <Fragment set:html={headTags} />
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

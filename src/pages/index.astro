@@ -1,0 +1,86 @@
+---
+import PageBody from "../components/site/PageBody.astro";
+import Base from "../layouts/Base.astro";
+import { elementAt } from "../lib/array.ts";
+import { SITE_URL } from "../lib/site/config.ts";
+import { PAGES } from "../lib/site/content.ts";
+import { documentTitle, headTags } from "../lib/site/head.ts";
+import { VIEWS } from "../lib/url-state.ts";
+import { VIEW_LABELS } from "../lib/views.ts";
+import "../styles/doc.css";
+
+const home = elementAt(PAGES, 0);
+---
+
+<Base description={home.description} headTags={headTags(home, SITE_URL)} title={documentTitle(home)}>
+  <Fragment slot="head">
+    <script is:inline>
+      // Starts the scan download before the bundle loads; client/scan-api.ts takes it.
+      window.__scanPreload = fetch("/api/scan")
+        .then(async (r) => ({ status: r.status, body: r.status === 200 ? await r.json() : null }))
+        .catch(() => null);
+    </script>
+  </Fragment>
+
+  <main class="doc" id="home"><PageBody page={home} /></main>
+
+  <main class="app-msg" hidden id="app-msg">
+    <div id="msg-loading">
+      <p>Scanning installed programs…</p>
+      <scan-progress variant="loading"></scan-progress>
+    </div>
+    <div hidden id="msg-error">
+      <p>Could not load the scan: <span id="msg-error-text"></span></p>
+      <p class="muted">Is the backend running? Start everything with <code>./run.sh</code>.</p>
+    </div>
+  </main>
+
+  <div class="app" hidden id="app">
+    <header class="topbar">
+      <h1>FOSS audit</h1>
+      <p class="scan-meta">
+        <span><span class="muted">host</span> <span data-meta="host"></span></span>
+        <span><span class="muted">scanned</span> <time data-meta="scanned"></time></span>
+        <span><span class="muted">took</span> <span data-meta="took"></span></span>
+      </p>
+      <scan-progress variant="header"></scan-progress>
+      <input
+        aria-label="Search name or id (typos ok)"
+        class="search"
+        placeholder="Search name or id, typos ok  (/)"
+        type="search"
+      />
+      <button class="btn btn-primary" id="rescan" type="button">Rescan</button>
+    </header>
+    <error-banner></error-banner>
+    <nav aria-label="Views" class="tabs">
+      {
+        VIEWS.map((view) => {
+          return (
+            <button class="tab" data-view={view} type="button">
+              {VIEW_LABELS[view]}
+              <span class="tab-count" />
+            </button>
+          );
+        })
+      }
+    </nav>
+    <div class="body">
+      <main class="content">
+        <div class="view" data-view="summary" hidden><summary-view></summary-view></div>
+        <div class="view" data-view="table" hidden>
+          <filter-bar></filter-bar>
+          <selection-bar></selection-bar>
+          <items-table></items-table>
+        </div>
+        <div class="view" data-view="wins" hidden><easy-wins></easy-wins></div>
+      </main>
+      <detail-panel></detail-panel>
+    </div>
+    <help-overlay></help-overlay>
+  </div>
+
+  <script>
+    import "../client/main.ts";
+  </script>
+</Base>

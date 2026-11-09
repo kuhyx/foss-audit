@@ -114,3 +114,19 @@
   color: var(--text-muted);
   font-size: var(--text-label);
 }
+
+/* Narrow screens: the facet groups fold away so the table stays above the fold. */
+.filter-toggle {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .filter-toggle {
+    display: inline-flex;
+  }
+
+  .filters[data-collapsed="true"] .chips,
+  .filters[data-collapsed="true"] .segmented {
+    display: none;
+  }
+}

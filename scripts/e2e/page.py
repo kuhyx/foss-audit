@@ -16,6 +16,11 @@ from cdp import Browser
 # performs it, so the "Copied" status proves the real API succeeded).
 BOOT = """
 window.__copied = [];
+window.__errors = [];
+addEventListener('error', (e) => window.__errors.push(`error: ${e.message}`));
+addEventListener('unhandledrejection', (e) => window.__errors.push(`rejection: ${e.reason}`));
+const realError = console.error.bind(console);
+console.error = (...args) => { window.__errors.push(`console: ${args.join(' ')}`); realError(...args); };
 const realWrite = navigator.clipboard.writeText.bind(navigator.clipboard);
 navigator.clipboard.writeText = (text) => { window.__copied.push(text); return realWrite(text); };
 """
@@ -92,6 +97,8 @@ true
 class Page:
     """The foss-audit UI in one headless tab."""
 
+    helpers = HELPERS
+
     def __init__(self, browser: Browser, url: str) -> None:
         self.b = browser
         origin = url.split("/?", maxsplit=1)[0].rstrip("/")
@@ -139,6 +146,9 @@ class Page:
     def sort_by(self, column: str) -> str:
         """Click a column's sort button; return the new `sort=` URL value."""
         before = self.js("new URLSearchParams(location.search).get('sort')")
+        self.js(
+            f"__fa.sortButton({json.dumps(column)}).scrollIntoView({{block: 'nearest', inline: 'nearest'}})"
+        )
         spot = self.js(f"__fa.center(__fa.sortButton({json.dumps(column)}))")
         self.b.click(spot["x"], spot["y"])
         sort = str(
@@ -190,5 +200,9 @@ class Page:
 
     def panel_open(self) -> bool:
         return bool(
-            self.js("document.querySelector('aside.panel') !== null || location.search.includes('sel=')")
+            self.js(
+                "document.querySelector('.panel') !== null"
+                " && document.querySelector('.panel').getBoundingClientRect().width > 0"
+                " || location.search.includes('sel=')"
+            )
         )

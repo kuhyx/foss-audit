@@ -4,7 +4,7 @@
 # foss-audit: start the scanner API and the UI, then open the UI in a browser.
 #
 #   ./run.sh                     install if needed, serve dev UI, open browser
-#   ./run.sh --build             serve the production build (vite preview)
+#   ./run.sh --build             serve the production build (astro preview)
 #   ./run.sh --port 5190         UI port (default 5190)
 #   ./run.sh --api-port 5191     backend port (default 5191)
 #   ./run.sh --scan-file PATH    serve a saved `python -m foss_audit.scan` output
@@ -42,7 +42,7 @@ COREPACK_SHIM_DIR=""
 
 # Each server is started under `setsid`, so its PID is also its process
 # group id. Signalling the group (`-pid`) reaches the real server too: the UI
-# PID is pnpm, and vite is pnpm's child, which a plain `kill pid` orphans.
+# PID is pnpm, and astro is pnpm's child, which a plain `kill pid` orphans.
 #
 # Called only from cleanup, which runs from the traps below; shellcheck cannot
 # follow a trap string, hence the SC2329 ("never invoked") opt-outs.
@@ -150,12 +150,14 @@ start_ui() {
     if [[ "$PRODUCTION_BUILD" == true ]]; then
         echo "==> Building for production"
         pnpm run build
-        setsid pnpm exec vite preview --host 127.0.0.1 --port "$PORT" --strictPort &
+        # --ignore-lock: the port is guarded above; astro's single-instance lock
+        # (and its agent auto-background) would outlive our SIGTERM of the group.
+        setsid pnpm exec astro preview --ignore-lock --host 127.0.0.1 --port "$PORT" &
     else
-        setsid pnpm exec vite --host 127.0.0.1 --port "$PORT" --strictPort &
+        setsid pnpm exec astro dev --ignore-lock --host 127.0.0.1 --port "$PORT" &
     fi
     UI_PID=$!
-    # Health through Vite's proxy: proves the UI server AND the /api wiring.
+    # Health through the /api proxy: proves the UI server AND the /api wiring.
     wait_for "http://127.0.0.1:${PORT}/api/health" "UI (and its /api proxy)"
 }
 

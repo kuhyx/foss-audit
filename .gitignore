@@ -12,3 +12,4 @@ fixtures/scan.sample.json
 .ruff_cache/
 .pytest_cache/
 .claude/
+.astro/

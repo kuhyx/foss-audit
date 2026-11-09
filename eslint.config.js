@@ -2,23 +2,21 @@
 //
 // Baseline is typescript-eslint's *type-checked* strict + stylistic presets, so
 // anything they flag is an error, not a warning. On top of that: unicorn (all),
-// sonarjs (cognitive complexity / duplicate logic), perfectionist (sorting), and
-// react-hooks. Unused disable directives are themselves errors, so every
+// sonarjs (cognitive complexity / duplicate logic), perfectionist (sorting) and
+// eslint-plugin-astro for `.astro` files. Unused disable directives are themselves errors, so every
 // `eslint-disable` in this repo must be load-bearing.
 //
 // Deliberately absent:
-//   - eslint-plugin-react   : 7.37.x still calls context.getFilename(), removed in
-//                             ESLint 10, so it crashes the run.
 //   - eslint-plugin-jsx-a11y: 6.10.2 declares peer ESLint "^3 || ... || ^9" — no
-//                             ESLint 10 support yet. a11y is enforced by review +
-//                             testing-library queries (getByLabelText) instead.
+//                             ESLint 10 support yet. a11y is enforced by review
+//                             and the e2e flows instead.
 //
 // TypeScript is pinned to 6.0.x, not 7.x: typescript-eslint requires
 // "typescript >=4.8.4 <6.1.0", and losing every type-aware rule would be a far
 // bigger regression than gaining the Go-native compiler.
 import js from "@eslint/js";
+import astro from "eslint-plugin-astro";
 import perfectionist from "eslint-plugin-perfectionist";
-import reactHooks from "eslint-plugin-react-hooks";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
 import tseslint from "typescript-eslint";
@@ -26,6 +24,7 @@ import tseslint from "typescript-eslint";
 const config = tseslint.config(
   {
     ignores: [
+      ".astro",
       ".claude",
       "dist",
       "coverage",
@@ -36,6 +35,9 @@ const config = tseslint.config(
       "foss_audit",
       "screenshots",
       "tests",
+      // React leftovers: the reference implementation until each widget is
+      // ported, then deleted. Not part of the build.
+      "**/*.tsx",
     ],
   },
   { linterOptions: { reportUnusedDisableDirectives: "error" } },
@@ -46,19 +48,17 @@ const config = tseslint.config(
   unicorn.configs.all,
   sonarjs.configs.recommended,
   perfectionist.configs["recommended-natural"],
+  ...astro.configs.recommended,
 
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["**/*.ts"],
     languageOptions: {
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    plugins: { "react-hooks": reactHooks },
     rules: {
-      ...reactHooks.configs.recommended.rules,
-
       // Numbers in template literals are unambiguous and pervasive here
       // (counts, percentages, SVG geometry).
       "@typescript-eslint/restrict-template-expressions": [
@@ -75,14 +75,8 @@ const config = tseslint.config(
         { prefixes: { matches: true, passes: true } },
       ],
 
-      // Kebab-case files exporting PascalCase components: house convention.
+      // Kebab-case files; `.astro` layouts may be PascalCase (see below).
       "unicorn/filename-case": ["error", { case: "kebabCase" }],
-
-      // Keep the rule, drop one replacement: `props` is React's own word.
-      // `interface FilterBarProps` is the convention every React codebase and
-      // every reader expects; `FilterBarProperties` would be unidiomatic in
-      // service of a generic dictionary. Every other replacement stays on.
-      "unicorn/name-replacements": ["error", { replacements: { props: false } }],
     },
   },
 
@@ -152,7 +146,7 @@ const config = tseslint.config(
 
   // Tests: relax the rules that fight with mocking and fixtures.
   {
-    files: ["**/*.test.{ts,tsx}", "src/test/**"],
+    files: ["**/*.test.ts", "src/test/**"],
     rules: {
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
@@ -183,10 +177,24 @@ const config = tseslint.config(
     },
   },
 
-  // Plain JS config files get no type-aware linting.
+  // Plain JS config files and `.astro` pages get no type-aware linting:
+  // projectService cannot see `.astro` files, `astro check` types them.
   {
     extends: [tseslint.configs.disableTypeChecked],
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ["**/*.{js,mjs,cjs,astro}"],
+  },
+
+  // Layouts are PascalCase by Astro convention; pages and endpoints stay
+  // kebab-case ("404.astro" and "index.astro" satisfy both).
+  {
+    files: ["**/*.astro"],
+    rules: {
+      "unicorn/filename-case": ["error", { cases: { kebabCase: true, pascalCase: true } }],
+      // Astro requires the frontmatter interface to be called `Props`.
+      "unicorn/name-replacements": ["error", { replacements: { props: false } }],
+      // Frontmatter is a module body: top-level side effects are its job.
+      "unicorn/no-top-level-side-effects": "off",
+    },
   },
 );
 

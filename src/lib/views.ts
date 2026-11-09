@@ -2,7 +2,7 @@
  * The views and keyboard shortcuts, as data.
  *
  * One source for the app (tab labels, the `?` sheet) and the prerendered docs
- * pages in src/site, so the static description cannot drift from the UI.
+ * pages in src/lib/site, so the static description cannot drift from the UI.
  */
 import type { View } from "./url-state.ts";
 

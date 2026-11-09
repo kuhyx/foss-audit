@@ -7,7 +7,7 @@ import {
   STEAM_GAME,
   UNRAR,
 } from "../test/fixtures.ts";
-import { countBy, FREE_VERDICTS, hasTrackedDependants, isEasyWin, percent } from "./verdict.ts";
+import { countBy, FREE_VERDICTS, hasTrackedDependants, isCacheSource, isEasyWin, percent } from "./verdict.ts";
 
 describe("isEasyWin", () => {
   it("accepts non-free with a drop-in or good alternative already installed", () => {
@@ -74,5 +74,12 @@ describe("summary math", () => {
 
   it("counts an item without overrides as foss", () => {
     expect(makeItem().verdict).toBe("foss");
+  });
+});
+
+describe("isCacheSource", () => {
+  it("is true only for the package-cache sources", () => {
+    expect(isCacheSource(makeItem({ source: "npm-cache" }))).toBe(true);
+    expect(isCacheSource(makeItem({ source: "pacman" }))).toBe(false);
   });
 });

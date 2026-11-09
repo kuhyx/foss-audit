@@ -1,4 +1,4 @@
-# API contract: backend scanner ⇄ React UI
+# API contract: backend scanner ⇄ web UI
 
 The Python backend (`foss_audit/server.py`) binds `127.0.0.1:5191`. The Vite
 dev/preview server proxies `/api` to it, so the UI always fetches same-origin.

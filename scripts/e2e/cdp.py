@@ -174,6 +174,19 @@ class Browser:
                 modifiers=8 if shift else 0,
             )
 
+    def key(self, key: str) -> None:
+        """A real key press (keyDown with text, then keyUp) on the focused page."""
+        code = {"Escape": 27}.get(key, ord(key.upper()[0]))
+        text = "" if len(key) > 1 else key
+        for kind in ("keyDown", "keyUp"):
+            self.call(
+                "Input.dispatchKeyEvent",
+                type=kind,
+                key=key,
+                text=text if kind == "keyDown" else "",
+                windowsVirtualKeyCode=code,
+            )
+
     def screenshot(self, path: str, clip: dict[str, float] | None = None) -> None:
         params: dict[str, Any] = {"format": "png"}
         if clip is not None:

@@ -10,6 +10,19 @@
   background: var(--surface-1);
 }
 
+/* A non-modal <dialog> in the flex row: drop the UA overlay box. */
+dialog.panel {
+  position: static;
+  width: auto;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border-width: 0 0 0 1px;
+  color: inherit;
+}
+
 .panel-head {
   display: flex;
   gap: var(--space-3);

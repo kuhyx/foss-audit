@@ -1,0 +1,25 @@
+/*
+ * Custom elements are `display: inline` by default, which would break the
+ * flex/height chain (.content -> .table-scroll). Every widget host and view
+ * wrapper is layout-transparent: its children take part in the parent's
+ * layout exactly as plain fragments would. Observe inner boxes
+ * (.chart, .table-scroll), never a host, with a ResizeObserver.
+ */
+items-table,
+filter-bar,
+selection-bar,
+copy-button,
+scan-progress,
+error-banner,
+detail-panel,
+help-overlay,
+summary-view,
+easy-wins,
+.view {
+  display: contents;
+}
+
+/* `display: contents` and the author rules above beat the UA `[hidden]`. */
+[hidden] {
+  display: none !important;
+}

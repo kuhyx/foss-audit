@@ -1,0 +1,57 @@
+/* Docs pages, the 404 page and the no-JS homepage: one readable column. */
+.doc {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  line-height: 1.6;
+}
+
+.doc h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+}
+
+.doc h2 {
+  margin: var(--space-6) 0 var(--space-2);
+}
+
+.doc p,
+.doc ul,
+.doc dl {
+  margin: 0 0 var(--space-3);
+}
+
+.doc .lead {
+  margin-bottom: var(--space-5);
+  color: var(--text-muted);
+}
+
+.doc pre {
+  overflow-x: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.doc dl div {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+}
+
+.doc dt {
+  min-width: 9rem;
+  font-weight: 600;
+}
+
+.doc dd {
+  margin: 0;
+}
+
+.doc .codes {
+  columns: 3;
+  padding-left: var(--space-4);
+}

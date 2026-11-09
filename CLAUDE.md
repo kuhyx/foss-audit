@@ -20,4 +20,4 @@
 
 - `foss_audit/`: stdlib-only Python scanner and HTTP API (`DOCS-api-contract.md`)
 - `data/curated.json`: hand-verified verdicts and FOSS alternatives (fnmatch globs; `null` means no alternative)
-- `src/`: React UI; `run.sh` starts both halves
+- `src/`: Astro UI, custom elements (`DOCS-ui-contract.md`); `run.sh` starts both halves

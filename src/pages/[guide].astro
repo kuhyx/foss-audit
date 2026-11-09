@@ -1,0 +1,24 @@
+---
+/**
+ * The static docs pages (`/verdicts/`, `/sources/`, `/views/`): every page in
+ * the page table except the homepage, prerendered with no client script.
+ */
+import type { GetStaticPaths } from "astro";
+
+import PageBody from "../components/site/PageBody.astro";
+import Base from "../layouts/Base.astro";
+import { SITE_URL } from "../lib/site/config.ts";
+import { PAGES } from "../lib/site/content.ts";
+import { documentTitle, headTags } from "../lib/site/head.ts";
+import "../styles/doc.css";
+
+export const getStaticPaths = (() => PAGES.filter((page) => page.path !== "").map((page) => ({ params: { guide: page.path.slice(0, -1) }, props: { page } }))) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<Base description={page.description} headTags={headTags(page, SITE_URL)} title={documentTitle(page)}>
+  <main class="doc">
+    <PageBody page={page} />
+  </main>
+</Base>

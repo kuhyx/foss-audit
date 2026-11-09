@@ -2,7 +2,7 @@
  * Base elements and shared atoms.
  *
  * Every colour, space, radius and type size comes from @kuhyx/web-ui's
- * tokens.css (imported first in main.tsx). Nothing here defines a colour
+ * tokens.css (imported first in layouts/Base.astro). Nothing here defines a colour
  * value: a local literal would shadow the shared palette and silently
  * un-migrate this repo. Split across six files to respect the 250-line cap.
  */
@@ -184,6 +184,22 @@ kbd {
   display: grid;
   place-items: center;
   background: color-mix(in srgb, var(--bg) 85%, transparent);
+}
+
+/* The modal <dialog> is the scrim: full-viewport, no UA box. */
+dialog.scrim {
+  width: auto;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+}
+
+dialog.scrim::backdrop {
+  background: transparent;
 }
 
 .help {
