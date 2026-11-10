@@ -1148,14 +1148,14 @@
     },
     "com.google.android.gms:play-services-base*": {
       "names": [
-        "microG client libs org.microg.gms:play-services-base / -basement 0.3.6.244735 (Apache-2.0 per Maven pom; microg/GmsCore pushed 2026-10; fit partial, effort L): Gradle dependencySubstitution, but the API is frozen near GMS 17.x so firebase-bom 34 / google_sign_in 7 may not compile",
-        "Nothing: pulled in only by firebase-* and the google_sign_in / geolocator / mlkit Flutter plugins; replacing those removes it"
+        "Nothing: drop its last caller, geolocator_android (play-services-location) in umbrella and workout_app, for a LocationManager-based plugin (see play-services-location); sufler and punchme release APKs already have 0 com/google/android/gms classes (fit good, effort M)",
+        "microG client libs org.microg.gms:play-services-base / -basement 0.3.14.250932 (Apache-2.0 per Maven Central pom; microg/GmsCore pushed 2026-11-04; fit partial, effort L): Gradle dependencySubstitution, but the API is frozen near GMS 17.x so newer callers may not compile"
       ],
       "candidates": ["org.microg.gms:play-services-base", "org.microg.gms:play-services-basement"],
-      "fit": "partial",
-      "effort": "L",
-      "effortReason": "Runtime glue for every GMS/Firebase library; only goes away once its callers (Firebase, google_sign_in, geolocator, mlkit) are replaced",
-      "lockIn": "Every Firebase SDK and Google sign-in depends on it",
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Checked 2026-11-10: no ~/src gradle file names GMS/Firebase, Google sign-in and ML Kit are gone; only geolocator_android in umbrella and workout_app still pulls it, so it leaves with the play-services-location swap",
+      "lockIn": "None once geolocator is replaced; Firebase is reached over REST",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-tasks": {
@@ -1180,7 +1180,7 @@
       "candidates": ["google_account_token", "net.openid:appauth", "flutter_appauth", "org.microg.gms:play-services-auth"],
       "fit": "good",
       "effort": "M",
-      "effortReason": "Checked 2026-11-10: still pulled by google_sign_in_android 7.2.18 in sufler, punchme, restaurant-rater and (via google_sign_in 7.2.0) workout_app; the other 9 apps already use google_account_token; each of the 4 needs the same swap plus a phone sign-in test",
+      "effortReason": "2026-11-10: sufler (c24fbb3) and punchme (034cf04) swapped, CI APKs have 0 auth/googleid classes; workout_app swap committed (23ad2e0, unpushed); restaurant-rater swap local only (repo archived); gate utils/scripts/check_no_gms_signin.sh blocks a return",
       "lockIn": "The token still comes from the phone's Google account service (GMS on stock Android); only the app's own code is FOSS",
       "onlySource": "maven-cache"
     },
