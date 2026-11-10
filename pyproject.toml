@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "foss-audit"
 version = "0.1.0"
+license = "MIT"
 description = "Scan every program installed on this PC and classify it as FOSS or not, with FOSS alternatives"
 requires-python = ">=3.14"
 # Standard library only at runtime: the scanner must work on a bare system Python.
