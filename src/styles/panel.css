@@ -94,9 +94,9 @@ dialog.panel {
   align-items: baseline;
 }
 
-/* A dependant warning: the badge carries the state, the text stays in ink. */
+/* A warning line: the ⚠ badge carries the state (silent: the line's own label is spoken). */
 .warning-line::before {
-  content: "Still needed";
+  content: "⚠" / "";
   display: inline-block;
   margin-right: var(--space-2);
   padding: 0 var(--space-2);

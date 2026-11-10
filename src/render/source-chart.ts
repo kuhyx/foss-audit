@@ -10,6 +10,7 @@ import { VERDICTS } from "../lib/schema.ts";
 import { layoutSegments, roundedEndPath, SEGMENT_GAP } from "../lib/stack.ts";
 import { numberFormat, percent, VERDICT_COLORS, VERDICT_LABELS } from "../lib/verdict.ts";
 import { html } from "./dom.ts";
+import { verdictMark } from "./glyph.ts";
 
 export interface SourceChartOptions {
   readonly onDrill: (source: Source, verdict: null | Verdict) => void;
@@ -59,7 +60,7 @@ function legend(): HTMLElement {
   return html(
     "ul",
     { "aria-label": "Legend", class: "legend" },
-    ...VERDICTS.map((verdict) => html("li", {}, swatch(verdict), VERDICT_LABELS[verdict])),
+    ...VERDICTS.map((verdict) => html("li", {}, swatch(verdict), verdictMark(verdict))),
   );
 }
 
@@ -68,12 +69,12 @@ function tooltip(row: SourceRow, segment: Segment, left: number, top: number): H
     "span",
     { class: "tooltip-title" },
     swatch(segment.verdict),
-    html("span", {}, html("strong", {}, row.source), ` · ${VERDICT_LABELS[segment.verdict]}`),
+    html("span", {}, html("strong", {}, row.source), " ", verdictMark(segment.verdict)),
   );
   const value = html(
     "span",
     { class: "tooltip-value" },
-    `${numberFormat.format(segment.count)} of ${numberFormat.format(row.total)} · ${percent(segment.count, row.total)}`,
+    `${numberFormat.format(segment.count)} / ${numberFormat.format(row.total)} · ${percent(segment.count, row.total)}`,
   );
   const element = html("div", { class: "tooltip", role: "status" }, title, value);
   element.style.left = `${left}px`;

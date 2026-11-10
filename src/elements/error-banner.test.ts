@@ -5,6 +5,7 @@ import "./error-banner.ts";
 import { store } from "../client/store.ts";
 import { mount, resetDocument, showScan } from "../test/elements.ts";
 import { makeScan } from "../test/fixtures.ts";
+import { spoken } from "../test/table-setup.ts";
 
 beforeEach(() => {
   resetDocument();
@@ -26,10 +27,11 @@ describe("error-banner", () => {
     const { scan } = store.getState();
     if (scan.kind !== "ready") throw new Error("not ready");
     store.set({ scan: { ...scan, refreshError: "HTTP 500 from /api/scan" } });
-    expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-      "flatpak: not installed",
+    expect(screen.getAllByRole("listitem").map((li) => spoken(li))).toEqual([
+      "Error: flatpak: not installed",
       "Rescan failed: HTTP 500 from /api/scan",
     ]);
+    expect(screen.getAllByRole("listitem")[1]?.textContent).toBe("⟳ ⚠ HTTP 500 from /api/scan");
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(element).toBeEmptyDOMElement();
   });

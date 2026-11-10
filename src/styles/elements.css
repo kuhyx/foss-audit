@@ -19,6 +19,43 @@ easy-wins,
   display: contents;
 }
 
+/* Spoken-only live text (copy-button's announcer): read out, never painted. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Glyph vocabulary (render/glyph.ts): shapes carry the meaning, colour is the 2nd channel. */
+.verdict-mark {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.bars {
+  color: var(--accent);
+  letter-spacing: -0.1em;
+}
+
+#rescan[aria-busy="true"] {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #rescan[aria-busy="true"] {
+    animation: none;
+  }
+}
+
 /* `display: contents` and the author rules above beat the UA `[hidden]`. */
 [hidden] {
   display: none !important;

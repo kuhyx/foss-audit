@@ -51,6 +51,7 @@ describe("404 page", () => {
     const html = await container.renderToString(NotFound);
     expect(html).toContain('<h1><span aria-label="Page not found">🗄</span></h1>');
     expect(html).toContain('<main class="doc">');
-    for (const p of PAGES) expect(html).toContain(`<a href="${SITE_URL}${p.path}">`);
+    for (const p of PAGES) expect(html).toContain(`href="${SITE_URL}${p.path}"`);
+    expect(html).not.toContain("There is no page at this address</p>");
   });
 });

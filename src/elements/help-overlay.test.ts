@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import "./help-overlay.ts";
 import { store } from "../client/store.ts";
 import { mount, resetDocument, showScan, stubDialog } from "../test/elements.ts";
+import { paintedWords } from "../test/table-setup.ts";
 
 function scrim(): HTMLDialogElement | null {
   return document.querySelector("dialog.scrim");
@@ -26,7 +27,9 @@ describe("help-overlay", () => {
     expect(scrim()).toHaveAttribute("open");
     expect(document.querySelector(".scrim > .help")).not.toBeNull();
     expect(screen.getByRole("dialog", { name: "Keyboard shortcuts" })).toBe(scrim());
-    expect(screen.getByText("focus search")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "focus search" })).toHaveTextContent("⌕");
+    expect(screen.getByLabelText("PgUp PgDn")).toHaveTextContent("⇞ ⇟");
+    expect(paintedWords(scrim()!)).toEqual([]);
     expect(screen.getAllByRole("term")).toHaveLength(6);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" }));
   });

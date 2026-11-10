@@ -7,6 +7,7 @@ import { PAGES } from "../lib/site/content.ts";
 import { documentTitle, headTags } from "../lib/site/head.ts";
 import { VIEWS } from "../lib/url-state.ts";
 import { VIEW_LABELS } from "../lib/views.ts";
+import { VIEW_GLYPHS } from "../render/glyph.ts";
 import "../styles/doc.css";
 
 const home = elementAt(PAGES, 0);
@@ -44,12 +45,7 @@ const home = elementAt(PAGES, 0);
         <span><span aria-label="took" class="muted">⏱</span> <span data-meta="took"></span></span>
       </p>
       <scan-progress variant="header"></scan-progress>
-      <input
-        aria-label="Search name or id (typos ok)"
-        class="search"
-        placeholder="Search name or id, typos ok  (/)"
-        type="search"
-      />
+      <input aria-label="Search name or id (typos ok), shortcut /" class="search" placeholder="⌕  /" type="search" />
       <button aria-label="Rescan" class="btn btn-primary" id="rescan" type="button">⟳</button>
     </header>
     <error-banner></error-banner>
@@ -57,8 +53,8 @@ const home = elementAt(PAGES, 0);
       {
         VIEWS.map((view) => {
           return (
-            <button class="tab" data-view={view} type="button">
-              {VIEW_LABELS[view]}
+            <button aria-label={VIEW_LABELS[view]} class="tab" data-view={view} type="button">
+              <span aria-hidden="true" class="icon">{VIEW_GLYPHS[view]}</span>
               <span class="tab-count" />
             </button>
           );

@@ -2,7 +2,7 @@ import "./items-table.ts";
 import { closeItem, openItem, setSort } from "../client/actions.ts";
 import { resetStore, store } from "../client/store.ts";
 import { DEAD_LAUNCHER, ITEMS, makeItem } from "../test/fixtures.ts";
-import { click, find, mount, press, showTable } from "../test/table-setup.ts";
+import { click, find, mount, paintedWords, press, showTable, spoken } from "../test/table-setup.ts";
 
 const NAME = 1;
 const FIT = 10;
@@ -13,7 +13,7 @@ function rows(root: ParentNode): HTMLElement[] {
 }
 
 function column(root: ParentNode, index: number): string[] {
-  return rows(root).map((row) => row.querySelectorAll(".td")[index]?.textContent ?? "");
+  return rows(root).map((row) => spoken(row.querySelectorAll(".td")[index] ?? document.createTextNode("")));
 }
 
 function box(root: ParentNode, name: string): HTMLInputElement {
@@ -25,7 +25,7 @@ function header(root: ParentNode): HTMLInputElement {
 }
 
 function head(root: ParentNode, label: string): HTMLElement {
-  const found = [...root.querySelectorAll<HTMLElement>(".th-button")].find((button) => button.textContent.startsWith(label));
+  const found = [...root.querySelectorAll<HTMLElement>(".th-button")].find((button) => button.getAttribute("aria-label") === label);
   if (found === undefined) throw new Error(`no ${label} header`);
   return found;
 }
@@ -66,7 +66,7 @@ describe("items-table", () => {
   it("explains an empty result and recovers when rows return", () => {
     showTable([]);
     const table = mount("items-table");
-    expect(table.querySelector(".table-empty")?.textContent).toContain("No items match these filters.");
+    expect(find(table, ".table-empty [role=img]").getAttribute("aria-label")).toContain("No items match these filters.");
     expect(table.querySelector(".table-scroll")).toBeNull();
     showTable(ITEMS);
     expect(table.querySelector(".table-empty")).toBeNull();
@@ -80,27 +80,28 @@ describe("items-table", () => {
     const first = rows(table)[0]!;
     expect(first.getAttribute("aria-rowindex")).toBe("2");
     expect(first.dataset.id).toBe("pacman:bash");
-    const text = (name: string): string => rows(table).find((row) => row.textContent.includes(name))!.textContent;
+    const text = (name: string): string => spoken(rows(table).find((row) => row.textContent.includes(name))!);
     expect(text("Some Game")).toContain("—");
     expect(text("Some Game")).toContain("0ad");
-    expect(text("Some Game")).toContain("Good");
+    expect(text("Some Game")).toContain("Fit: Good");
     expect(text("unrar")).toContain("dependency");
     expect(text("libfoo")).toContain("orphan");
-    expect(text("backup.sh")).toContain("own");
-    expect(text("mystery")).toContain("loose");
-    expect(text("rpcs3")).toContain("dead");
-    expect(find(rows(table)[0]!, ".verdict .dot").getAttribute("aria-hidden")).toBe("true");
+    expect(text("backup.sh")).toContain("kuhy's own code");
+    expect(text("mystery")).toContain("no repo or package tracks it");
+    expect(text("rpcs3")).toContain("Exec target no longer exists");
+    expect(find(rows(table)[0]!, ".verdict .verdict-mark").getAttribute("role")).toBe("img");
+    expect(paintedWords(find(table, ".thead"))).toEqual([]);
   });
 
   it("sorts by the url sort and marks only that header", () => {
     showTable(ITEMS, { sort: { desc: false, id: "name" } });
     const table = mount("items-table");
-    expect(column(table, NAME)[0]).toBe("backup.sh own");
+    expect(column(table, NAME)[0]).toBe("backup.sh kuhy's own code");
     const marked = [...table.querySelectorAll(".th[aria-sort]")].filter((th) => th.getAttribute("aria-sort") !== "none");
     expect(marked).toHaveLength(1);
     expect(marked[0]?.getAttribute("aria-sort")).toBe("ascending");
     setSort({ desc: true, id: "fit" });
-    expect(column(table, FIT).filter((fit) => fit !== "").slice(0, 3)).toEqual(["Good", "Good", "Drop-in"]);
+    expect(column(table, FIT).filter((fit) => fit !== "").slice(0, 3)).toEqual(["Fit: Good", "Fit: Good", "Fit: Drop-in"]);
     expect(column(table, FIT).at(-1)).toBe("");
     expect(find(table, '.th[aria-sort="descending"] .sort-mark').textContent).toBe("▼");
   });

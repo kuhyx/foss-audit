@@ -13,10 +13,14 @@ describe("html", () => {
 });
 
 describe("verdictBadge", () => {
-  it("is a dot plus the label", () => {
+  it("is a shape mark with a spoken-only label", () => {
     const badge = verdictBadge("nonfree");
     expect(badge.className).toBe("verdict");
-    expect(badge.querySelector(".dot")?.getAttribute("aria-hidden")).toBe("true");
-    expect(badge.textContent).not.toBe("");
+    const mark = badge.querySelector<HTMLElement>(".verdict-mark");
+    expect(mark?.dataset.verdict).toBe("nonfree");
+    expect(mark?.getAttribute("role")).toBe("img");
+    expect(mark?.getAttribute("aria-label")).toBe("Non-free");
+    expect(badge.textContent).not.toMatch(/[A-Za-z]{2}/);
+    expect(badge.hasAttribute("title")).toBe(false);
   });
 });

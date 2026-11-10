@@ -41,7 +41,7 @@ describe("scan-progress variant=loading", () => {
     expect(bar).toHaveAttribute("aria-valuemax", "26");
     expect(document.querySelector(".scan-live-loading")).not.toBeNull();
     expect(screen.getByText("14/26")).toBeInTheDocument();
-    expect(screen.getByText("9120 items")).toBeInTheDocument();
+    expect(screen.getByLabelText("9120 items")).toHaveTextContent("Σ 9120");
     expect(screen.getByText("npm-cache 3400/12000")).toBeInTheDocument();
     expect(screen.getByText("pip-cache 57")).toBeInTheDocument();
   });

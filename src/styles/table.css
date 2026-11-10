@@ -130,6 +130,12 @@
   text-align: center;
 }
 
+/* The empty state is one big glyph (its sentence is spoken only). */
+.large-empty-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
 /* Multi-selection bar: outside the scroller, so it stays put while the rows
  * scroll; hidden (not rendered) while nothing is selected. */
 .selection-bar {

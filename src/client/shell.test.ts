@@ -12,7 +12,7 @@ const FIXTURE = `
 <div id="app" hidden>
   <span data-meta="host"></span><time data-meta="scanned"></time><span data-meta="took"></span>
   <input aria-label="Search name or id" class="search" />
-  <button id="rescan" type="button">Rescan</button>
+  <button aria-label="Rescan" id="rescan" type="button">⟳</button>
   <nav>
     <button class="tab" data-view="summary"><span class="tab-count"></span></button>
     <button class="tab" data-view="table"><span class="tab-count"></span></button>
@@ -62,7 +62,8 @@ describe("startShell", () => {
     expect(document.querySelector('[data-meta="host"]')?.textContent).toBe("testhost");
     expect(document.querySelector('[data-meta="scanned"]')?.getAttribute("datetime")).toBe(makeScan().generatedAt);
     expect(document.querySelector('.tab[data-view="summary"] .tab-count')?.textContent).toBe("2");
-    expect(document.querySelector("#rescan")?.textContent).toBe("Rescan");
+    expect(document.querySelector("#rescan")?.getAttribute("aria-label")).toBe("Rescan");
+    expect(document.querySelector("#rescan")?.textContent).toBe("⟳");
   });
 
   it("shows the readable error and no [object Object]", () => {
@@ -97,7 +98,8 @@ describe("startShell", () => {
     const button = document.querySelector<HTMLButtonElement>("#rescan");
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute("aria-busy")).toBe("true");
-    expect(button?.textContent).toBe("Rescanning…");
+    expect(button?.getAttribute("aria-label")).toBe("Rescanning…");
+    expect(button?.textContent).toBe("⟳");
   });
 
   it("stops listening when told", () => {

@@ -12,9 +12,10 @@ import { watchRemove } from "../client/remove.ts";
 import { selectWins } from "../client/selectors.ts";
 import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { FITS } from "../lib/schema.ts";
-import { FIT_LABELS, hasTrackedDependants, numberFormat } from "../lib/verdict.ts";
+import { hasTrackedDependants, numberFormat } from "../lib/verdict.ts";
 import { commandButton } from "../render/command.ts";
 import { html } from "../render/dom.ts";
+import { fitMark, glyph, GLYPH } from "../render/glyph.ts";
 import { verdictBadge } from "../render/verdict-badge.ts";
 
 function fitRank(item: Item): number {
@@ -34,10 +35,10 @@ export function orderWins(items: readonly Item[]): Item[] {
 }
 
 function removeCell(fetched: RemoveFetch, id: string): HTMLElement {
-  if (fetched.kind === "loading") return html("span", { class: "muted" }, "Loading the remove command…");
-  if (fetched.kind === "error") return html("span", { "aria-label": `Remove command unavailable: ${fetched.message}`, class: "muted", role: "alert" }, `Remove command unavailable: ${fetched.message}`);
+  if (fetched.kind === "loading") return glyph(GLYPH.rescan, "Loading the remove command…", "muted");
+  if (fetched.kind === "error") return html("span", { "aria-label": `Remove command unavailable: ${fetched.message}`, class: "muted", role: "alert" }, GLYPH.warning);
   const info = fetched.infos.get(id);
-  return info === undefined ? html("span", { "aria-label": "No remove command", class: "muted", role: "alert" }, "No remove command") : commandButton(info.removeCommand);
+  return info === undefined ? html("span", { "aria-label": "No remove command", class: "muted", role: "alert" }, GLYPH.empty) : commandButton(info.removeCommand);
 }
 
 function card(item: Item): HTMLElement {
@@ -52,7 +53,7 @@ function card(item: Item): HTMLElement {
     name,
     html("span", { class: "muted" }, item.source),
     verdictBadge(item.verdict),
-    alt === null ? null : html("span", { class: "muted" }, `fit: ${FIT_LABELS[alt.fit]}`),
+    alt === null ? null : fitMark(alt.fit),
   );
   const installed = html(
     "p",
@@ -63,11 +64,17 @@ function card(item: Item): HTMLElement {
   );
   const untracked = hasTrackedDependants(item)
     ? null
-    : html("p", { class: "muted caption" }, `Dependants are not tracked for ${item.source} items; check before removing.`);
+    : html("p", { class: "muted" }, glyph(`${GLYPH.warning} ?`, `Dependants are not tracked for ${item.source} items; check before removing.`));
   const needed =
     item.requiredBy.length === 0
       ? null
-      : html("p", { class: "warning-line" }, `by ${item.requiredBy.join(", ")}: removing it is not a one-command job.`);
+      : html(
+          "p",
+          { class: "warning-line" },
+          glyph(GLYPH.requiredBy, "Required by these; removing it is not a one-command job:"),
+          " ",
+          item.requiredBy.join(", "),
+        );
   return html("li", { class: "win card", "data-id": item.id }, head, installed, untracked, needed);
 }
 
@@ -107,12 +114,9 @@ export class EasyWins extends StoreElement {
     }
     const ordered = orderWins(wins);
     const cards = ordered.map((item) => card(item));
-    const caption = html(
-      "p",
-      { class: "muted caption" },
-      `${numberFormat.format(wins.length)} non-free or partly-free items with a drop-in or good FOSS alternative that is already installed. Nothing here is removed for you: copy the command and run it yourself.`,
-    );
-    this.replaceChildren(html("div", { class: "wins-scroll" }, caption, html("ul", { class: "wins" }, ...cards)));
+    const spoken = `${numberFormat.format(wins.length)} non-free or partly-free items with a drop-in or good FOSS alternative that is already installed. Nothing here is removed for you: copy the command and run it yourself.`;
+    const list = html("ul", { "aria-description": spoken, "aria-label": "Easy wins", class: "wins" }, ...cards);
+    this.replaceChildren(html("div", { class: "wins-scroll" }, list));
     this.#highlight(selected);
     this.#stopRemove = watchRemove(
       ordered.map((item) => item.id),

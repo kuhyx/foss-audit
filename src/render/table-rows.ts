@@ -6,28 +6,74 @@ import type { SortState } from "../lib/url-state.ts";
 import { COLUMNS } from "../lib/columns.ts";
 import { ROW_HEIGHT } from "../lib/virtual.ts";
 import { html } from "./dom.ts";
+import { effortMark, fitMark, GLYPH, type GlyphName, named } from "./glyph.ts";
 import { verdictBadge } from "./verdict-badge.ts";
 
 const ARIA_SORT = { asc: "ascending", desc: "descending" } as const;
 const SORT_MARK = { asc: "▲", desc: "▼" } as const;
 
-const BADGES: readonly (readonly ["dangling" | "loose" | "own", string, string])[] = [
-  ["own", "own", "kuhy's own code"],
-  ["loose", "loose", "in ~/.local/bin, no repo or package tracks it"],
-  ["dangling", "dead", "a .desktop launcher whose Exec target no longer exists"],
+// Header glyph per column id (COLUMNS); the header word is the button's spoken name.
+const HEADER_GLYPHS: Readonly<Record<string, GlyphName>> = {
+  alternative: "alternative",
+  effort: "effort",
+  fit: "fit",
+  installed: "installed",
+  kind: "kind",
+  license: "license",
+  name: "name",
+  orphan: "orphan",
+  requiredBy: "requiredBy",
+  source: "source",
+  verdict: "verdict",
+  version: "version",
+};
+
+const BADGES: readonly (readonly ["dangling" | "loose" | "own", string])[] = [
+  ["own", "kuhy's own code"],
+  ["loose", "in ~/.local/bin, no repo or package tracks it"],
+  ["dangling", "a .desktop launcher whose Exec target no longer exists"],
 ];
 
 function nameCell(item: Item): (Node | string)[] {
   const cell: (Node | string)[] = [item.name];
-  for (const [flag, label, title] of BADGES) {
-    if (item[flag]) cell.push(" ", html("span", { class: "badge badge-own", title }, label));
+  for (const [flag, spoken] of BADGES) {
+    if (item[flag]) cell.push(" ", named(flag, spoken, "badge badge-own"));
   }
   return cell;
 }
 
+// Enum cells are glyphs (spoken as the old word); names, versions, licences and alternatives are content.
+function glyphCell(column: Column, item: Item): Node | null {
+  const alt = item.alternative;
+  switch (column.id) {
+    case "effort": {
+      return alt?.effort == null ? null : effortMark(alt.effort);
+    }
+    case "fit": {
+      return alt === null ? null : fitMark(alt.fit);
+    }
+    case "kind": {
+      return named(item.explicit ? "explicit" : "dependency", column.text(item));
+    }
+    case "orphan": {
+      return item.orphan ? named("orphan", "orphan") : null;
+    }
+    case "verdict": {
+      return verdictBadge(item.verdict);
+    }
+    default: {
+      return null;
+    }
+  }
+}
+
+const GLYPH_COLUMNS: ReadonlySet<string> = new Set(["effort", "fit", "kind", "orphan", "verdict"]);
+
 function cellContent(column: Column, item: Item): (Node | string)[] {
   if (column.id === "name") return nameCell(item);
-  return [column.id === "verdict" ? verdictBadge(item.verdict) : column.text(item)];
+  if (!GLYPH_COLUMNS.has(column.id)) return [column.text(item)];
+  const node = glyphCell(column, item);
+  return node === null ? [] : [node];
 }
 
 export function buildHeaderCheckbox(): HTMLInputElement {
@@ -37,7 +83,8 @@ export function buildHeaderCheckbox(): HTMLInputElement {
 export function buildHeader(headerCheckbox: HTMLInputElement): HTMLElement {
   const columns = COLUMNS.map((column) => {
     const mark = html("span", { "aria-hidden": "true", class: "sort-mark" });
-    const button = html("button", { class: "th-button", "data-column": column.id, type: "button" }, column.header, mark);
+    const symbol = html("span", { "aria-hidden": "true", class: "icon" }, GLYPH[HEADER_GLYPHS[column.id] ?? "name"]);
+    const button = html("button", { "aria-label": column.header, class: "th-button", "data-column": column.id, type: "button" }, symbol, mark);
     return html("div", { "aria-sort": "none", class: "th", role: "columnheader" }, button);
   });
   const check = html("div", { class: "th th-check", role: "columnheader" }, headerCheckbox);
@@ -93,7 +140,10 @@ export function buildEmpty(): HTMLElement {
   return html(
     "div",
     { class: "table-empty" },
-    html("p", {}, "No items match these filters."),
-    html("p", { class: "muted" }, "Reset the filters or clear the search to see everything."),
+    html(
+      "p",
+      { "aria-label": "No items match these filters. Reset the filters or clear the search to see everything.", class: "large-empty-icon muted", role: "img" },
+      GLYPH.empty,
+    ),
   );
 }

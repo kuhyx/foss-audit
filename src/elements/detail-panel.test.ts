@@ -31,7 +31,7 @@ describe("detail-panel", () => {
     open(CHROME);
     expect(dialog()).toHaveAttribute("open");
     expect(screen.getByRole("heading", { name: "google-chrome" })).toBeInTheDocument();
-    expect(screen.getByText("Non-free")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Non-free" })).toBeInTheDocument();
     expect(screen.getAllByText("custom:chrome")).toHaveLength(2);
     expect(screen.getByRole("link", { name: "https://www.google.com/chrome" })).toHaveAttribute("target", "_blank");
     expect(screen.getByText("aur:google-chrome")).toBeInTheDocument();
@@ -40,8 +40,8 @@ describe("detail-panel", () => {
     expect(screen.getByText("Chromium")).toBeInTheDocument();
     expect(screen.getByLabelText("Already installed")).toBeInTheDocument();
     expect(screen.getByText("ungoogled-chromium-bin")).toBeInTheDocument();
-    expect(screen.getByText("Drop-in")).toBeInTheDocument();
-    expect(screen.getByText("XL · infeasible")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Fit: Drop-in" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Effort: XL · infeasible" })).toBeInTheDocument();
     expect(screen.getByText("Google Sync")).toBeInTheDocument();
     expect(await screen.findByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
     expect(document.querySelector(".panel copy-button")).not.toBeNull();
@@ -117,7 +117,7 @@ describe("detail-panel", () => {
     const user = userEvent.setup();
     const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     open(CHROME);
-    await user.click(screen.getByRole("button", { name: "Copy Claude prompt" }));
+    await user.click(screen.getByRole("button", { name: /^Copy Claude prompt/u }));
     await screen.findByLabelText('Copied');
     const prompt = String(writeText.mock.calls[0]?.[0]);
     expect(prompt).toMatch(/^Replace google-chrome with a FOSS alternative\n/u);
@@ -126,42 +126,42 @@ describe("detail-panel", () => {
 
   it("offers no Claude prompt for FOSS items", () => {
     open(OWN_SCRIPT);
-    expect(screen.queryByRole("button", { name: "Copy Claude prompt" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Copy Claude prompt/u })).toBeNull();
   });
 
   it("warns when other packages still need it", () => {
     open(UNRAR);
-    expect(screen.getByText(/by 1 package:/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /by 1 package:/u })).toBeInTheDocument();
     expect(screen.getByText("file-roller")).toBeInTheDocument();
-    expect(screen.getByText(/dependency/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "dependency" })).toBeInTheDocument();
   });
 
   it("pluralises the dependant count", () => {
     open({ ...UNRAR, requiredBy: ["a", "b"] });
-    expect(screen.getByText(/by 2 packages:/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /by 2 packages:/u })).toBeInTheDocument();
   });
 
   it("lists the projects that use a cached package", () => {
     open({ ...UNRAR, id: "pub-cache:unrar", requiredBy: ["~/src/todo"], source: "pub-cache" });
     expect(screen.getByRole("heading", { name: "Used by" })).toBeInTheDocument();
-    expect(screen.getByText(/by 1 project:/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /by 1 project:/u })).toBeInTheDocument();
   });
 
   it("says a cached package no project names may be transitive", () => {
     open({ ...UNRAR, id: "maven-cache:unrar", requiredBy: [], source: "maven-cache" });
-    expect(screen.getByText(/No ~\/src lockfile or build file names it/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /No ~\/src lockfile or build file names it/u })).toBeInTheDocument();
   });
 
   it("says dependants are untracked outside pacman/AUR", () => {
     open(STEAM_GAME);
-    expect(screen.getByText(/Not tracked: .* not steam\./u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Not tracked: .* not steam\./u })).toBeInTheDocument();
   });
 
   it("handles absent values: no alternative, url, version, licence or command", async () => {
     open({ ...OWN_SCRIPT, license: "", orphan: true, version: null });
     expect(screen.queryByRole("heading", { name: "FOSS alternative" })).toBeNull();
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3);
-    expect(screen.getByText(/yes — nothing requires it/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /yes: nothing requires it/u })).toBeInTheDocument();
     expect(await screen.findByLabelText("No remove command")).toBeInTheDocument();
   });
 
@@ -175,11 +175,11 @@ describe("detail-panel", () => {
 
   it("flags own code, untracked files and dead launchers", () => {
     open(OWN_SCRIPT, [MYSTERY, DEAD_LAUNCHER]);
-    expect(screen.getByText("yes — kuhy's own")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "yes: kuhy's own" })).toBeInTheDocument();
     store.set({ url: { ...store.getState().url, selected: MYSTERY.id } });
-    expect(screen.getByText(/yes — in ~\/\.local\/bin/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /yes: in ~\/\.local\/bin/u })).toBeInTheDocument();
     store.set({ url: { ...store.getState().url, selected: DEAD_LAUNCHER.id } });
-    expect(screen.getByText(/yes — the \.desktop file's Exec target no longer exists/u)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /yes: the \.desktop file's Exec target no longer exists/u })).toBeInTheDocument();
   });
 
   it("explains an alternative with no names and nothing installed", () => {

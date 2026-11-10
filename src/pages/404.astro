@@ -12,15 +12,16 @@ import "../styles/doc.css";
 <Base description="No page at this address." title={`Page not found · ${SITE_NAME}`}>
   <main class="doc">
     <h1><span aria-label="Page not found">🗄</span></h1>
-    <p class="lead">
-      There is no page at this address on the {SITE_NAME} site. It may have moved; these are the pages that exist:
+    <p aria-label={`There is no page at this address on the ${SITE_NAME} site. These are the pages that exist:`} class="lead" role="img">
+      ∅ → ↓
     </p>
+    <!-- Page titles are the docs site's link names (AgentReady wants real text on a 404); the descriptions are spoken only. -->
     <ul>
       {
         PAGES.map((page) => {
           return (
             <li>
-              <a href={absoluteUrl(page.path, SITE_URL)}>{page.title}</a>: {page.description}
+              <a aria-description={page.description} href={absoluteUrl(page.path, SITE_URL)}>{page.title}</a>
             </li>
           );
         })

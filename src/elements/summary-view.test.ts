@@ -39,7 +39,7 @@ describe("summary-view", () => {
   it("shows the headline split and verdict tiles that sum to the scan", () => {
     showScan("summary");
     mount("summary-view");
-    expect(screen.getByText("44.4% free")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "44.4% free" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "4 free" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "5 not free" })).toBeInTheDocument();
     expect(screen.getByTestId("count-nonfree")).toHaveTextContent("5");
@@ -118,7 +118,7 @@ describe("summary-view", () => {
     mount("summary-view");
     const segment = screen.getByRole("button", { name: /^pacman, FOSS: 2 of 5/u });
     fire(segment, "mouseenter");
-    expect(screen.getByRole("status")).toHaveTextContent("2 of 5 · 40%");
+    expect(screen.getByRole("status")).toHaveTextContent("2 / 5 · 40%");
     fire(segment, "mouseleave");
     expect(screen.queryByRole("status")).toBeNull();
     fire(segment, "focus");
@@ -143,7 +143,7 @@ describe("summary-view", () => {
   it("copes with an empty scan", () => {
     showScan("summary", makeScan({ items: [] }));
     mount("summary-view");
-    expect(screen.getByText("0% free")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "0% free" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Copy Claude prompt/u })).toBeNull();
   });
 

@@ -69,12 +69,13 @@ describe("easy-wins", () => {
     mount("easy-wins");
     const [first, second, third] = cards();
     expect(first).toHaveTextContent("ungoogled-chromium-bin");
-    expect(first).toHaveTextContent("fit: Drop-in");
-    expect(within(second!).getByText(/not tracked for steam/u)).toBeInTheDocument();
-    expect(within(third!).getByText(/by file-roller: removing it/u)).toBeInTheDocument();
+    expect(within(first!).getByRole("img", { name: "Fit: Drop-in" })).toBeInTheDocument();
+    expect(within(second!).getByRole("img", { name: /not tracked for steam/u })).toBeInTheDocument();
+    expect(within(third!).getByRole("img", { name: /removing it is not a one-command job/u })).toBeInTheDocument();
+    expect(third).toHaveTextContent("file-roller");
     expect(third).toHaveAttribute("aria-current", "true");
     expect(first).not.toHaveAttribute("aria-current");
-    expect(screen.getAllByText("Loading the remove command…")).toHaveLength(3);
+    expect(screen.getAllByRole("img", { name: "Loading the remove command…" })).toHaveLength(3);
     expect(await screen.findAllByRole("button", { name: "Copy remove command" })).toHaveLength(3);
     expect(within(first!).getByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
     expect(mock).toHaveBeenCalledOnce();

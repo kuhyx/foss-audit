@@ -6,12 +6,12 @@ import { buildRemoveScript } from "../lib/remove-script.ts";
 import { buildSelectionPrompt } from "../lib/selection-prompt.ts";
 import { CHROME, makeItem } from "../test/fixtures.ts";
 import { postedIds, stubRemove } from "../test/remove-stub.ts";
-import { click, find, mount, showTable } from "../test/table-setup.ts";
+import { click, find, mount, paintedWords, showTable } from "../test/table-setup.ts";
 
 const BASH = makeItem();
 
 function copy(bar: ParentNode, prefix: string): HTMLElement {
-  const found = [...bar.querySelectorAll<HTMLElement>(":scope .selection-bar button")].find((button) => button.textContent.startsWith(prefix));
+  const found = [...bar.querySelectorAll<HTMLElement>(":scope .selection-bar button")].find((button) => button.getAttribute("aria-label")?.startsWith(prefix) === true);
   if (found === undefined) throw new Error(`no ${prefix} button`);
   return found;
 }
@@ -52,8 +52,9 @@ describe("selection-bar", () => {
     const section = find(bar, "section");
     setRowsChecked([BASH.id], true);
     expect(find(bar, "section")).toBe(section);
-    expect(copy(bar, "Copy Claude prompt").textContent).toBe("Copy Claude prompt (2)");
-    expect(copy(bar, "Copy remove commands").textContent).toBe("Copy remove commands (2)");
+    expect(copy(bar, "Copy Claude prompt").textContent).toBe("⧉ ✦");
+    expect(copy(bar, "Copy remove commands").textContent).toBe("⧉ 🗑");
+    expect(paintedWords(bar)).toEqual([]);
     clearSelection();
     expect(bar.childElementCount).toBe(0);
   });

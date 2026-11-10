@@ -11,10 +11,11 @@ import { buildRemoveScript } from "../lib/remove-script.ts";
 import { buildSelectionPrompt } from "../lib/selection-prompt.ts";
 import { numberFormat } from "../lib/verdict.ts";
 import { html } from "../render/dom.ts";
+import { GLYPH } from "../render/glyph.ts";
 import "./copy-button.ts";
 
-const PROMPT_LABEL = "Copy one Claude prompt per selected item";
-const SCRIPT_LABEL = "Copy a shell script of remove commands for every selected item (not run)";
+const PROMPT_LABEL = "Copy Claude prompt: one per selected item";
+const SCRIPT_LABEL = "Copy remove commands: a shell script for every selected item (not run)";
 
 interface Bar {
   readonly count: Text;
@@ -67,8 +68,9 @@ export class SelectionBar extends StoreElement {
     this.#bar = bar;
     const count = numberFormat.format(checked.length);
     bar.count.data = count;
-    bar.prompt.setAttribute("button-text", `Copy Claude prompt (${count})`);
-    bar.script.setAttribute("button-text", `Copy remove commands (${count})`);
+    // The count is painted once, in .selection-count; the buttons are glyphs.
+    bar.prompt.setAttribute("button-text", `${GLYPH.copy} ${GLYPH.claude}`);
+    bar.script.setAttribute("button-text", `${GLYPH.copy} ${GLYPH.remove}`);
   }
 }
 

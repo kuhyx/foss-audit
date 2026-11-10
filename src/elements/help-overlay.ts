@@ -9,12 +9,29 @@ import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { SHORTCUTS } from "../lib/views.ts";
 import { html } from "../render/dom.ts";
 
+// Painted form of each SHORTCUTS row: key-cap symbol, then the action as glyphs.
+// SHORTCUTS keeps the words (spoken here, printed on the docs pages).
+const PICTURES: Readonly<Record<string, readonly [string, string]>> = {
+  "/": ["/", "⌕"],
+  "?": ["?", "⌨"],
+  "↑ ↓": ["↑ ↓", "▦ ↕"],
+  Enter: ["⏎", "▶"],
+  Esc: ["⎋", "✕"],
+  "PgUp PgDn": ["⇞ ⇟", "▦ ⇕"],
+};
+
 function sheet(): HTMLElement {
   const close = html("button", { "aria-label": "Close", autofocus: true, class: "btn", type: "button" }, "✕");
   close.addEventListener("click", closeHelp);
-  const rows = SHORTCUTS.map(([key, what]) =>
-    html("div", { class: "help-row" }, html("dt", {}, html("kbd", {}, key)), html("dd", {}, what)),
-  );
+  const rows = SHORTCUTS.map(([key, what]) => {
+    const [cap, action] = PICTURES[key] ?? [key, "•"];
+    return html(
+      "div",
+      { class: "help-row" },
+      html("dt", {}, html("kbd", { "aria-label": key }, cap)),
+      html("dd", {}, html("span", { "aria-label": what, role: "img" }, action)),
+    );
+  });
   return html(
     "div",
     { class: "help" },

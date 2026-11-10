@@ -3,14 +3,17 @@ import { setFilter } from "../client/actions.ts";
 import { resetStore, store } from "../client/store.ts";
 import { DEFAULT_FILTER } from "../lib/filter.ts";
 import { ITEMS } from "../test/fixtures.ts";
-import { click, find, mount, showTable } from "../test/table-setup.ts";
+import { click, find, mount, paintedWords, showTable, spoken } from "../test/table-setup.ts";
+
+// Source ids are scan content (keep-list), the only words the bar may paint.
+const SOURCE_WORDS = new Set(["aur", "bin", "local", "opt", "pacman", "steam"]);
 
 function chips(bar: ParentNode, group: string): HTMLElement[] {
   return [...find(bar, `.chips[aria-label="${group}"]`).querySelectorAll<HTMLElement>(".chip")];
 }
 
 function chip(bar: ParentNode, group: string, label: RegExp): HTMLElement {
-  const found = chips(bar, group).find((candidate) => label.test(candidate.textContent));
+  const found = chips(bar, group).find((candidate) => label.test(spoken(candidate)));
   if (found === undefined) throw new Error(`no ${group} chip ${label}`);
   return found;
 }
@@ -50,7 +53,8 @@ describe("filter-bar", () => {
     expect(chips(bar, "Verdict")).toHaveLength(3);
     expect(chip(bar, "Verdict", /Non-free/u).querySelector(".chip-count")?.textContent).toBe("5");
     expect(chips(bar, "Source").map((button) => button.textContent)).toEqual(["pacman5", "aur1", "opt1", "local-bin1", "steam1"]);
-    expect(find(bar, ".result-count").textContent).toBe("9 of 9 items");
+    expect(find(bar, ".result-count").textContent).toBe("9 / 9");
+    expect(paintedWords(bar).filter((word) => !SOURCE_WORDS.has(word))).toEqual([]);
     expect(find(bar, ".result-count strong").textContent).toBe("9");
     expect(find<HTMLButtonElement>(bar, "[data-reset]").disabled).toBe(true);
   });
@@ -97,6 +101,15 @@ describe("filter-bar", () => {
     }
   });
 
+  it("names every icon-only segmented button for screen readers", () => {
+    showTable(ITEMS);
+    const bar = mount("filter-bar");
+    expect(seg(bar, "Orphan", "yes").getAttribute("aria-label")).toBe("Yes");
+    expect(seg(bar, "Installed as", "any").getAttribute("aria-label")).toBe("Any");
+    const unnamed = [...bar.querySelectorAll(".seg")].filter((button) => !button.getAttribute("aria-label"));
+    expect(unnamed).toHaveLength(0);
+  });
+
   it("resets to the default filter, query included", () => {
     showTable(ITEMS);
     const bar = mount("filter-bar");
@@ -132,7 +145,7 @@ describe("filter-bar", () => {
     expect(root.dataset.collapsed).toBe("false");
     showTable(ITEMS.slice(0, 3));
     expect(find(bar, ".filters")).not.toBe(root);
-    expect(find(bar, ".result-count").textContent).toBe("3 of 3 items");
+    expect(find(bar, ".result-count").textContent).toBe("3 / 3");
   });
 
   it("ignores clicks that miss a button", () => {

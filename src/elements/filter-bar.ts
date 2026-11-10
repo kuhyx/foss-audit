@@ -7,31 +7,33 @@ import { selectItems, selectResults } from "../client/selectors.ts";
 import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { DEFAULT_FILTER, isFilterActive, toggleMember } from "../lib/filter.ts";
 import { SOURCES, VERDICTS } from "../lib/schema.ts";
-import { countBy, numberFormat, VERDICT_COLORS, VERDICT_LABELS } from "../lib/verdict.ts";
+import { countBy, numberFormat } from "../lib/verdict.ts";
 import { html } from "../render/dom.ts";
+import { GLYPH, verdictMark } from "../render/glyph.ts";
 
 type Facet = "altInstalled" | "dangling" | "hasAlt" | "kind" | "loose" | "orphan" | "own";
 type Options = readonly (readonly [string, string])[];
 
 // Visible option/facet labels are drawn as symbols; the old words live on as
 // aria-label (spoken) while the option *values* stay unchanged.
+// Same glyph as the table column / detail field for the same fact (render/glyph.ts).
 const SYMBOL: Readonly<Record<string, string>> = {
-  "Alternative installed": "✓",
-  Any: "☰",
-  "Dead launcher": "✕",
-  Dependency: "⧉",
-  Explicit: "⚙",
-  Filters: "☰",
-  "Has alternative": "⧉",
-  "Installed as": "⚙",
-  No: "✕",
-  Orphan: "🗑",
-  "Own code": "✓",
-  "Reset filters": "⟳",
-  Source: "⚙",
-  "Untracked file": "▲",
-  Verdict: "⚙",
-  Yes: "✓",
+  "Alternative installed": GLYPH.installed,
+  Any: GLYPH.any,
+  "Dead launcher": GLYPH.dangling,
+  Dependency: GLYPH.dependency,
+  Explicit: GLYPH.explicit,
+  Filters: GLYPH.filters,
+  "Has alternative": GLYPH.alternative,
+  "Installed as": GLYPH.kind,
+  No: GLYPH.no,
+  Orphan: GLYPH.orphan,
+  "Own code": GLYPH.own,
+  "Reset filters": GLYPH.reset,
+  Source: GLYPH.source,
+  "Untracked file": GLYPH.loose,
+  Verdict: GLYPH.verdict,
+  Yes: GLYPH.yes,
 };
 
 const TRI: Options = [["any", "Any"], ["yes", "Yes"], ["no", "No"]];
@@ -68,9 +70,7 @@ function chip(group: string, value: string, count: number, ...label: readonly (N
 }
 
 function verdictChip(verdict: Verdict, count: number): HTMLButtonElement {
-  const dot = html("span", { "aria-hidden": "true", class: "dot" });
-  dot.style.background = VERDICT_COLORS[verdict];
-  return chip("verdicts", verdict, count, dot, VERDICT_LABELS[verdict]);
+  return chip("verdicts", verdict, count, verdictMark(verdict));
 }
 
 function group(label: string, ...buttons: readonly HTMLElement[]): HTMLElement {
@@ -79,7 +79,7 @@ function group(label: string, ...buttons: readonly HTMLElement[]): HTMLElement {
 
 function segmented(facet: Facet, label: string, options: Options): HTMLElement {
   const buttons = options.map(([value, text]) =>
-    html("button", { "aria-pressed": "false", class: "seg", "data-facet": facet, "data-value": value, type: "button" }, icon(text)),
+    html("button", { "aria-label": text, "aria-pressed": "false", class: "seg", "data-facet": facet, "data-value": value, type: "button" }, icon(text)),
   );
   return html("div", { "aria-label": label, class: "segmented", role: "group" }, html("span", { class: "facet-label" }, icon(label)), ...buttons);
 }
@@ -95,7 +95,7 @@ function build(items: readonly Item[]): Bar {
   const total = document.createTextNode("");
   const reset = html("button", { "aria-label": "Reset filters", class: "btn", "data-reset": true, type: "button" }, icon("Reset filters"));
   const toggle = html("button", { "aria-expanded": "false", "aria-label": "Filters", class: "btn filter-toggle", type: "button" }, icon("Filters"));
-  const result = html("p", { "aria-live": "polite", class: "result-count" }, html("strong", {}, count), " ", html("span", { class: "muted" }, "of ", total, " items"));
+  const result = html("p", { "aria-live": "polite", class: "result-count" }, html("strong", {}, count), " ", html("span", { "aria-hidden": "true", class: "muted" }, "/ "), html("span", { class: "muted" }, total));
   const row = html("div", { class: "facet-row" }, toggle, ...FACETS.map(([facet, label, options]) => segmented(facet, label, options)), result, reset);
   const root = html(
     "div",

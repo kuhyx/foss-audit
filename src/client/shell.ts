@@ -54,7 +54,8 @@ function showMeta(state: AppState): void {
   const button = rescanButton();
   button.disabled = isRefreshing;
   button.setAttribute("aria-busy", String(isRefreshing));
-  button.textContent = isRefreshing ? "Rescanning…" : "Rescan";
+  // The glyph spins while busy (CSS on aria-busy); only the spoken name changes.
+  button.setAttribute("aria-label", isRefreshing ? "Rescanning…" : "Rescan");
 }
 
 function showViews(state: AppState): void {

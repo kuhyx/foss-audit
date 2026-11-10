@@ -4,6 +4,7 @@ import type { ScanProgress as Progress, RunningSource } from "../lib/schema.ts";
 import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { formatAge } from "../lib/age.ts";
 import { html } from "../render/dom.ts";
+import { GLYPH } from "../render/glyph.ts";
 
 function runningLabel({ done, source, total }: RunningSource): string {
   return total === null ? `${source} ${done}` : `${source} ${done}/${total}`;
@@ -41,7 +42,7 @@ function loadingView(progress: Progress): HTMLElement {
       "p",
       { class: "scan-nums" },
       html("span", {}, `${progress.sourcesDone}/${progress.sourcesTotal}`),
-      html("span", {}, `${progress.itemsFound} items`),
+      html("span", { "aria-label": `${progress.itemsFound} items` }, `${GLYPH.total} ${progress.itemsFound}`),
     ),
     html("ul", { class: "scan-running" }, ...visibleRunning(progress).map((source) => html("li", {}, runningLabel(source)))),
   );

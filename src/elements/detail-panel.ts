@@ -15,9 +15,10 @@ import { watchRemove } from "../client/remove.ts";
 import { selectSelectedItem } from "../client/selectors.ts";
 import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { buildItemPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
-import { EFFORT_LABELS, FIT_LABELS, hasTrackedDependants, isCacheSource } from "../lib/verdict.ts";
+import { hasTrackedDependants, isCacheSource, numberFormat } from "../lib/verdict.ts";
 import { buildButton, commandButton } from "../render/command.ts";
 import { html } from "../render/dom.ts";
+import { effortMark, fitMark, glyph, GLYPH, named, yesNoMark } from "../render/glyph.ts";
 import { verdictBadge } from "../render/verdict-badge.ts";
 
 function icon(symbol: string): Child {
@@ -32,8 +33,8 @@ function orDash(value: null | string): string {
   return value === null || value === "" ? "—" : value;
 }
 
-function yesNo(isYes: boolean, yes: string): string {
-  return isYes ? `yes — ${yes}` : "no";
+function yesNo(isYes: boolean, yes: string): HTMLElement {
+  return yesNoMark(isYes, yes);
 }
 
 function section(id: string, ariaLabel: string, icon: Child, ...children: readonly Child[]): HTMLElement {
@@ -45,17 +46,17 @@ function fields(item: Item): HTMLElement {
   return html(
     "dl",
     { class: "fields" },
-    field("Verdict", icon("✓"), verdictBadge(item.verdict)),
-    field("Own code", icon("👤"), yesNo(item.own, "kuhy's own")),
-    field("Untracked file", icon("📎"), yesNo(item.loose, "in ~/.local/bin, no repo or package tracks it")),
-    field("Dead launcher", icon("💀"), yesNo(item.dangling, "the .desktop file's Exec target no longer exists")),
+    field("Verdict", icon(GLYPH.verdict), verdictBadge(item.verdict)),
+    field("Own code", icon(GLYPH.own), yesNo(item.own, "kuhy's own")),
+    field("Untracked file", icon(GLYPH.loose), yesNo(item.loose, "in ~/.local/bin, no repo or package tracks it")),
+    field("Dead launcher", icon(GLYPH.dangling), yesNo(item.dangling, "the .desktop file's Exec target no longer exists")),
     field("Evidence", icon("🔎"), orDash(item.reason)),
-    field("Licence", icon("📄"), orDash(item.license)),
-    field("Version", icon("🔖"), orDash(item.version)),
-    field("Source", icon("📦"), item.source),
-    field("Installed as", icon("↩"), item.explicit ? "explicit" : "dependency"),
-    field("Orphan", icon("🏝"), yesNo(item.orphan, "nothing requires it any more")),
-    field("Homepage", icon("🔗"), homepage),
+    field("Licence", icon(GLYPH.license), orDash(item.license)),
+    field("Version", icon(GLYPH.version), orDash(item.version)),
+    field("Source", icon(GLYPH.source), item.source),
+    field("Installed as", icon(GLYPH.kind), named(item.explicit ? "explicit" : "dependency", item.explicit ? "explicit" : "dependency")),
+    field("Orphan", icon(GLYPH.orphan), yesNo(item.orphan, "nothing requires it any more")),
+    field("Homepage", icon("🌐"), homepage),
     field("ID", icon("#"), html("code", {}, item.id)),
   );
 }
@@ -78,8 +79,8 @@ function alternativeSection(alt: Alternative): HTMLElement {
   const facts = html(
     "dl",
     { class: "fields" },
-    field("Fit", icon("🎯"), FIT_LABELS[alt.fit]),
-    field("Build-it effort", icon("⚒"), alt.effort === null ? "—" : EFFORT_LABELS[alt.effort]),
+    field("Fit", icon(GLYPH.fit), fitMark(alt.fit)),
+    field("Build-it effort", icon(GLYPH.effort), alt.effort === null ? "—" : effortMark(alt.effort)),
     field("Why that effort", icon("🧭"), orDash(alt.effortReason)),
     field("Lock-in", icon("🔒"), orDash(alt.lockIn)),
   );
@@ -89,25 +90,26 @@ function alternativeSection(alt: Alternative): HTMLElement {
 // Why `requiredBy` is empty: nothing needs it, no project names it, or not tracked.
 function noDependantsText(item: Item): HTMLElement {
   if (isCacheSource(item)) {
-    return html("span", {}, "No ~/src lockfile or build file names it: a transitive dependency or a stale cache entry.");
+    return glyph(GLYPH.empty, "No ~/src lockfile or build file names it: a transitive dependency or a stale cache entry.", "muted");
   }
   return hasTrackedDependants(item)
-    ? html("span", { "aria-label": "Nothing depends on it.", class: "muted" }, icon("—"))
-    : html("span", {}, `Not tracked: reverse dependencies are only known for pacman and AUR packages, not ${item.source}.`);
+    ? glyph("—", "Nothing depends on it.", "muted")
+    : glyph(`${GLYPH.warning} ?`, `Not tracked: reverse dependencies are only known for pacman and AUR packages, not ${item.source}.`, "muted");
 }
 
 function requiredSection(item: Item): HTMLElement {
   const isCached = isCacheSource(item);
   const count = item.requiredBy.length;
   if (count === 0) {
-    return section("req-heading", isCached ? "Used by" : "Required by", icon("🔗"), html("p", { class: "muted" }, noDependantsText(item)));
+    return section("req-heading", isCached ? "Used by" : "Required by", icon(GLYPH.requiredBy), html("p", { class: "muted" }, noDependantsText(item)));
   }
   const noun = isCached ? "project" : "package";
+  const spokenCount = `Required by ${count} ${count === 1 ? noun : noun + "s"}: removing it is not a one-command job.`;
   return section(
     "req-heading",
     isCached ? "Used by" : "Required by",
-    icon("🔗"),
-    html("p", { class: "warning-line" }, `by ${count} ${count === 1 ? noun : noun + "s"}:`),
+    icon(GLYPH.requiredBy),
+    html("p", { "aria-label": spokenCount, class: "warning-line", role: "img" }, numberFormat.format(count)),
     html("ul", { class: "req-list" }, ...item.requiredBy.map((name) => html("li", {}, html("code", {}, name)))),
   );
 }
@@ -116,27 +118,22 @@ function promptSection(item: Item): HTMLElement | null {
   if (!isPromptCandidate(item)) return null;
   const button = buildButton(
     async (): Promise<string> => buildItemPrompt(await withRemove(item)),
-    "📋",
-    "Copy Claude prompt",
+    `${GLYPH.copy} ${GLYPH.claude}`,
+    `Copy Claude prompt: research, suggest and install a FOSS alternative. It never removes ${item.name}.`,
   );
-  const note = html(
-    "p",
-    { class: "muted" },
-    `A prompt to research, suggest and install a FOSS alternative. It never removes ${item.name}.`,
-  );
-  return section("prompt-heading", "Hand it to Claude", icon("💬"), note, button);
+  return section("prompt-heading", "Hand it to Claude", icon(GLYPH.claude), button);
 }
 
 function removeBody(fetched: RemoveFetch, id: string): Node[] {
   if (fetched.kind === "loading") {
-    return [html("p", { class: "muted", "data-testid": "remove-loading" }, "Loading the remove command…")];
+    return [html("p", { "aria-label": "Loading the remove command…", class: "muted", "data-testid": "remove-loading", role: "img" }, GLYPH.rescan)];
   }
   if (fetched.kind === "error") {
-    return [html("p", { "aria-label": `Could not load the remove command: ${fetched.message}`, class: "warning-line", role: "alert" }, `Could not load the remove command: ${fetched.message}`)];
+    return [html("p", { "aria-label": `Could not load the remove command: ${fetched.message}`, class: "warning-line", role: "alert" }, GLYPH.remove)];
   }
   const info = fetched.infos.get(id);
   if (info === undefined) {
-    return [html("p", { "aria-label": "No remove command", class: "warning-line", role: "alert" }, "No remove command")];
+    return [html("p", { "aria-label": "No remove command", class: "warning-line", role: "alert" }, GLYPH.empty)];
   }
   const button = commandButton(info.removeCommand);
   return info.removeVia === "" ? [button] : [button, html("p", { class: "muted", "data-testid": "remove-via" }, info.removeVia)];

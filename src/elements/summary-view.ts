@@ -19,12 +19,11 @@ import {
   NOT_FREE_VERDICTS,
   numberFormat,
   percent,
-  VERDICT_COLORS,
   VERDICT_HINTS,
-  VERDICT_LABELS,
 } from "../lib/verdict.ts";
 import { buildButton } from "../render/command.ts";
 import { html } from "../render/dom.ts";
+import { GLYPH, verdictMark } from "../render/glyph.ts";
 import { drawSourceChart, renderSourceChart } from "../render/source-chart.ts";
 
 // One decimal: at ~98% integer rounding hides the change a cleanup rescan should show.
@@ -32,8 +31,10 @@ function heroPercent(part: number, whole: number): string {
   return whole === 0 ? "0%" : `${((part / whole) * 100).toFixed(1)}%`;
 }
 
-function drillButton(text: string, verdicts: readonly Verdict[]): HTMLButtonElement {
-  const button = html("button", { class: "link", type: "button" }, text);
+// The verdict marks of `verdicts`, then the number; the old sentence is the spoken name.
+function drillButton(count: number, spoken: string, verdicts: readonly Verdict[]): HTMLButtonElement {
+  const marks = html("span", { "aria-hidden": "true" }, ...verdicts.map((verdict) => verdictMark(verdict)));
+  const button = html("button", { "aria-label": spoken, class: "link", type: "button" }, marks, " ", numberFormat.format(count));
   button.addEventListener("click", () => {
     drill(verdicts, []);
   });
@@ -45,7 +46,7 @@ function promptButton(items: readonly Item[]): HTMLElement | null {
   if (candidates.length === 0) return null;
   const button = buildButton(
     async (): Promise<string> => buildBulkPrompt(await withRemoves(candidates)),
-    `⧉ ${numberFormat.format(candidates.length)}`,
+    `${GLYPH.claude} ${numberFormat.format(candidates.length)}`,
     `Copy Claude prompt for all ${numberFormat.format(candidates.length)}`,
   );
   return html("p", { class: "headline-text" }, button);
@@ -57,26 +58,23 @@ function headline(items: readonly Item[]): HTMLElement {
   const split = html(
     "p",
     { class: "headline-text" },
-    drillButton(`${numberFormat.format(free)} free`, [...FREE_VERDICTS]),
-    " ",
-    html("span", { class: "muted" }, "(FOSS and partly-FOSS)"),
-    " versus ",
-    drillButton(`${numberFormat.format(total - free)} not free`, NOT_FREE_VERDICTS),
-    " ",
-    html("span", { class: "muted" }, "(non-free, incl. firmware blobs and unlicensed)"),
-    `, out of ${numberFormat.format(total)} installed items.`,
+    drillButton(free, `${numberFormat.format(free)} free`, [...FREE_VERDICTS]),
+    html("span", { "aria-hidden": "true", class: "muted" }, " / "),
+    drillButton(total - free, `${numberFormat.format(total - free)} not free`, NOT_FREE_VERDICTS),
+    html("span", { "aria-hidden": "true", class: "muted" }, " / "),
+    html("span", { "aria-label": `out of ${numberFormat.format(total)} installed items` }, `${GLYPH.total} ${numberFormat.format(total)}`),
   );
-  const hero = html("p", { class: "hero" }, `${heroPercent(free, total)} free`);
+  const percentText = heroPercent(free, total);
+  const freeMarks = html("span", { "aria-hidden": "true" }, ...[...FREE_VERDICTS].map((verdict) => verdictMark(verdict)));
+  const hero = html("p", { "aria-label": `${percentText} free`, class: "hero", role: "img" }, freeMarks, " ", percentText);
   return html("section", { "aria-label": "Headline", class: "headline card" }, hero, split, promptButton(items));
 }
 
 function tile(verdict: Verdict, count: number, total: number): HTMLElement {
-  const dot = html("span", { "aria-hidden": "true", class: "dot" });
-  dot.style.background = VERDICT_COLORS[verdict];
   const button = html(
     "button",
-    { class: "tile", "data-verdict": verdict, title: VERDICT_HINTS[verdict], type: "button" },
-    html("span", { class: "tile-label" }, dot, VERDICT_LABELS[verdict]),
+    { "aria-description": VERDICT_HINTS[verdict], class: "tile", "data-verdict": verdict, type: "button" },
+    html("span", { class: "tile-label" }, verdictMark(verdict)),
     html("span", { class: "tile-value", "data-testid": `count-${verdict}` }, numberFormat.format(count)),
     html("span", { class: "tile-pct" }, percent(count, total)),
   );
@@ -107,16 +105,18 @@ export class SummaryView extends StoreElement {
       rows: sourceRows(items),
     };
     const chart = renderSourceChart(options, 0);
-    const caption = html(
-      "p",
-      { class: "muted caption" },
-      "Each bar is one source at 100%; the number is its item count. Click a segment or source to open those items in the table.",
-    );
     const bySource = html(
       "section",
       { "aria-labelledby": "by-source", class: "card" },
-      html("h2", { "aria-label": "Verdicts by source", id: "by-source" }, html("span", { "aria-hidden": "true", class: "icon" }, "⚙")),
-      caption,
+      html(
+        "h2",
+        {
+          "aria-description": "Each bar is one source at 100%; the number is its item count. Click a segment or source to open those items in the table.",
+          "aria-label": "Verdicts by source",
+          id: "by-source",
+        },
+        html("span", { "aria-hidden": "true", class: "icon" }, `${GLYPH.verdict} ${GLYPH.source}`),
+      ),
       chart,
     );
     this.replaceChildren(html("div", { class: "summary" }, headline(items), tiles(items), bySource));
