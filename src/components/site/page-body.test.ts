@@ -49,7 +49,7 @@ describe("404 page", () => {
     const container = await AstroContainer.create();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- typed lint cannot see .astro component types
     const html = await container.renderToString(NotFound);
-    expect(html).toContain("<h1>Page not found</h1>");
+    expect(html).toContain('<h1><span aria-label="Page not found">🗄</span></h1>');
     expect(html).toContain('<main class="doc">');
     for (const p of PAGES) expect(html).toContain(`<a href="${SITE_URL}${p.path}">`);
   });

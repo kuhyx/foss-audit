@@ -23,7 +23,7 @@ describe("copy-button", () => {
     expect(element.querySelector(".command")?.textContent).toBe("sudo pacman -Rns google-chrome");
     click(element);
     await vi.waitFor(() => {
-      expect(element.querySelector("button")?.nextElementSibling?.textContent).toBe("Copied");
+      expect(element.querySelector("button")?.nextElementSibling?.getAttribute('aria-label')).toBe('Copied');
     });
     expect(writeText).toHaveBeenCalledWith("sudo pacman -Rns google-chrome");
   });
@@ -31,10 +31,10 @@ describe("copy-button", () => {
   it("reports a clipboard failure instead of pretending", async () => {
     vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(new Error("denied"));
     const element = mount({ command: "rm x", label: "Copy it" });
-    expect(element.querySelector("button")?.title).toBe("Copy it");
+    expect(element.querySelector("button")?.getAttribute('aria-label')).toBe('Copy it');
     click(element);
     await vi.waitFor(() => {
-      expect(element.querySelector(".copy-status")?.textContent).toBe("Copy failed");
+      expect(element.querySelector(".copy-status")?.getAttribute('aria-label')).toBe('Copy failed');
     });
   });
 
@@ -68,14 +68,14 @@ describe("copy-button", () => {
     document.body.replaceChildren(element);
     click(element);
     await vi.waitFor(() => {
-      expect(element.querySelector(".copy-status")?.textContent).toBe("Could not load the remove commands");
+      expect(element.querySelector(".copy-status")?.getAttribute('aria-label')).toBe('Could not load the remove commands');
     });
   });
 
   it("hides the command with show-text=false and shows a note when there is none", () => {
     expect(mount({ command: "x", "show-text": "false" }).querySelector(".command")).toBeNull();
     const none = mount();
-    expect(none.textContent).toBe("No remove command");
+    expect(none.querySelector('span[aria-label="No remove command"]')).not.toBeNull();
     expect(none.querySelector("button")).toBeNull();
   });
 });

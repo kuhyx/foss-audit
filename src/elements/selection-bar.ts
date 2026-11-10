@@ -13,8 +13,8 @@ import { numberFormat } from "../lib/verdict.ts";
 import { html } from "../render/dom.ts";
 import "./copy-button.ts";
 
-const PROMPT_LABEL = "Copy one Claude prompt for every selected item: replace the non-FOSS ones, confirm the FOSS ones";
-const SCRIPT_LABEL = "Copy a shell script with the remove command of every selected item (it is not run)";
+const PROMPT_LABEL = "Copy one Claude prompt per selected item";
+const SCRIPT_LABEL = "Copy a shell script of remove commands for every selected item (not run)";
 
 interface Bar {
   readonly count: Text;
@@ -39,14 +39,14 @@ export class SelectionBar extends StoreElement {
 
   #build(): Bar {
     const count = document.createTextNode("");
-    const clear = html("button", { class: "link", type: "button" }, "Clear");
+    const clear = html("button", { "aria-label": "Clear", class: "link", type: "button" }, "✕");
     clear.addEventListener("click", () => {
       clearSelection();
     });
     const prompt = copyButton(PROMPT_LABEL, async () => buildSelectionPrompt(await checkedWithRemoves()));
     const script = copyButton(SCRIPT_LABEL, async () => buildRemoveScript(await checkedWithRemoves()));
     this.replaceChildren(
-      html("section", { "aria-label": "Selection", class: "selection-bar" }, html("span", { class: "selection-count" }, count, " selected · ", clear), prompt, script),
+      html("section", { "aria-label": "Selection", class: "selection-bar" }, html("span", { class: "selection-count" }, count), clear, prompt, script),
     );
     return { count, prompt, script };
   }

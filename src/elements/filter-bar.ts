@@ -13,6 +13,27 @@ import { html } from "../render/dom.ts";
 type Facet = "altInstalled" | "dangling" | "hasAlt" | "kind" | "loose" | "orphan" | "own";
 type Options = readonly (readonly [string, string])[];
 
+// Visible option/facet labels are drawn as symbols; the old words live on as
+// aria-label (spoken) while the option *values* stay unchanged.
+const SYMBOL: Readonly<Record<string, string>> = {
+  "Alternative installed": "✓",
+  Any: "☰",
+  "Dead launcher": "✕",
+  Dependency: "⧉",
+  Explicit: "⚙",
+  Filters: "☰",
+  "Has alternative": "⧉",
+  "Installed as": "⚙",
+  No: "✕",
+  Orphan: "🗑",
+  "Own code": "✓",
+  "Reset filters": "⟳",
+  Source: "⚙",
+  "Untracked file": "▲",
+  Verdict: "⚙",
+  Yes: "✓",
+};
+
 const TRI: Options = [["any", "Any"], ["yes", "Yes"], ["no", "No"]];
 const KIND: Options = [["any", "Any"], ["explicit", "Explicit"], ["dependency", "Dependency"]];
 
@@ -33,6 +54,10 @@ interface Bar {
   readonly total: Text;
 }
 
+function icon(label: string): HTMLElement {
+  return html("span", { "aria-hidden": "true", class: "icon" }, SYMBOL[label] ?? label);
+}
+
 function chip(group: string, value: string, count: number, ...label: readonly (Node | string)[]): HTMLButtonElement {
   return html(
     "button",
@@ -49,14 +74,14 @@ function verdictChip(verdict: Verdict, count: number): HTMLButtonElement {
 }
 
 function group(label: string, ...buttons: readonly HTMLElement[]): HTMLElement {
-  return html("div", { "aria-label": label, class: "chips", role: "group" }, html("span", { class: "facet-label" }, label), ...buttons);
+  return html("div", { "aria-label": label, class: "chips", role: "group" }, html("span", { class: "facet-label" }, icon(label)), ...buttons);
 }
 
 function segmented(facet: Facet, label: string, options: Options): HTMLElement {
   const buttons = options.map(([value, text]) =>
-    html("button", { "aria-pressed": "false", class: "seg", "data-facet": facet, "data-value": value, type: "button" }, text),
+    html("button", { "aria-pressed": "false", class: "seg", "data-facet": facet, "data-value": value, type: "button" }, icon(text)),
   );
-  return html("div", { "aria-label": label, class: "segmented", role: "group" }, html("span", { class: "facet-label" }, label), ...buttons);
+  return html("div", { "aria-label": label, class: "segmented", role: "group" }, html("span", { class: "facet-label" }, icon(label)), ...buttons);
 }
 
 function pressed(root: ParentNode, selector: string, isOn: (button: HTMLElement) => boolean): void {
@@ -68,8 +93,8 @@ function build(items: readonly Item[]): Bar {
   const present = [...countBy(items, (item) => item.source)].toSorted(([a], [b]) => SOURCES.indexOf(a) - SOURCES.indexOf(b));
   const count = document.createTextNode("");
   const total = document.createTextNode("");
-  const reset = html("button", { class: "btn", "data-reset": true, type: "button" }, "Reset filters");
-  const toggle = html("button", { "aria-expanded": "false", class: "btn filter-toggle", type: "button" }, "Filters");
+  const reset = html("button", { "aria-label": "Reset filters", class: "btn", "data-reset": true, type: "button" }, icon("Reset filters"));
+  const toggle = html("button", { "aria-expanded": "false", "aria-label": "Filters", class: "btn filter-toggle", type: "button" }, icon("Filters"));
   const result = html("p", { "aria-live": "polite", class: "result-count" }, html("strong", {}, count), " ", html("span", { class: "muted" }, "of ", total, " items"));
   const row = html("div", { class: "facet-row" }, toggle, ...FACETS.map(([facet, label, options]) => segmented(facet, label, options)), result, reset);
   const root = html(

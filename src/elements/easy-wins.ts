@@ -35,8 +35,9 @@ export function orderWins(items: readonly Item[]): Item[] {
 
 function removeCell(fetched: RemoveFetch, id: string): HTMLElement {
   if (fetched.kind === "loading") return html("span", { class: "muted" }, "Loading the remove command…");
-  if (fetched.kind === "error") return html("span", { class: "muted" }, `Remove command unavailable: ${fetched.message}`);
-  return commandButton(fetched.infos.get(id)?.removeCommand);
+  if (fetched.kind === "error") return html("span", { "aria-label": `Remove command unavailable: ${fetched.message}`, class: "muted", role: "alert" }, `Remove command unavailable: ${fetched.message}`);
+  const info = fetched.infos.get(id);
+  return info === undefined ? html("span", { "aria-label": "No remove command", class: "muted", role: "alert" }, "No remove command") : commandButton(info.removeCommand);
 }
 
 function card(item: Item): HTMLElement {
@@ -56,7 +57,7 @@ function card(item: Item): HTMLElement {
   const installed = html(
     "p",
     { class: "win-alt" },
-    html("span", { class: "badge badge-success" }, "Already installed"),
+    html("span", { "aria-label": "Already installed", class: "badge badge-success" }, "📦"),
     " ",
     alt?.installed.join(", "),
   );
@@ -74,11 +75,13 @@ function emptyState(): HTMLElement {
   return html(
     "div",
     { class: "table-empty" },
-    html("p", {}, "No easy wins right now."),
     html(
-      "p",
-      { class: "muted" },
-      "An easy win is a non-free or partly-free item whose drop-in or good FOSS alternative is already installed.",
+      "span",
+      {
+        "aria-label": "No easy wins right now. An easy win is a non-free or partly-free item whose drop-in or good FOSS alternative is already installed.",
+        class: "muted large-empty-icon",
+      },
+      "⚡",
     ),
   );
 }

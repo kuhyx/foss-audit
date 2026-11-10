@@ -93,6 +93,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Symbol used in place of visible chrome text; the words stay as aria-label. */
+.icon {
+  font-size: var(--text-label);
+  line-height: 1;
+}
+
 /* ---------- copy-to-clipboard ---------- */
 
 .copy {

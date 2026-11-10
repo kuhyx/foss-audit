@@ -20,8 +20,12 @@ import { buildButton, commandButton } from "../render/command.ts";
 import { html } from "../render/dom.ts";
 import { verdictBadge } from "../render/verdict-badge.ts";
 
-function field(label: string, value: Child): HTMLElement {
-  return html("div", { class: "field" }, html("dt", {}, label), html("dd", {}, value));
+function icon(symbol: string): Child {
+  return html("span", { "aria-hidden": "true", class: "icon" }, symbol);
+}
+
+function field(ariaLabel: string, icon: Child, value: Child): HTMLElement {
+  return html("div", { "aria-label": ariaLabel, class: "field" }, html("dt", {}, icon), html("dd", {}, value));
 }
 
 function orDash(value: null | string): string {
@@ -32,8 +36,8 @@ function yesNo(isYes: boolean, yes: string): string {
   return isYes ? `yes — ${yes}` : "no";
 }
 
-function section(id: string, heading: string, ...children: readonly Child[]): HTMLElement {
-  return html("section", { "aria-labelledby": id, class: "panel-section" }, html("h3", { id }, heading), ...children);
+function section(id: string, ariaLabel: string, icon: Child, ...children: readonly Child[]): HTMLElement {
+  return html("section", { "aria-labelledby": id, class: "panel-section" }, html("h3", { "aria-label": ariaLabel, id }, icon), ...children);
 }
 
 function fields(item: Item): HTMLElement {
@@ -41,67 +45,68 @@ function fields(item: Item): HTMLElement {
   return html(
     "dl",
     { class: "fields" },
-    field("Verdict", verdictBadge(item.verdict)),
-    field("Own code", yesNo(item.own, "kuhy's own")),
-    field("Untracked file", yesNo(item.loose, "in ~/.local/bin, no repo or package tracks it")),
-    field("Dead launcher", yesNo(item.dangling, "the .desktop file's Exec target no longer exists")),
-    field("Evidence", orDash(item.reason)),
-    field("Licence", orDash(item.license)),
-    field("Version", orDash(item.version)),
-    field("Source", item.source),
-    field("Installed as", item.explicit ? "explicit" : "dependency"),
-    field("Orphan", yesNo(item.orphan, "nothing requires it any more")),
-    field("Homepage", homepage),
-    field("ID", html("code", {}, item.id)),
+    field("Verdict", icon("✓"), verdictBadge(item.verdict)),
+    field("Own code", icon("👤"), yesNo(item.own, "kuhy's own")),
+    field("Untracked file", icon("📎"), yesNo(item.loose, "in ~/.local/bin, no repo or package tracks it")),
+    field("Dead launcher", icon("💀"), yesNo(item.dangling, "the .desktop file's Exec target no longer exists")),
+    field("Evidence", icon("🔎"), orDash(item.reason)),
+    field("Licence", icon("📄"), orDash(item.license)),
+    field("Version", icon("🔖"), orDash(item.version)),
+    field("Source", icon("📦"), item.source),
+    field("Installed as", icon("↩"), item.explicit ? "explicit" : "dependency"),
+    field("Orphan", icon("🏝"), yesNo(item.orphan, "nothing requires it any more")),
+    field("Homepage", icon("🔗"), homepage),
+    field("ID", icon("#"), html("code", {}, item.id)),
   );
 }
 
 function alternativeSection(alt: Alternative): HTMLElement {
   const names =
     alt.names.length === 0
-      ? html("p", { class: "muted" }, "No named alternative in the curated list.")
+      ? html("p", { "aria-label": "No named alternative in the curated list.", class: "muted" }, icon("—"))
       : html("ol", { class: "alt-names" }, ...alt.names.map((name) => html("li", {}, name)));
   const installed =
     alt.installed.length === 0
       ? null
       : html(
           "p",
-          { class: "installed-line" },
-          html("span", { class: "badge badge-success" }, "Already installed"),
+          { "aria-label": "Already installed", class: "installed-line" },
+          html("span", { class: "badge badge-success" }, icon("📦")),
           " ",
           [...new Set(alt.installed)].join(", "),
         );
   const facts = html(
     "dl",
     { class: "fields" },
-    field("Fit", FIT_LABELS[alt.fit]),
-    field("Build-it effort", alt.effort === null ? "—" : EFFORT_LABELS[alt.effort]),
-    field("Why that effort", orDash(alt.effortReason)),
-    field("Lock-in", orDash(alt.lockIn)),
+    field("Fit", icon("🎯"), FIT_LABELS[alt.fit]),
+    field("Build-it effort", icon("⚒"), alt.effort === null ? "—" : EFFORT_LABELS[alt.effort]),
+    field("Why that effort", icon("🧭"), orDash(alt.effortReason)),
+    field("Lock-in", icon("🔒"), orDash(alt.lockIn)),
   );
-  return section("alt-heading", "FOSS alternative", names, installed, facts);
+  return section("alt-heading", "FOSS alternative", icon("🌿"), names, installed, facts);
 }
 
 // Why `requiredBy` is empty: nothing needs it, no project names it, or not tracked.
-function noDependantsText(item: Item): string {
+function noDependantsText(item: Item): HTMLElement {
   if (isCacheSource(item)) {
-    return "No ~/src lockfile or build file names it: a transitive dependency or a stale cache entry.";
+    return html("span", {}, "No ~/src lockfile or build file names it: a transitive dependency or a stale cache entry.");
   }
   return hasTrackedDependants(item)
-    ? "Nothing depends on it."
-    : `Not tracked: reverse dependencies are only known for pacman and AUR packages, not ${item.source}.`;
+    ? html("span", { "aria-label": "Nothing depends on it.", class: "muted" }, icon("—"))
+    : html("span", {}, `Not tracked: reverse dependencies are only known for pacman and AUR packages, not ${item.source}.`);
 }
 
 function requiredSection(item: Item): HTMLElement {
   const isCached = isCacheSource(item);
   const count = item.requiredBy.length;
   if (count === 0) {
-    return section("req-heading", isCached ? "Used by" : "Required by", html("p", { class: "muted" }, noDependantsText(item)));
+    return section("req-heading", isCached ? "Used by" : "Required by", icon("🔗"), html("p", { class: "muted" }, noDependantsText(item)));
   }
   const noun = isCached ? "project" : "package";
   return section(
     "req-heading",
     isCached ? "Used by" : "Required by",
+    icon("🔗"),
     html("p", { class: "warning-line" }, `by ${count} ${count === 1 ? noun : noun + "s"}:`),
     html("ul", { class: "req-list" }, ...item.requiredBy.map((name) => html("li", {}, html("code", {}, name)))),
   );
@@ -111,15 +116,15 @@ function promptSection(item: Item): HTMLElement | null {
   if (!isPromptCandidate(item)) return null;
   const button = buildButton(
     async (): Promise<string> => buildItemPrompt(await withRemove(item)),
+    "📋",
     "Copy Claude prompt",
-    "Copy a Claude prompt for this item",
   );
   const note = html(
     "p",
     { class: "muted" },
     `A prompt to research, suggest and install a FOSS alternative. It never removes ${item.name}.`,
   );
-  return section("prompt-heading", "Hand it to Claude", note, button);
+  return section("prompt-heading", "Hand it to Claude", icon("💬"), note, button);
 }
 
 function removeBody(fetched: RemoveFetch, id: string): Node[] {
@@ -127,11 +132,14 @@ function removeBody(fetched: RemoveFetch, id: string): Node[] {
     return [html("p", { class: "muted", "data-testid": "remove-loading" }, "Loading the remove command…")];
   }
   if (fetched.kind === "error") {
-    return [html("p", { class: "warning-line", role: "alert" }, `Could not load the remove command: ${fetched.message}`)];
+    return [html("p", { "aria-label": `Could not load the remove command: ${fetched.message}`, class: "warning-line", role: "alert" }, `Could not load the remove command: ${fetched.message}`)];
   }
   const info = fetched.infos.get(id);
-  const button = commandButton(info?.removeCommand);
-  return info === undefined || info.removeVia === "" ? [button] : [button, html("p", { class: "muted", "data-testid": "remove-via" }, info.removeVia)];
+  if (info === undefined) {
+    return [html("p", { "aria-label": "No remove command", class: "warning-line", role: "alert" }, "No remove command")];
+  }
+  const button = commandButton(info.removeCommand);
+  return info.removeVia === "" ? [button] : [button, html("p", { class: "muted", "data-testid": "remove-via" }, info.removeVia)];
 }
 
 export class DetailPanel extends StoreElement {
@@ -139,9 +147,9 @@ export class DetailPanel extends StoreElement {
 
   #render(item: Item): void {
     this.teardown();
-    const close = html("button", { "aria-label": "Close details (Esc)", class: "btn", type: "button" }, "Close");
+    const close = html("button", { "aria-label": "Close details (Esc)", class: "btn", type: "button" }, icon("✕"));
     close.addEventListener("click", closeItem);
-    const heading = html("h3", { id: "remove-heading" }, "Remove");
+    const heading = html("h3", { "aria-label": "Remove", id: "remove-heading" }, icon("🗑"));
     const remove = html("section", { "aria-labelledby": "remove-heading", class: "panel-section" }, heading);
     const body = html(
       "div",

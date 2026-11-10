@@ -10,7 +10,7 @@ import { SHORTCUTS } from "../lib/views.ts";
 import { html } from "../render/dom.ts";
 
 function sheet(): HTMLElement {
-  const close = html("button", { autofocus: true, class: "btn", type: "button" }, "Close");
+  const close = html("button", { "aria-label": "Close", autofocus: true, class: "btn", type: "button" }, "✕");
   close.addEventListener("click", closeHelp);
   const rows = SHORTCUTS.map(([key, what]) =>
     html("div", { class: "help-row" }, html("dt", {}, html("kbd", {}, key)), html("dd", {}, what)),
@@ -18,12 +18,12 @@ function sheet(): HTMLElement {
   return html(
     "div",
     { class: "help" },
-    html("h2", {}, "Keyboard shortcuts"),
+    html("h2", {}, html("span", { "aria-label": "Keyboard shortcuts" }, "⌨")),
     html("dl", {}, ...rows),
     html(
       "p",
-      { class: "muted" },
-      "Every filter, the sort and the open row live in the URL, so the address bar is always a shareable link.",
+      { "aria-label": "Every filter, the sort and the open row live in the URL, so the address bar is always a shareable link.", class: "muted" },
+      "⧉",
     ),
     close,
   );

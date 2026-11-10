@@ -15,9 +15,10 @@ function chip(bar: ParentNode, group: string, label: RegExp): HTMLElement {
   return found;
 }
 
-function seg(bar: ParentNode, group: string, option: string): HTMLElement {
-  const found = [...find(bar, `.segmented[aria-label="${group}"]`).querySelectorAll<HTMLElement>(".seg")].find((button) => button.textContent === option);
-  if (found === undefined) throw new Error(`no ${group} ${option}`);
+function seg(bar: ParentNode, group: string, value: string): HTMLElement {
+  const found = [...find(bar, `.segmented[aria-label="${group}"]`).querySelectorAll<HTMLElement>(".seg")]
+    .find((button) => button.dataset.value === value);
+  if (found === undefined) throw new Error(`no ${group} segment ${value}`);
   return found;
 }
 
@@ -80,19 +81,19 @@ describe("filter-bar", () => {
     showTable(ITEMS);
     const bar = mount("filter-bar");
     const cases = [
-      ["Installed as", "Dependency", "kind", "dependency"],
-      ["Orphan", "Yes", "orphan", "yes"],
-      ["Own code", "Yes", "own", "yes"],
-      ["Untracked file", "Yes", "loose", "yes"],
-      ["Dead launcher", "Yes", "dangling", "yes"],
-      ["Has alternative", "No", "hasAlt", "no"],
-      ["Alternative installed", "Yes", "altInstalled", "yes"],
+      ["Installed as", "dependency", "kind", "dependency"],
+      ["Orphan", "yes", "orphan", "yes"],
+      ["Own code", "yes", "own", "yes"],
+      ["Untracked file", "yes", "loose", "yes"],
+      ["Dead launcher", "yes", "dangling", "yes"],
+      ["Has alternative", "no", "hasAlt", "no"],
+      ["Alternative installed", "yes", "altInstalled", "yes"],
     ] as const;
     for (const [group, option, key, value] of cases) {
       click(seg(bar, group, option));
       expect(filterNow()[key]).toBe(value);
       expect(seg(bar, group, option).getAttribute("aria-pressed")).toBe("true");
-      expect(seg(bar, group, "Any").getAttribute("aria-pressed")).toBe("false");
+      expect(seg(bar, group, "any").getAttribute("aria-pressed")).toBe("false");
     }
   });
 
@@ -102,7 +103,7 @@ describe("filter-bar", () => {
     setFilter({ ...DEFAULT_FILTER, orphan: "yes", query: "lib" });
     const reset = find<HTMLButtonElement>(bar, "[data-reset]");
     expect(reset.disabled).toBe(false);
-    expect(seg(bar, "Orphan", "Yes").getAttribute("aria-pressed")).toBe("true");
+    expect(seg(bar, "Orphan", "yes").getAttribute("aria-pressed")).toBe("true");
     click(reset);
     expect(filterNow()).toEqual(DEFAULT_FILTER);
     expect(reset.disabled).toBe(true);

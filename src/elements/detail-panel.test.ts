@@ -35,10 +35,10 @@ describe("detail-panel", () => {
     expect(screen.getAllByText("custom:chrome")).toHaveLength(2);
     expect(screen.getByRole("link", { name: "https://www.google.com/chrome" })).toHaveAttribute("target", "_blank");
     expect(screen.getByText("aur:google-chrome")).toBeInTheDocument();
-    expect(screen.getByText("Nothing depends on it.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Nothing depends on it.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "FOSS alternative" })).toBeInTheDocument();
     expect(screen.getByText("Chromium")).toBeInTheDocument();
-    expect(screen.getByText("Already installed")).toBeInTheDocument();
+    expect(screen.getByLabelText("Already installed")).toBeInTheDocument();
     expect(screen.getByText("ungoogled-chromium-bin")).toBeInTheDocument();
     expect(screen.getByText("Drop-in")).toBeInTheDocument();
     expect(screen.getByText("XL · infeasible")).toBeInTheDocument();
@@ -95,14 +95,14 @@ describe("detail-panel", () => {
   it("shows an error line when the remove command cannot be loaded", async () => {
     vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockRejectedValue(new Error("backend down")));
     open(CHROME);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the remove command: backend down");
+    expect(await screen.findByRole('alert')).toHaveAttribute('aria-label', 'Could not load the remove command: backend down');
     expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
   });
 
   it("says there is no command when the backend no longer knows the item", async () => {
     stubRemove([]);
     open(CHROME);
-    expect(await screen.findByText("No remove command")).toBeInTheDocument();
+    expect(await screen.findByLabelText("No remove command")).toBeInTheDocument();
   });
 
   it("fetches again for the next item and shows loading, not the old command", async () => {
@@ -118,7 +118,7 @@ describe("detail-panel", () => {
     const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     open(CHROME);
     await user.click(screen.getByRole("button", { name: "Copy Claude prompt" }));
-    await screen.findByText("Copied");
+    await screen.findByLabelText('Copied');
     const prompt = String(writeText.mock.calls[0]?.[0]);
     expect(prompt).toMatch(/^Replace google-chrome with a FOSS alternative\n/u);
     expect(prompt).toContain("`sudo pacman -Rns google-chrome` (do not run it)");
@@ -162,7 +162,7 @@ describe("detail-panel", () => {
     expect(screen.queryByRole("heading", { name: "FOSS alternative" })).toBeNull();
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText(/yes — nothing requires it/u)).toBeInTheDocument();
-    expect(await screen.findByText("No remove command")).toBeInTheDocument();
+    expect(await screen.findByLabelText("No remove command")).toBeInTheDocument();
   });
 
   it("explains the remove command's shape under it when removeVia is set", async () => {
@@ -184,8 +184,8 @@ describe("detail-panel", () => {
 
   it("explains an alternative with no names and nothing installed", () => {
     open({ ...CHROME, alternative: makeAlternative({ names: [] }) });
-    expect(screen.getByText("No named alternative in the curated list.")).toBeInTheDocument();
-    expect(screen.queryByText("Already installed")).toBeNull();
+    expect(screen.getByLabelText("No named alternative in the curated list.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Already installed")).toBeNull();
   });
 
   it("closes from its button: clears sel in the store and the URL", async () => {

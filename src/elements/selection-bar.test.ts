@@ -39,9 +39,10 @@ describe("selection-bar", () => {
   it("counts the selection and clears it", () => {
     const bar = mount("selection-bar");
     setRowsChecked([CHROME.id, BASH.id], true);
-    expect(find(bar, ".selection-count").textContent).toBe("2 selected · Clear");
+    expect(find(bar, ".selection-count").textContent).toBe('2');
+    expect(find(bar, ".selection-bar > .link").getAttribute('aria-label')).toBe('Clear');
     expect(find(bar, "section").getAttribute("aria-label")).toBe("Selection");
-    click(find(bar, ".selection-count .link"));
+    click(find(bar, ".selection-bar > .link"));
     expect(bar.childElementCount).toBe(0);
   });
 
@@ -65,7 +66,7 @@ describe("selection-bar", () => {
     expect(mock).not.toHaveBeenCalled();
     click(copy(bar, "Copy Claude prompt"));
     await vi.waitFor(() => {
-      expect(copy(bar, "Copy Claude prompt").nextElementSibling?.textContent).toBe("Copied");
+      expect(copy(bar, "Copy Claude prompt").nextElementSibling?.getAttribute('aria-label')).toBe('Copied');
     });
     expect(writeText).toHaveBeenLastCalledWith(buildSelectionPrompt([CHROME, BASH]));
     click(copy(bar, "Copy remove commands"));
@@ -82,7 +83,7 @@ describe("selection-bar", () => {
     const bar = mount("selection-bar");
     setRowsChecked([CHROME.id], true);
     setFilter({ ...DEFAULT_FILTER, query: "bash" });
-    expect(find(bar, ".selection-count").textContent).toBe("1 selected · Clear");
+    expect(find(bar, ".selection-count").textContent).toBe("1");
     click(copy(bar, "Copy remove commands"));
     await vi.waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(buildRemoveScript([CHROME]));
@@ -96,7 +97,7 @@ describe("selection-bar", () => {
     setRowsChecked([CHROME.id], true);
     click(copy(bar, "Copy remove commands"));
     await vi.waitFor(() => {
-      expect(copy(bar, "Copy remove commands").nextElementSibling?.textContent).toBe("Could not load the remove commands");
+      expect(copy(bar, "Copy remove commands").nextElementSibling?.getAttribute('aria-label')).toBe('Could not load the remove commands');
     });
     expect(writeText).not.toHaveBeenCalled();
   });

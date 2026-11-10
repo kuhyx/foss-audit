@@ -40,7 +40,7 @@ describe("easy-wins", () => {
   it("shows an explained empty state", () => {
     showScan("wins", makeScan({ items: [makeItem()] }));
     mount("easy-wins");
-    expect(screen.getByText("No easy wins right now.")).toBeInTheDocument();
+    expect(screen.getByLabelText("No easy wins right now. An easy win is a non-free or partly-free item whose drop-in or good FOSS alternative is already installed.")).toBeInTheDocument();
     expect(document.querySelector(".table-empty")).not.toBeNull();
   });
 
@@ -75,7 +75,7 @@ describe("easy-wins", () => {
     expect(third).toHaveAttribute("aria-current", "true");
     expect(first).not.toHaveAttribute("aria-current");
     expect(screen.getAllByText("Loading the remove command…")).toHaveLength(3);
-    expect(await screen.findAllByRole("button", { name: "Copy" })).toHaveLength(3);
+    expect(await screen.findAllByRole("button", { name: "Copy remove command" })).toHaveLength(3);
     expect(within(first!).getByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
     expect(mock).toHaveBeenCalledOnce();
     await user.click(screen.getByRole("button", { name: "google-chrome" }));
@@ -88,7 +88,7 @@ describe("easy-wins", () => {
     const mock = stubRemove([UNRAR, STEAM_GAME, CHROME]);
     showScan("wins", WINS, UNRAR.id);
     mount("easy-wins");
-    await screen.findAllByRole("button", { name: "Copy" });
+    await screen.findAllByRole("button", { name: "Copy remove command" });
     const before = cards()[0];
     store.set({ url: { ...store.getState().url, selected: CHROME.id } });
     expect(cards()[0]).toBe(before);
@@ -101,14 +101,14 @@ describe("easy-wins", () => {
     vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockRejectedValue(new Error("down")));
     showScan("wins", makeScan({ items: [CHROME] }));
     mount("easy-wins");
-    expect(await screen.findByText("Remove command unavailable: down")).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveAttribute('aria-label', 'Remove command unavailable: down');
   });
 
   it("shows no command for a win the backend no longer knows", async () => {
     stubRemove([]);
     showScan("wins", makeScan({ items: [CHROME] }));
     mount("easy-wins");
-    expect(await screen.findByText("No remove command")).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveAttribute('aria-label', 'No remove command');
   });
 
   it("stops listening for remove commands once it leaves the view", async () => {

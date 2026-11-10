@@ -26,22 +26,22 @@ const home = elementAt(PAGES, 0);
 
   <main class="app-msg" hidden id="app-msg">
     <div id="msg-loading">
-      <p>Scanning installed programs…</p>
+      <span aria-label="Scanning installed programs">⟳</span>
       <scan-progress variant="loading"></scan-progress>
     </div>
     <div hidden id="msg-error">
-      <p>Could not load the scan: <span id="msg-error-text"></span></p>
-      <p class="muted">Is the backend running? Start everything with <code>./run.sh</code>.</p>
+      <p><span aria-label="Could not load the scan">⚠</span> <span id="msg-error-text"></span></p>
+      <p class="muted"><span aria-label="Is the backend running? Start everything with ./run.sh.">⚙</span></p>
     </div>
   </main>
 
   <div class="app" hidden id="app">
     <header class="topbar">
-      <h1>FOSS audit</h1>
+      <h1><span aria-label="FOSS audit">🗄</span></h1>
       <p class="scan-meta">
-        <span><span class="muted">host</span> <span data-meta="host"></span></span>
-        <span><span class="muted">scanned</span> <time data-meta="scanned"></time></span>
-        <span><span class="muted">took</span> <span data-meta="took"></span></span>
+        <span><span aria-label="host" class="muted">🖥</span> <span data-meta="host"></span></span>
+        <span><span aria-label="scanned" class="muted">🕒</span> <time data-meta="scanned"></time></span>
+        <span><span aria-label="took" class="muted">⏱</span> <span data-meta="took"></span></span>
       </p>
       <scan-progress variant="header"></scan-progress>
       <input
@@ -50,7 +50,7 @@ const home = elementAt(PAGES, 0);
         placeholder="Search name or id, typos ok  (/)"
         type="search"
       />
-      <button class="btn btn-primary" id="rescan" type="button">Rescan</button>
+      <button aria-label="Rescan" class="btn btn-primary" id="rescan" type="button">⟳</button>
     </header>
     <error-banner></error-banner>
     <nav aria-label="Views" class="tabs">

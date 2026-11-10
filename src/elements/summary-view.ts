@@ -45,8 +45,8 @@ function promptButton(items: readonly Item[]): HTMLElement | null {
   if (candidates.length === 0) return null;
   const button = buildButton(
     async (): Promise<string> => buildBulkPrompt(await withRemoves(candidates)),
+    `⧉ ${numberFormat.format(candidates.length)}`,
     `Copy Claude prompt for all ${numberFormat.format(candidates.length)}`,
-    "Copy one Claude prompt to research, suggest and install FOSS alternatives for every non-FOSS item",
   );
   return html("p", { class: "headline-text" }, button);
 }
@@ -115,7 +115,7 @@ export class SummaryView extends StoreElement {
     const bySource = html(
       "section",
       { "aria-labelledby": "by-source", class: "card" },
-      html("h2", { id: "by-source" }, "Verdicts by source"),
+      html("h2", { "aria-label": "Verdicts by source", id: "by-source" }, html("span", { "aria-hidden": "true", class: "icon" }, "⚙")),
       caption,
       chart,
     );

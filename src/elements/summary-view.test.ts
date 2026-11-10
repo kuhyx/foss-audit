@@ -135,7 +135,7 @@ describe("summary-view", () => {
     mount("summary-view");
     expect(mock).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Copy Claude prompt for all 6" }));
-    await screen.findByText("Copied");
+    await screen.findByLabelText("Copied");
     expect(postedIds(mock)[0]).toHaveLength(6);
     expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^Replace 6 non-FOSS items with FOSS alternatives\n/u));
   });
