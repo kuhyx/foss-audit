@@ -13,6 +13,18 @@
       "foss",
       "OpenJDK: GPL-2.0 with Classpath exception"
     ],
+    "mingw-w64-crt": [
+      "foss",
+      "COPYING.MinGW-w64*: ZPL-2.1 overall, BSD/MIT/public-domain parts; Arch labels it LicenseRef-custom"
+    ],
+    "mingw-w64-headers": [
+      "foss",
+      "COPYING.MinGW-w64*: ZPL-2.1 overall, BSD/MIT/public-domain parts; Arch labels it LicenseRef-custom"
+    ],
+    "mingw-w64-winpthreads": [
+      "foss",
+      "COPYING.MinGW-w64*: ZPL-2.1 overall, BSD/MIT/public-domain parts; Arch labels it LicenseRef-custom"
+    ],
     "gamescope": [
       "foss",
       "BSD-2-Clause; bundled ReShade effect compiler is BSD-3-Clause"
