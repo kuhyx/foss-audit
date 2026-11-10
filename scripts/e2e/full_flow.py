@@ -67,10 +67,7 @@ class Flow:
 
     def sort_every_column(self) -> None:
         names = list(
-            self.p.js(
-                "[...document.querySelectorAll('.th-button')]"
-                ".map((b) => b.textContent.replace(/[▲▼↑↓]/g, '').trim())"
-            )
+            self.p.js("[...document.querySelectorAll('.th-button')].map((b) => b.getAttribute('aria-label'))")
         )
         check(len(names) >= 3, f"only {len(names)} sortable headers")
         changed = []
@@ -91,7 +88,7 @@ class Flow:
         nonfree = {i["id"] for i in self.items if i["verdict"] == "nonfree"}
         chip = (
             "[...document.querySelectorAll('.chips[aria-label=\"Verdict\"] .chip')]"
-            ".find((c) => c.textContent.startsWith('Non-free'))"
+            ".find((c) => c.dataset.value === 'nonfree')"
         )
         self.p.js(f"{chip}.click()")
         self.p.b.wait("new URLSearchParams(location.search).has('v')", "a verdict filter in the URL")
@@ -114,9 +111,7 @@ class Flow:
         expect = sum(1 for r in rows if r["id"] in nonfree)
         check(narrowed == expect, f"firefox + Non-free shows {narrowed}, expected {expect}")
         self.reload_keeps_state()
-        reset = (
-            "[...document.querySelectorAll('.filters button')].find((b) => b.textContent.includes('Reset'))"
-        )
+        reset = "document.querySelector('.filters button[aria-label=\"Reset filters\"]')"
         self.p.js(f"{reset}.click()")
         self.p.b.wait(f"__fa.shown() === {self.total}", "reset to restore every row")
         self.notes.append(
@@ -188,8 +183,9 @@ class Flow:
             "the detail panel",
         )
         check(self.param("sel") == row_id, f"sel={self.param('sel')}, clicked {row_id}")
-        text = str(self.p.js("document.querySelector('.panel').innerText"))
-        check("Alternative" in text or "alternative" in text, "detail panel has no alternatives section")
+        # Section headings are glyphs; their spoken name is the aria-label.
+        has_alt = self.p.js("document.querySelector('.panel h3[aria-label=\"FOSS alternative\"]') !== null")
+        check(bool(has_alt), "detail panel has no alternatives section")
         self.p.b.key("Escape")
         self.p.b.wait(
             "(() => { const p = document.querySelector('.panel');"

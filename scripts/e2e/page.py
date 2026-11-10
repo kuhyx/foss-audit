@@ -76,9 +76,9 @@ window.__fa = {
     input.select();
   },
   button: (prefix) => [...document.querySelectorAll('.selection-bar button')]
-    .find((b) => b.textContent.startsWith(prefix)),
+    .find((b) => (b.getAttribute('aria-label') ?? '').startsWith(prefix)),
   sortButton: (column) => [...document.querySelectorAll('.th-button')]
-    .find((b) => b.textContent.trim().startsWith(column)),
+    .find((b) => b.getAttribute('aria-label') === column),
   center(el) {
     const r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -192,7 +192,10 @@ class Page:
         box = self.js(f"__fa.center({finder})")
         self.b.click(box["x"], box["y"])
         self.b.wait(f"window.__copied.length > {before}", f"'{prefix}' to write the clipboard")
-        self.b.wait(f"{finder}.nextElementSibling.textContent === 'Copied'", f"'{prefix}' to report Copied")
+        self.b.wait(
+            f"{finder}.nextElementSibling.getAttribute('aria-label') === 'Copied'",
+            f"'{prefix}' to report Copied",
+        )
         text = str(self.js(f"window.__copied[{before}]"))
         if self.js("navigator.clipboard.readText()") != text:
             raise AssertionError(f"system clipboard does not hold what '{prefix}' copied")

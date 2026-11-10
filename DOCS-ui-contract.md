@@ -42,6 +42,10 @@ Remove commands: `src/client/remove-api.ts` (`withRemove(s)`,
 - Hosts are `display: contents` (`src/styles/elements.css`). Observe inner
   boxes (`.table-scroll`, `.chart`) with `observeWidth`, never a host.
 - Text goes in as text (`html()` in `src/render/dom.ts`), never as HTML.
+- No visible chrome words (textgate): the UI paints only scan content (names, ids, versions, sources, licences,
+  commands, evidence) plus glyphs from `src/render/glyph.ts`, one glyph per meaning. The old wording is the
+  spoken name only (`aria-label` on `role="img"`, `aria-description`), never `title` or CSS `content`.
+  `scripts/e2e/text_free.py` (run by `scripts/e2e_selection.sh`) fails on any other painted word.
 - Rows carry `tabindex` (0 on the active row, -1 on the others). items-table
   refocuses `.tr.row[data-id=<prev>]` (scrolling the window to it) when
   `url.selected` goes from an id to null; full_flow step 6 asserts it.

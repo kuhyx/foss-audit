@@ -12,7 +12,8 @@
 # Serves the scan file through the real backend (--scan-file, no live scan)
 # and dist/ through `astro preview` with its /api proxy, on ports of its own
 # (E2E_API_PORT / E2E_UI_PORT, default 5291 / 5290), then drives the UI with
-# scripts/e2e/selection_flow.py. Exit 0 = every step passed. Screenshots:
+# scripts/e2e/selection_flow.py, full_flow.py and text_free.py (no visible chrome
+# words). Exit 0 = every step passed. Screenshots (text_free: /tmp/fa-e2e-text/):
 # /tmp/fa-e2e-table.png, /tmp/fa-e2e-bar.png (and /tmp/fa-e2e-fail.png).
 # Nothing on the clipboard is ever run.
 # ============================================================================
@@ -112,6 +113,11 @@ main() {
     if ((status == 0)); then
         python3 "${SCRIPT_DIR}/e2e/full_flow.py" "http://127.0.0.1:${UI_PORT}" "$SCAN_FILE" \
             "${SHOT_DIR}/fa-e2e-full-fail.png" "$@" || status=$?
+    fi
+    if ((status == 0)); then
+        # textgate: every screen paints only scan content and glyphs.
+        mkdir -p "${SHOT_DIR}/fa-e2e-text"
+        python3 "${SCRIPT_DIR}/e2e/text_free.py" "http://127.0.0.1:${UI_PORT}" "${SHOT_DIR}/fa-e2e-text" | tail -20 || status=$?
     fi
     if ((status == 0)); then
         echo "PASS e2e_selection in $(elapsed) s"
