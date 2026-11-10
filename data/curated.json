@@ -1172,16 +1172,16 @@
     },
     "com.google.android.gms:play-services-auth*": {
       "names": [
-        "Own plugin google_account_token 0.1.0 in ~/src/utils (AccountManager, one-tap, no browser); replaces google_sign_in in 9 apps since 2026-11-02 (fit good, effort M)",
-        "AppAuth (net.openid:appauth 0.11.1, Apache-2.0, GitHub openid/AppAuth-Android LICENSE; last release 2021-12, repo pushed 2026-03) via flutter_appauth (BSD-3-Clause, LICENSE in MaikuB/flutter_appauth, pushed 2026-10): browser OAuth with Google as IdP, ID token then fed to FirebaseAuth signInWithCredential (fit good, effort L)",
-        "microG org.microg.gms:play-services-auth / -auth-base / -auth-api-phone 0.3.6.244735 (Apache-2.0 per Maven pom; fit partial, effort L): old GoogleSignIn API only, no Credential Manager, google_sign_in_android 7.x will not build against it",
+        "Own plugin google_account_token 0.1.0 in ~/src/utils (MIT, kuhyx/utils LICENSE, pushed 2026-11-10; AccountManager, one-tap, no browser); replaces google_sign_in in 9 apps since 2026-11-02 (fit good, effort M)",
+        "AppAuth (net.openid:appauth 0.11.1, Apache-2.0, GitHub openid/AppAuth-Android LICENSE; last release 2021-12, repo pushed 2026-03-22) via flutter_appauth 13.0.0 (BSD-3-Clause, flutter_appauth/LICENSE in MaikuB/flutter_appauth, released 2026-10-30): browser OAuth with Google as IdP, ID token then fed to FirebaseAuth signInWithCredential (fit good, effort L); kuhy rejected leaving the app to sign in",
+        "microG org.microg.gms:play-services-auth / -auth-base / -auth-api-phone / -auth-blockstore 0.3.14.250932 (Apache-2.0 per Maven Central pom; microg/GmsCore pushed 2026-11-04; fit partial, effort L): old GoogleSignIn API only, no Credential Manager, google_sign_in_android 7.x will not build against it",
         "Firebase Auth email/password (drops Google sign-in; firebase-auth itself is still non-free, fit partial, effort M)"
       ],
       "candidates": ["google_account_token", "net.openid:appauth", "flutter_appauth", "org.microg.gms:play-services-auth"],
-      "fit": "partial",
-      "effort": "L",
-      "effortReason": "Pulled by google_sign_in_android 7.2.18 in 10 Flutter apps (todo, tutor, diet-guard, home_inventory, kartka, home-guard, leetcode-guard, wake-alarm, crdt_sync_flutter); each needs a new sign-in flow, OAuth client and phone test",
-      "lockIn": "Your Firebase-only sync rule assumes Google sign-in; AppAuth keeps the Google account but loses one-tap/Credential Manager UX",
+      "fit": "good",
+      "effort": "M",
+      "effortReason": "Checked 2026-11-10: still pulled by google_sign_in_android 7.2.18 in sufler, punchme, restaurant-rater and (via google_sign_in 7.2.0) workout_app; the other 9 apps already use google_account_token; each of the 4 needs the same swap plus a phone sign-in test",
+      "lockIn": "The token still comes from the phone's Google account service (GMS on stock Android); only the app's own code is FOSS",
       "onlySource": "maven-cache"
     },
     "com.google.android.gms:play-services-identity-credentials": {
