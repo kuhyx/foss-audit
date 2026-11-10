@@ -35,6 +35,16 @@ easy-wins,
   line-height: 1;
 }
 
+/* Where the mark replaced a label (tiles, legend, chips) it must read at a glance. */
+.tile-label .verdict-mark,
+.legend .verdict-mark {
+  font-size: 1.5rem;
+}
+
+.chip .verdict-mark {
+  font-size: 1.25rem;
+}
+
 .bars {
   color: var(--accent);
   letter-spacing: -0.1em;

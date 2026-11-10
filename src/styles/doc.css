@@ -55,3 +55,8 @@
   columns: 3;
   padding-left: var(--space-4);
 }
+
+/* index.astro's inline head script sets .app-boot: the app replaces the docs prose before it ever paints. */
+.app-boot #home {
+  display: none;
+}

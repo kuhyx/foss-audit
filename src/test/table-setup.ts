@@ -43,7 +43,8 @@ export function paintedWords(node: Element): string[] {
   const words: string[] = [];
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
   for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
-    if (text.parentElement?.closest('[aria-hidden="true"], .sr-only') != null) continue;
+    // aria-hidden only silences a node; it still paints, so it counts here.
+    if (text.parentElement?.closest(".sr-only") != null) continue;
     words.push(...(text.textContent?.match(/[A-Za-z]{2,}/gu) ?? []));
   }
   return words;

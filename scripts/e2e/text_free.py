@@ -29,7 +29,8 @@ PROBE = """
     const t = n.textContent.trim();
     if (!/[A-Za-z]{2,}/.test(t)) continue;
     const el = n.parentElement;
-    if (el.closest('[aria-hidden="true"], .sr-only, script, style, template, [hidden], code, time')) continue;
+    // aria-hidden text still paints, so it is checked too; only unpainted or content nodes are skipped.
+    if (el.closest('.sr-only, script, style, template, [hidden], code, time')) continue;
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
     if (getComputedStyle(el).visibility === 'hidden') continue;
