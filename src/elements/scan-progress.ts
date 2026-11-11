@@ -50,8 +50,8 @@ function loadingView(progress: Progress): HTMLElement {
 
 function headerView(progress: null | Progress, age: HTMLElement | null): HTMLElement {
   if (progress === null) return html("p", { class: "scan-live" }, age);
-  const steps = [`${progress.sourcesDone}/${progress.sourcesTotal}`, ...visibleRunning(progress).map((source) => runningLabel(source))];
-  const text = html("span", { "aria-label": "Rescan progress", class: "scan-live-text" }, steps.join(" · "));
+  // Digits only: source names are words, and the loading view already lists them on the first scan.
+  const text = html("span", { "aria-label": "Rescan progress", class: "scan-live-text" }, `${progress.sourcesDone}/${progress.sourcesTotal}`);
   return html("p", { class: "scan-live" }, bar(progress), text, age);
 }
 

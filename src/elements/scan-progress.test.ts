@@ -113,7 +113,7 @@ describe("scan-progress variant=header", () => {
     refreshing();
     store.set({ progress: makeProgress({ running: RUNNING.slice(0, 1), sourcesDone: 14 }) });
     expect(document.querySelector("p.scan-live")).not.toBeNull();
-    expect(screen.getByLabelText("Rescan progress")).toHaveTextContent("14/26 · npm-cache 3400/12000");
+    expect(screen.getByLabelText("Rescan progress")).toHaveTextContent(/^14\/26$/u);
     expect(screen.getByLabelText("Scan age")).toHaveTextContent("5m");
   });
 
@@ -121,7 +121,7 @@ describe("scan-progress variant=header", () => {
     mount("scan-progress", { variant: "header" });
     refreshing();
     store.set({ progress: makeProgress({ running: [{ done: 0, source: "npm-cache", total: null }, ...RUNNING.slice(1)] }) });
-    expect(screen.getByLabelText("Rescan progress")).toHaveTextContent("0/26 · pip-cache 57");
+    expect(screen.getByLabelText("Rescan progress")).toHaveTextContent(/^0\/26$/u);
   });
 
   it("shows only the age before the first progress reply and keeps it current", () => {
