@@ -91,7 +91,11 @@ wait_healthy() {
 }
 
 main() {
-    update_checkout
+    # The pull may change this very script: rerun the pulled copy once.
+    if [[ "${FOSS_AUDIT_DEPLOY_PULLED:-}" != 1 ]]; then
+        update_checkout
+        FOSS_AUDIT_DEPLOY_PULLED=1 exec "${REPO}/scripts/deploy.sh" "$@"
+    fi
     install_unit
     install_launcher
     # Build with the old servers stopped: never rebuild a dist that is being
