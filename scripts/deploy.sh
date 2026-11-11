@@ -2,7 +2,7 @@
 
 # ============================================================================
 # Deploy foss-audit for real: update the live checkout (~/src/foss-audit),
-# install and restart the systemd --user unit that serves it, point the
+# build it, install and restart the systemd --user unit that serves it, point the
 # dmenu/rofi launcher at the running UI, then health-check the live URLs.
 #
 #   scripts/deploy.sh
@@ -69,9 +69,9 @@ Categories=System;" || true
 
 healthy() {
     local want="$1"
-    curl -fsS -o /dev/null --max-time 2 "${API_URL}/api/health" \
-        && curl -fsS -o /dev/null --max-time 2 "${UI_URL}/api/health" \
-        && [[ "$(curl -fsS --max-time 2 "${UI_URL}/version.txt")" == "$want" ]] \
+    curl -fs -o /dev/null --max-time 2 "${API_URL}/api/health" \
+        && curl -fs -o /dev/null --max-time 2 "${UI_URL}/api/health" \
+        && [[ "$(curl -fs --max-time 2 "${UI_URL}/version.txt")" == "$want" ]] \
         && systemctl --user is-active --quiet "$UNIT"
 }
 
@@ -94,7 +94,11 @@ main() {
     update_checkout
     install_unit
     install_launcher
-    systemctl --user restart "$UNIT"
+    # Build with the old servers stopped: never rebuild a dist that is being
+    # served, and the API's startup scan would starve the build of CPU.
+    systemctl --user stop "$UNIT"
+    nice -n 10 "${REPO}/run.sh" --build-only >/dev/null || die "build failed (run: ${REPO}/run.sh --build-only)"
+    systemctl --user start "$UNIT"
     wait_healthy
 }
 

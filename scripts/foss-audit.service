@@ -8,10 +8,11 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=@REPO@
-# run.sh --build installs deps, builds dist/ (stamped with the commit hash) and
-# serves it; it exits when either server dies, so systemd restarts both. A clean exit (0) only
-# happens when run.sh found a fresh instance already serving.
-ExecStart=@REPO@/run.sh --build --no-open
+# Serves dist/ as scripts/deploy.sh built it (stamped with the commit hash):
+# building here would race the API's startup scan for CPU (>60 s). run.sh
+# exits when either server dies, so systemd restarts both. A clean exit (0)
+# only happens when run.sh found a fresh instance already serving.
+ExecStart=@REPO@/run.sh --prebuilt --no-open
 Restart=on-failure
 RestartSec=5
 

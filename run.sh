@@ -10,6 +10,8 @@
 #   ./run.sh --scan-file PATH    serve a saved `python -m foss_audit.scan` output
 #   ./run.sh --no-open           do not launch a browser (headless use)
 #   ./run.sh --install-launcher  add foss-audit to dmenu/rofi, then exit
+#   ./run.sh --build-only        install deps and build dist/, then exit
+#   ./run.sh --prebuilt          like --build, but serve dist/ as built (service)
 #
 # Both servers bind 127.0.0.1 only; Ctrl-C (or closing the terminal) stops both.
 # If foss-audit is already running and newer than its sources, run.sh just opens
@@ -34,6 +36,7 @@ readonly LAUNCHER_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/applications"
 PORT=5190
 API_PORT=5191
 PRODUCTION_BUILD=false
+BUILD_MODE=serve
 OPEN_BROWSER=true
 SCAN_FILE=""
 API_PID=""
@@ -76,7 +79,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 usage() {
-    sed -n '4,17p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '4,19p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -148,8 +151,10 @@ start_ui() {
     port_in_use "$PORT" && die "port ${PORT} is already in use; try --port"
     export FOSS_AUDIT_API_PORT="$API_PORT"
     if [[ "$PRODUCTION_BUILD" == true ]]; then
-        echo "==> Building for production"
-        pnpm run build
+        if [[ "$BUILD_MODE" != prebuilt ]]; then
+            echo "==> Building for production"
+            pnpm run build
+        fi
         # --ignore-lock: the port is guarded above; astro's single-instance lock
         # (and its agent auto-background) would outlive our SIGTERM of the group.
         setsid pnpm exec astro preview --ignore-lock --host 127.0.0.1 --port "$PORT" &
@@ -201,6 +206,10 @@ EOF
 
 main() {
     cd "$SCRIPT_DIR"
+    if [[ "$BUILD_MODE" == only ]]; then
+        check_node; setup_pnpm; install_dependencies; pnpm run build
+        exit 0
+    fi
     # A fresh instance is reused; a stale or half-running one is stopped first.
     if reconcile_running; then
         open_browser "http://127.0.0.1:${PORT}/"
@@ -208,13 +217,15 @@ main() {
     fi
     check_node
     setup_pnpm
-    install_dependencies
+    [[ "$BUILD_MODE" == prebuilt ]] || install_dependencies
     serve
 }
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --build) PRODUCTION_BUILD=true; shift ;;
+        --build-only) BUILD_MODE=only; shift ;;
+        --prebuilt) PRODUCTION_BUILD=true; BUILD_MODE=prebuilt; shift ;;
         --no-open) OPEN_BROWSER=false; shift ;;
         --port)
             [[ "${2:-}" =~ ^[0-9]+$ ]] || die "--port needs a number"
