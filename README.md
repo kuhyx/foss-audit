@@ -10,6 +10,7 @@ alternative, a fit rating, and the effort it would take to build one ourselves.
 ```bash
 ./run.sh            # scanner API on 127.0.0.1:5191 + UI on 127.0.0.1:5190, opens the browser
 ./run.sh --install-launcher   # adds "FOSS audit" to dmenu/rofi
+scripts/deploy.sh   # always-on: systemd --user unit foss-audit.service, launcher opens it
 ```
 
 Everything binds to localhost. The scan is live (about 1.5 s; the **Rescan**

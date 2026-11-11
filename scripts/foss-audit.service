@@ -1,0 +1,19 @@
+# foss-audit as a systemd --user service: scanner API on 127.0.0.1:5191 and the
+# production UI on 127.0.0.1:5190. Template; scripts/deploy.sh replaces @REPO@
+# with the live checkout and installs it to ~/.config/systemd/user/.
+[Unit]
+Description=foss-audit (FOSS audit UI and scanner API)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO@
+# run.sh --build installs deps, builds dist/ (stamped with the commit hash) and
+# serves it; it exits when either server dies, so systemd restarts both. A clean exit (0) only
+# happens when run.sh found a fresh instance already serving.
+ExecStart=@REPO@/run.sh --build --no-open
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

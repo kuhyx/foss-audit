@@ -3,6 +3,7 @@
 - run: `./run.sh` (API on 127.0.0.1:5191 + UI on 127.0.0.1:5190; `--build`, `--port`, `--api-port`, `--scan-file`, `--no-open`, `--install-launcher`)
 - backend only: `python3 -m foss_audit.server --port 5191` (`--scan-file PATH` serves a saved scan, no live scan)
 - build: `pnpm run build`
+- deploy: `scripts/deploy.sh`
 - lint: `pnpm run lint`
 - test: `pnpm run test`
 - test-changed: `scripts/test_changed.sh`
