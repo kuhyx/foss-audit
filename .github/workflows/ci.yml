@@ -36,7 +36,7 @@ jobs:
       # Reads the pinned pnpm from package.json's packageManager field.
       - uses: pnpm/action-setup@v4
       # 24 is the engines floor; pinning CI to it catches newer-only APIs.
-      # .nvmrc is the one pin (checked by the dependency-freshness gate).
+      # .nvmrc is the one pin (checked by the local dependency-freshness hook).
       - uses: actions/setup-node@v4
         with:
           cache: pnpm

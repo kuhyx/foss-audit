@@ -32,9 +32,9 @@ jobs:
         with:
           python-version: "3.x"
 
-      # Node comes from .nvmrc (the dependency-freshness pin). Without one the
+      # Node comes from .nvmrc (pinned by the local dependency-freshness hook). Without one the
       # runner's preinstalled Node builds the site; a channel name like lts/*
-      # here would turn the dependency-freshness gate red in every site repo.
+      # here would conflict with the local dependency-freshness hook.
       - name: Set up Node (pinned by .nvmrc)
         if: hashFiles('.nvmrc') != ''
         uses: actions/setup-node@v4
