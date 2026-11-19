@@ -29,7 +29,7 @@ function checkedWithRemoves(): Promise<RemovableItem[]> {
 
 // The commands are fetched when a copy button is used, for whatever is checked at that moment; nothing is ever run.
 function copyButton(label: string, build: () => Promise<string>): CopyButton {
-  const button = document.createElement("copy-button") as CopyButton;
+  const button = document.createElement("copy-button");
   button.setAttribute("label", label);
   button.build = build;
   return button;

@@ -93,3 +93,9 @@ export class CopyButton extends HTMLElement {
 }
 
 define("copy-button", CopyButton);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "copy-button": CopyButton;
+  }
+}

@@ -2,7 +2,7 @@ import "./copy-button.ts";
 import type { CopyButton } from "./copy-button.ts";
 
 function mount(attributes: Record<string, string> = {}): CopyButton {
-  const element = document.createElement("copy-button") as CopyButton;
+  const element = document.createElement("copy-button");
   for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
   document.body.append(element);
   return element;
@@ -49,7 +49,7 @@ describe("copy-button", () => {
 
   it("builds long text on click behind a named button without printing it", async () => {
     const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
-    const element = document.createElement("copy-button") as CopyButton;
+    const element = document.createElement("copy-button");
     element.build = (): Promise<string> => Promise.resolve("a long prompt");
     element.setAttribute("button-text", "Copy Claude prompt");
     element.setAttribute("show-text", "false");

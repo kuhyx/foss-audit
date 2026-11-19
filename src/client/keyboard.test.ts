@@ -1,8 +1,8 @@
 import { actionFor, APP_KEYS, isTypingTarget, startKeyboard } from "./keyboard.ts";
 import { resetStore, store } from "./store.ts";
 
-function event(key: string, target: EventTarget | null = document.body, modifiers = {}) {
-  return { altKey: false, ctrlKey: false, key, metaKey: false, target, ...modifiers };
+function event(key: string, options: Partial<{ altKey: boolean; ctrlKey: boolean; metaKey: boolean; target: EventTarget | null }> = {}) {
+  return { altKey: false, ctrlKey: false, key, metaKey: false, target: document.body, ...options };
 }
 
 describe("actionFor", () => {
@@ -14,16 +14,16 @@ describe("actionFor", () => {
   });
 
   it("ignores chords", () => {
-    expect(actionFor(event("/", document.body, { ctrlKey: true }))).toBeNull();
-    expect(actionFor(event("/", document.body, { metaKey: true }))).toBeNull();
-    expect(actionFor(event("/", document.body, { altKey: true }))).toBeNull();
+    expect(actionFor(event("/", { ctrlKey: true }))).toBeNull();
+    expect(actionFor(event("/", { metaKey: true }))).toBeNull();
+    expect(actionFor(event("/", { altKey: true }))).toBeNull();
   });
 
   it("lets / and ? be typed into fields but still honours Escape", () => {
     const input = document.createElement("input");
-    expect(actionFor(event("/", input))).toBeNull();
-    expect(actionFor(event("?", input))).toBeNull();
-    expect(actionFor(event("Escape", input))).toBe("onEscape");
+    expect(actionFor(event("/", { target: input }))).toBeNull();
+    expect(actionFor(event("?", { target: input }))).toBeNull();
+    expect(actionFor(event("Escape", { target: input }))).toBe("onEscape");
   });
 });
 

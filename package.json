@@ -9,7 +9,7 @@
     "node": ">=24",
     "pnpm": ">=10"
   },
-  "packageManager": "pnpm@12.18.0",
+  "packageManager": "pnpm@12.21.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@kuhyx/web-ui": "github:kuhyx/utils#web_ui-v0.5.0&path:/web_ui",
-    "astro": "7.4.8",
+    "astro": "7.4.12",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -28,17 +28,17 @@
     "@eslint/js": "10.0.1",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
-    "@testing-library/user-event": "14.6.9",
+    "@testing-library/user-event": "14.6.12",
     "@types/node": "26.6.6",
-    "@vitest/coverage-v8": "5.1.0",
-    "eslint": "10.14.0",
+    "@vitest/coverage-v8": "5.1.1",
+    "eslint": "10.15.0",
     "eslint-plugin-astro": "3.2.1",
-    "eslint-plugin-perfectionist": "5.13.0",
+    "eslint-plugin-perfectionist": "5.14.0",
     "eslint-plugin-sonarjs": "4.2.2",
-    "eslint-plugin-unicorn": "79.0.0",
-    "jsdom": "31.0.0",
+    "eslint-plugin-unicorn": "80.0.0",
+    "jsdom": "31.0.1",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.2",
-    "vitest": "5.1.0"
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.1.1"
   }
 }
