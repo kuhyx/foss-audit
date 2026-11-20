@@ -668,6 +668,595 @@
       "lockIn": "Binds proprietary libcuda; the real lock-in is the nvidia-* wheels. CPU torch loses the 3090 (diffusion/TTS much slower) and still shows as 'torch' in the scan; Vulkan runtimes drop diffusers/peft and chatterbox-tts 0.1.7; tinygrad needs every model rewritten",
       "onlySource": "pip-cache"
     },
+    "cuda-toolkit": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.2.2, 13.0.3.0, 13.0.2, 12.8.1 no licence metadata; newest 13.5.0 (2026-11-04) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cublas": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.4.1.3 no licence metadata; 13.1.1.3 LicenseRef-NVIDIA-Proprietary; newest 13.10.1.6 (2026-11-17) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cublas-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.9.3.13, 12.9.2.10 LicenseRef-NVIDIA-Proprietary; 12.8.4.1 NVIDIA Proprietary Software; newest 12.9.3.13 (2026-10-30) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-cccl": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.3.5.0.6 LicenseRef-NVIDIA-Proprietary; newest 13.3.5.0.6 (2026-11-04) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-cupti": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.2.86 no licence metadata; 13.0.85 LicenseRef-NVIDIA-Proprietary; newest 13.5.25 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-cupti-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.8.90 NVIDIA Proprietary Software; newest 12.9.79 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-nvrtc": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.2.86 no licence metadata; 13.0.88 LicenseRef-NVIDIA-Proprietary; newest 13.5.37 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-nvrtc-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.9.86 LicenseRef-NVIDIA-Proprietary; 12.8.93 NVIDIA Proprietary Software; newest 12.9.86 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-runtime": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.2.86, 13.0.96 no licence metadata; newest 13.5.37 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cuda-runtime-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.8.90 NVIDIA Proprietary Software; newest 12.9.79 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cudnn-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 9.19.0.56 no licence metadata; 9.10.2.21 LicenseRef-NVIDIA-Proprietary; newest 9.28.1.4 (2026-11-06) no licence metadata. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cudnn-cu13": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 9.26.0.51, 9.24.0.43, 9.20.0.48 no licence metadata; newest 9.28.1.4 (2026-11-06) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cufft": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.2.0.57 no licence metadata; 12.0.0.61 LicenseRef-NVIDIA-Proprietary; newest 12.5.0.14 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cufft-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 11.3.3.83 NVIDIA Proprietary Software; newest 11.4.1.4 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cufile": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 1.17.1.22 no licence metadata; 1.15.1.6 LicenseRef-NVIDIA-Proprietary; newest 1.20.0.107 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cufile-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 1.13.1.3 NVIDIA Proprietary Software; newest 1.14.1.1 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-curand": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 10.4.0.35 LicenseRef-NVIDIA-Proprietary; newest 10.4.5.25 (2026-11-04) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-curand-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 10.3.9.90 NVIDIA Proprietary Software; newest 10.3.10.19 (2025-05-01) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cusolver": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.2.0.11 no licence metadata; 12.0.4.66 LicenseRef-NVIDIA-Proprietary; newest 12.4.1.2 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cusolver-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 11.7.3.90 NVIDIA Proprietary Software; newest 11.7.5.82 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cusparse": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.7.10.12 no licence metadata; 12.6.3.3 LicenseRef-NVIDIA-Proprietary; newest 12.9.4.2 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cusparse-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.5.8.93 NVIDIA Proprietary Software; newest 12.5.10.65 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cusparselt-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 0.7.1 NVIDIA Proprietary Software; newest 0.8.1 (2025-09-05) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-cusparselt-cu13": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 0.8.1 NVIDIA Proprietary Software; newest 0.10.0 (2026-09-30) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nccl-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 2.28.9 no licence metadata; 2.27.5, 2.27.3 BSD-3-Clause; newest 2.32.6 (2026-11-11) no licence metadata. FOSS: BSD-3-Clause in 2.27.5, 2.27.3. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nccl-cu13": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 2.30.7, 2.29.7 no licence metadata; newest 2.32.6 (2026-11-11) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nvjitlink": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.4.92, 13.0.88 LicenseRef-NVIDIA-Proprietary; 13.3.33 no licence metadata; newest 13.5.37 (2026-11-04) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nvjitlink-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 12.8.93 NVIDIA Proprietary Software; newest 12.9.86 (2025-06-05) LicenseRef-NVIDIA-Proprietary. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nvshmem-cu12": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 3.4.5 no licence metadata; newest 3.8.0 (2026-09-22) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nvshmem-cu13": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 3.7.2, 3.4.5 no licence metadata; newest 3.8.0 (2026-09-22) same. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
+    "nvidia-nvtx": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "PyPI: 13.2.86 no licence metadata; 13.0.85 Apache 2.0; newest 13.5.25 (2026-11-04) LicenseRef-NVIDIA-Proprietary. FOSS: Apache 2.0 in 13.0.85. Pulled in by CUDA torch (artgate-gen, mangatl, sufler/tts); dropping it means a torch without CUDA (see cuda-bindings)",
+      "lockIn": "Proprietary NVIDIA runtime library; CPU torch loses the RTX 3090, Vulkan runtimes need a model port, tinygrad needs a rewrite",
+      "onlySource": "pip-cache"
+    },
     "cudnn": {
       "names": [
         "MIOpen (AMD only)",

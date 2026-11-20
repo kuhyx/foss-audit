@@ -96,3 +96,25 @@ def test_real_file_has_pip_cache_cuda_alternatives() -> None:
     assert "python-pytorch" in alt["candidates"]
     # onlySource keeps the pip-cache research off any other source.
     assert real.alternative_for(Item(name="cuda-bindings", source="pip-user", verdict="nonfree")) is None
+
+
+CUDA_WHEELS = (
+    "cuda-bindings", "cuda-toolkit", "nvidia-cublas", "nvidia-cublas-cu12", "nvidia-cuda-cccl",
+    "nvidia-cuda-cupti", "nvidia-cuda-cupti-cu12", "nvidia-cuda-nvrtc", "nvidia-cuda-nvrtc-cu12",
+    "nvidia-cuda-runtime", "nvidia-cuda-runtime-cu12", "nvidia-cudnn-cu12", "nvidia-cudnn-cu13",
+    "nvidia-cufft", "nvidia-cufft-cu12", "nvidia-cufile", "nvidia-cufile-cu12", "nvidia-curand",
+    "nvidia-curand-cu12", "nvidia-cusolver", "nvidia-cusolver-cu12", "nvidia-cusparse",
+    "nvidia-cusparse-cu12", "nvidia-cusparselt-cu12", "nvidia-cusparselt-cu13", "nvidia-nccl-cu12",
+    "nvidia-nccl-cu13", "nvidia-nvjitlink", "nvidia-nvjitlink-cu12", "nvidia-nvshmem-cu12",
+    "nvidia-nvshmem-cu13", "nvidia-nvtx",
+)  # fmt: skip
+
+
+def test_real_file_curates_every_cuda_wheel() -> None:
+    real = Curated.load()
+    assert len(CUDA_WHEELS) == 32
+    for name in CUDA_WHEELS:
+        alt = real.alternative_for(Item(name=name, source="pip-cache", verdict="nonfree"))
+        assert alt is not None, name
+        assert "python-pytorch" in alt["candidates"], name
+        assert real.alternative_for(Item(name=name, source="pip-user", verdict="nonfree")) is None, name
