@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import stat
 import subprocess
 import tomllib
 from functools import cache
@@ -24,6 +25,10 @@ REPO_ROOTS = (HOME / "src",)
 EXTRA_REPOS = (HOME / ".claude",)
 OWN_MARKER = "github.com/kuhyx/"
 REPO_SLUG = re.compile(r"github\.com[/:]kuhyx/([\w.-]+?)(?:\.git)?(?=[/#?\s]|$)", re.MULTILINE)
+# Content-hash tracing only hashes tracked files in this size window: tiny
+# stubs match anything, big files are never installed scripts.
+MIN_HASHED_BYTES = 64
+MAX_HASHED_BYTES = 1 << 20
 SOURCE_EXT = re.compile(r"\.(sh|bash|py|dart|go|rs|c|cc|cpp|js|ts)$")
 LICENSE_FILE = re.compile(r"(?i)^(licen[cs]e|copying)([.-].*)?$")
 # Distinctive phrase of each common license text. The phrase that appears
@@ -163,6 +168,13 @@ def script_key(name: str) -> str:
     return SOURCE_EXT.sub("", key)
 
 
+def _ls_files(repo: Path) -> list[str]:
+    out = subprocess.run(
+        ["git", "-C", str(repo), "ls-files", "-z"], capture_output=True, text=True, check=False
+    ).stdout
+    return [rel for rel in out.split("\0") if rel]
+
+
 @cache
 def tracked_by_name() -> dict[str, tuple[Path, ...]]:
     """script_key -> tracked paths across kuhy's repos (one `git ls-files` each).
@@ -173,10 +185,7 @@ def tracked_by_name() -> dict[str, tuple[Path, ...]]:
     index: dict[str, list[Path]] = {}
     by_dir: dict[str, list[Path]] = {}
     for repo in kuhy_repos():
-        out = subprocess.run(
-            ["git", "-C", str(repo), "ls-files", "-z"], capture_output=True, text=True, check=False
-        ).stdout
-        for rel in filter(None, out.split("\0")):
+        for rel in _ls_files(repo):
             path = Path(rel)
             index.setdefault(script_key(path.name), []).append(repo / rel)
             if path.parent.name:
@@ -187,15 +196,45 @@ def tracked_by_name() -> dict[str, tuple[Path, ...]]:
     return {k: tuple(v) for k, v in (by_dir | index).items()}
 
 
+@cache
+def tracked_by_size() -> dict[int, tuple[Path, ...]]:
+    """size -> tracked regular files of that size (stat only, nothing is read).
+
+    Bounded: only files inside the MIN/MAX_HASHED_BYTES window; symlinks and
+    files deleted from the work tree are skipped.
+    """
+    index: dict[int, list[Path]] = {}
+    for repo in kuhy_repos():
+        for rel in _ls_files(repo):
+            try:
+                info = (repo / rel).lstat()
+            except OSError:
+                continue
+            if stat.S_ISREG(info.st_mode) and MIN_HASHED_BYTES <= info.st_size <= MAX_HASHED_BYTES:
+                index.setdefault(info.st_size, []).append(repo / rel)
+    return {k: tuple(v) for k, v in index.items()}
+
+
 def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else ""
+
+
+def _copy_of(script: Path, want: str) -> Path | None:
+    """A tracked file with exactly the script's bytes, whatever its name."""
+    try:
+        size = script.stat().st_size
+    except OSError:
+        return None
+    return next((c for c in tracked_by_size().get(size, ()) if _digest(c) == want), None)
 
 
 def origin_of(script: Path) -> Path | None:
     """The tracked repo file a loose script was copied (or a binary built) from.
 
-    Identical content wins, else the first same-named tracked file.
+    Identical content wins (same name first, then any name: nmap_shim.sh is
+    deployed as /usr/local/bin/nmap), else the first same-named tracked file.
     """
     candidates = tracked_by_name().get(script_key(script.name), ())
     want = _digest(script)
-    return next((c for c in candidates if _digest(c) == want), candidates[0] if candidates else None)
+    same = next((c for c in candidates if _digest(c) == want), None)
+    return same or _copy_of(script, want) or (candidates[0] if candidates else None)

@@ -41,9 +41,11 @@ def fake_repo_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator
     monkeypatch.setattr(own_license, "EXTRA_REPOS", (tmp_path / ".claude",))
     own_license.kuhy_repos.cache_clear()
     own_license.tracked_by_name.cache_clear()
+    own_license.tracked_by_size.cache_clear()
     yield tmp_path
     own_license.kuhy_repos.cache_clear()
     own_license.tracked_by_name.cache_clear()
+    own_license.tracked_by_size.cache_clear()
 
 
 @pytest.fixture(autouse=True)
