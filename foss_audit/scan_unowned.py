@@ -19,7 +19,7 @@ from pathlib import Path
 from foss_audit.cited_terms import cited_item, is_elf
 from foss_audit.model import Item
 from foss_audit.own_license import origin_of
-from foss_audit.scan_misc import from_checkout, npm_items, npm_manifests, unknown
+from foss_audit.scan_misc import from_checkout, go_built_item, npm_items, npm_manifests, unknown
 from foss_audit.scan_pacman import owned_by_pacman
 
 BIN_ROOTS = (Path("/usr/bin"), Path("/usr/local/bin"))
@@ -72,9 +72,12 @@ def classify(path: Path, roots: tuple[Path, ...] | None = None) -> Item | None:
         # The program it backed up is gone; the backup still runs it.
         name, where = backup["base"], f"{path}: backup left after {backup['base']} was removed"
     origin = origin_of(path)
+    built = None if origin is not None else go_built_item(name, "unowned", path, "")
     if origin is not None:
         how = "built from" if is_elf(path) else "copy of"
         item = from_checkout(name, "unowned", origin, f"{how} {origin}")
+    elif built is not None:
+        item = built
     else:
         item = cited_item(name, path, where) or unknown(
             name,
@@ -86,7 +89,7 @@ def classify(path: Path, roots: tuple[Path, ...] | None = None) -> Item | None:
             own=not backup and not is_elf(path),
             loose=True,
         )
-        item.source = "unowned"
+    item.source = "unowned"
     item.removeCommand = f"sudo rm {path}"
     return item
 

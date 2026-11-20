@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 from foss_audit.cited_terms import cited_item, is_elf
+from foss_audit.go_buildinfo import go_checkout
 from foss_audit.licenses import classify_text
 from foss_audit.local_bin_remove import bin_remove
 from foss_audit.model import NO_LICENSE, Item
@@ -161,6 +162,18 @@ def from_checkout(name: str, source: str, path: Path, how: str) -> Item:
     )
 
 
+def go_built_item(name: str, source: str, target: Path, prefix: str) -> Item | None:
+    """An Item licensed by the kuhyx checkout a Go binary's build info names, else None."""
+    found = go_checkout(target) if target.is_file() else None
+    if found is None:
+        return None
+    module, checkout = found
+    # go.mod need not exist: only its directory is looked up for the LICENSE.
+    return from_checkout(
+        name, source, checkout / "go.mod", f"{prefix}built from Go module {module} in {checkout}"
+    )
+
+
 def classify_local_bin(path: Path, owners: dict[str, Path]) -> Item | None:
     """One ~/.local/bin entry; None when it belongs to another scanned source.
 
@@ -195,7 +208,8 @@ def classify_local_bin(path: Path, owners: dict[str, Path]) -> Item | None:
     if origin is not None:
         how = f"{link}, built from {origin}" if path.is_symlink() else f"copy of {origin}"
         return from_checkout(path.name, "local-bin", origin, how)
-    cited = cited_item(path.name, target, link)
+    built = go_built_item(path.name, "local-bin", target, f"{link}, " if path.is_symlink() else "")
+    cited = built or cited_item(path.name, target, link)
     if cited is not None or path.is_symlink():
         return cited or from_checkout(path.name, "local-bin", target, link)
     # A hand-placed script is kuhy's own; a native binary is someone else's.
