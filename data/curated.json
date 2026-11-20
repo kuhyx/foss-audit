@@ -516,6 +516,20 @@
       "foss",
       "MIT: actions/runner (upstream LICENSE); the installed runner folder ships no license file",
       "MIT"
+    ],
+    "cz.adaptech.tesseract4android:tesseract4android": [
+      "foss",
+      "Apache-2.0: LICENSE of github.com/adaptech-cz/Tesseract4Android (release 4.9.0 2025-06-11, pushed 2026-02-05); the Maven pom has no <licenses> block. Checked 2026-11-20",
+      "Apache-2.0"
+    ],
+    "@anthropic-ai/claude-agent-sdk*": [
+      "nonfree",
+      "Accepted non-free (kuhy 2026-11-20): Anthropic PBC, all rights reserved, use per https://code.claude.com/docs/en/legal-and-compliance (package.json: SEE LICENSE IN README.md/LICENSE.md); Claude tooling, no FOSS replacement. Claude Code itself is installed separately; clearing this npm cache does not affect it"
+    ],
+    "dpage/pgadmin4": [
+      "foss",
+      "PostgreSQL License: LICENSE of github.com/pgadmin-org/pgadmin4 ('released under the PostgreSQL licence', pushed 2026-11-20); the image has no license label. Checked 2026-11-20",
+      "PostgreSQL"
     ]
   },
   "alternatives": {
@@ -1304,33 +1318,41 @@
     },
     "intel-oneapi-*": {
       "names": [
-        "onetbb",
-        "libgomp/libomp",
-        "OpenBLAS"
+        "Keep: Arch's python-pytorch (and -opt, -cuda) depend on intel-oneapi-mkl; MKL runs on this AMD Ryzen 9 7900X3D, so there is no CPU need, only the licence (LicenseRef-Intel-Simplified, closed source)",
+        "Drop the system python-pytorch (explicit, nothing requires it) and use a venv torch per project (BSD-3-Clause; fit partial, effort S): the PyPI wheel statically links MKL inside libtorch_cpu.so, so the code is still Intel's, but nothing non-free is installed by pacman",
+        "PyTorch built with BLAS=OpenBLAS (cmake/Dependencies.cmake supports it; OpenBLAS BSD-3-Clause, pushed 2026-11-17) via a custom PKGBUILD (fit good, effort L): the only fully free route"
       ],
       "candidates": [
+        "openblas",
         "onetbb",
-        "openmp",
-        "openblas"
+        "openmp"
       ],
-      "fit": "drop-in",
-      "effort": null,
-      "effortReason": "Pulled in by blender and python-tensorflow; intel-oneapi-mkl is an orphan",
-      "lockIn": "Only prebuilt binaries need the closed runtimes"
+      "fit": "partial",
+      "effort": "L",
+      "effortReason": "Checked 2026-11-20: the chain is python-pytorch 2.15.0-2 (explicit, installed 2026-11-20 16:39 by pacman -S --needed --noconfirm) -> intel-oneapi-mkl -> openmp, tbb, tcm, common; blender is blender-bin and python-tensorflow is not installed. Pending kuhy: whether the system python-pytorch is needed. To drop all five: sudo pacman -Rns python-pytorch",
+      "lockIn": "Only prebuilt binaries need the closed runtimes; torch without MKL is slower on CPU math",
+      "onlySource": "pacman"
     },
     "*unrar*": {
       "names": [
-        "libarchive (bsdtar)",
-        "unar"
+        "Keep calibre and accept libunrar (fit drop-in, effort none): the unRAR licence allows use and redistribution but not building a RAR-compatible compressor, so only a free-software purist cares; libunrar is a hard dep of python-unrardll, which calibre needs. Nothing to install",
+        "Custom calibre PKGBUILD without python-unrardll (calibre GPL-3.0-only; fit good, effort M): calibre loses RAR/CBR input only, ongoing rebuild on every calibre release",
+        "book-guard drops calibre for per-format extractors (fit partial, effort L; loses calibre's other formats such as lit, lrf, pml, chm, snb, tcr, rb): libarchive 3.8.11 (BSD-2-Clause, own RAR 3/5 reader, release 2026-10-30) or unarchiver 1.10.8 (unar, LGPL-2.1; XADMaster's RAR parser is MacPaw's own LGPL code, no unRAR text) for cbz/cbr/cb7; pandoc 3.11 (GPL-2.0-or-later, release 3.14 2026-11-12) for epub, fb2, docx, odt, rtf, html but not mobi; python mobi 0.4.1 (GPL-3.0, iscc/mobi, pushed 2025-09-14, slow) for mobi/azw",
+        "unrar-free 0.6.0 (GPL-2.0-or-later per Arch, gitlab.com/bgermann/unrar-free): CLI only, no libunrar API, so it does not satisfy python-unrardll",
+        "Not clean: 7zip on this box carries LicenseRef-UnRAR too"
       ],
       "candidates": [
         "libarchive",
-        "unar"
+        "unarchiver",
+        "pandoc-cli",
+        "python-mobi",
+        "unrar-free"
       ],
-      "fit": "good",
-      "effort": null,
-      "effortReason": "",
-      "lockIn": "RAR creation is proprietary-only; extraction is covered. libunrar is pulled by calibre"
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Checked 2026-11-20: chain calibre -> python-unrardll -> libunrar (hard deps, installed 2026-11-10); calibre came from ~/src/book-guard/install.sh (ebook-convert for ~30 formats, app/lib/src/book_formats.dart) and libunrar is optional for mcomix. libunrar cannot go without dropping calibre or rebuilding it",
+      "lockIn": "RAR creation is proprietary-only; extraction is covered by libarchive and unarchiver",
+      "onlySource": "pacman"
     },
     "nmap": {
       "names": [
@@ -1756,13 +1778,13 @@
     },
     "com.google.android.gms:play-services-base*": {
       "names": [
-        "Nothing: drop its last caller, geolocator_android (play-services-location) in umbrella and workout_app, for a LocationManager-based plugin (see play-services-location); sufler and punchme release APKs already have 0 com/google/android/gms classes (fit good, effort M)",
+        "Nothing: drop its last caller, geolocator_android (play-services-location) in umbrella and workout_app, for a LocationManager-based plugin (todo 4820da39; see play-services-location); sufler and punchme release APKs already have 0 com/google/android/gms classes (fit good, effort M)",
         "microG client libs org.microg.gms:play-services-base / -basement 0.3.14.250932 (Apache-2.0 per Maven Central pom; microg/GmsCore pushed 2026-11-04; fit partial, effort L): Gradle dependencySubstitution, but the API is frozen near GMS 17.x so newer callers may not compile"
       ],
       "candidates": ["org.microg.gms:play-services-base", "org.microg.gms:play-services-basement"],
       "fit": "good",
       "effort": "M",
-      "effortReason": "Checked 2026-11-10: no ~/src gradle file names GMS/Firebase, Google sign-in and ML Kit are gone; only geolocator_android in umbrella and workout_app still pulls it, so it leaves with the play-services-location swap",
+      "effortReason": "Checked 2026-11-20: the scan finds no ~/src Gradle file that reaches it (stale cache; remove = the cache rm). The rm only clears the cache: an Android build of umbrella or workout_app fetches it again, because play-services-location 21.2.0 lists it at compile scope; it leaves for good with the geolocator swap. Same for play-services-basement",
       "lockIn": "None once geolocator is replaced; Firebase is reached over REST",
       "onlySource": "maven-cache"
     },
@@ -1774,7 +1796,7 @@
       "candidates": ["org.microg.gms:play-services-tasks"],
       "fit": "partial",
       "effort": "M",
-      "effortReason": "Small, stable API that microG reimplements; substitution has to hold for every Firebase artifact",
+      "effortReason": "Checked 2026-11-20: the scan finds no ~/src Gradle file that reaches it (stale cache; remove = the cache rm). The rm only clears the cache: an Android build of umbrella or workout_app fetches it again, because play-services-location 21.2.0 lists it at compile scope (also kotlinx-coroutines-play-services); goes with todo 4820da39",
       "lockIn": "Firebase's public API returns Task objects",
       "onlySource": "maven-cache"
     },
@@ -1800,7 +1822,7 @@
       "candidates": ["net.openid:appauth", "flutter_appauth"],
       "fit": "partial",
       "effort": "L",
-      "effortReason": "Transitive of androidx.credentials:credentials-play-services-auth in google_sign_in_android; goes with the sign-in rewrite",
+      "effortReason": "Checked 2026-11-20: stale cache, no ~/src Gradle file reaches it (only .claude/worktrees lockfiles still list google_sign_in_android); remove = the cache rm, nothing re-fetches it; it came with androidx.credentials:credentials-play-services-auth in google_sign_in_android",
       "lockIn": "Same as play-services-auth",
       "onlySource": "maven-cache"
     },
@@ -1813,7 +1835,7 @@
       "candidates": ["google_account_token"],
       "fit": "good",
       "effort": "M",
-      "effortReason": "Done: crdt_sync_flutter 0.4.0 plus todo, tutor, diet-guard, home_inventory, kartka, leetcode-guard, wake-alarm, daily-limits; home-guard branch pending",
+      "effortReason": "Checked 2026-11-20: stale cache, no ~/src Gradle file reaches it (only .claude/worktrees lockfiles still list google_sign_in_android); remove = the cache rm, nothing re-fetches it; the sign-in rewrite is done: crdt_sync_flutter 0.4.0 plus todo, tutor, diet-guard, home_inventory, kartka, leetcode-guard, wake-alarm, daily-limits; home-guard branch pending",
       "lockIn": "The token still comes from the phone's Google account service (GMS on stock Android); only the app's own code is FOSS",
       "onlySource": "maven-cache"
     },
@@ -1825,7 +1847,7 @@
       "candidates": ["org.microg.gms:play-services-fido", "net.openid:appauth"],
       "fit": "partial",
       "effort": "M",
-      "effortReason": "Transitive of the google_sign_in Credential Manager bridge",
+      "effortReason": "Checked 2026-11-20: stale cache, no ~/src Gradle file reaches it (only .claude/worktrees lockfiles still list google_sign_in_android); remove = the cache rm, nothing re-fetches it; it came with androidx.credentials:credentials-play-services-auth in google_sign_in_android",
       "lockIn": "Passkey sync lives in Google Password Manager",
       "onlySource": "maven-cache"
     },
@@ -1833,12 +1855,12 @@
       "names": [
         "AOSP android.location.LocationManager / androidx.core LocationManagerCompat (Apache-2.0, part of the platform): GPS + network provider, no fused provider (fit good, effort M)",
         "microG org.microg.gms:play-services-location 0.3.6.244735 (Apache-2.0 per Maven pom; fit partial, effort M): FusedLocationProviderClient API that needs microG GmsCore on the phone to return fixes",
-        "geolocator forceLocationManager: true (MIT, Baseflow/flutter-geolocator): uses LocationManager at runtime but still links play-services-location (fit partial, effort S)"
+        "geolocator forceLocationManager: true (MIT, Baseflow/flutter-geolocator LICENSE, pushed 2026-11-05): uses LocationManager at runtime but still links play-services-location (fit partial, effort S)"
       ],
       "candidates": ["org.microg.gms:play-services-location"],
       "fit": "good",
       "effort": "M",
-      "effortReason": "Pulled by geolocator_android 5.1.0 in umbrella only; a small platform channel over LocationManager replaces it",
+      "effortReason": "Checked 2026-11-20: still in use. geolocator 14.1.2 in ~/src/umbrella (geolocator_android 5.1.0) and ~/src/screen-locker/stronglift_replacement/workout_app (5.2.1) declares implementation 'com.google.android.gms:play-services-location:21.2.0'; the foss-audit scan calls it stale because it does not follow pub to Gradle, so rm of the cache is NOT a removal. Also pulls play-services-base, -basement and -tasks. A small platform channel over LocationManager replaces it (todo 4820da39)",
       "lockIn": "Fused provider battery/accuracy tuning; Wi-Fi/cell fixes need a network provider (Pixel ships Google's)",
       "onlySource": "maven-cache"
     },
@@ -1875,6 +1897,23 @@
       "effort": "M",
       "effortReason": "google_mlkit_text_recognition 0.17.1 in book-guard only, Latin script only (CJK and Devanagari models are compileOnly); one new PageReader behind createPageReader() plus a Kotlin channel",
       "lockIn": "None; Tesseract reads phone photos of book pages worse than ML Kit, so page-number hits need re-checking on real photos",
+      "onlySource": "maven-cache"
+    },
+    "@anthropic-ai/claude-agent-sdk*": null,
+    "org.json:json": {
+      "names": [
+        "Nothing to replace: stleary/JSON-java is Public Domain (LICENSE says 'Public Domain.'; the 20240303 pom says Public Domain; pushed 2026-10-31, newest 20260814). Checked 2026-11-20",
+        "Only 20180813 and 20160810 are The JSON License (json.org/license.html, 'good, not evil' clause, non-free); both are stale cache: rm -rf ~/.gradle/caches/modules-2/files-2.1/org.json/json/20180813 ~/.gradle/caches/modules-2/files-2.1/org.json/json/20160810",
+        "In your own code: the Android framework's org.json (AOSP, Apache-2.0) on a device, or Gson / kotlinx.serialization (Apache-2.0); the artifact is not removable from builds"
+      ],
+      "candidates": [
+        "com.google.code.gson:gson",
+        "org.jetbrains.kotlinx:kotlinx-serialization-json"
+      ],
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "In use 20240303 is Public Domain. The scan graph shows AGP (com.android.tools.build:gradle) -> com.google.crypto.tink:tink -> org.json:json in every Android project, so only the two old versions can go; phone-focus-mode also declares it",
+      "lockIn": "None",
       "onlySource": "maven-cache"
     },
     "*": {
