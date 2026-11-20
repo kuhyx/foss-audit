@@ -19,6 +19,8 @@ URL = "org.opencontainers.image.url"
 @pytest.fixture
 def docker(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/docker")
+    # Never reach the network for images whose source label names a repository.
+    monkeypatch.setattr(scan_docker, "upstream_license", lambda _url, _ref="": ("", "offline"))
 
 
 def test_no_docker_binary(monkeypatch: pytest.MonkeyPatch) -> None:

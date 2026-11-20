@@ -2,7 +2,9 @@
 
 Licenses come from the image's `org.opencontainers.image.licenses` label (an
 SPDX expression). Images without it fall back to OFFICIAL (Docker Hub official
-images) and then to `unknown()`, which data/curated.json settles by name.
+images), then to the licence of the repository the `org.opencontainers.image.source`
+label names (upstream_license), then to `unknown()`, which data/curated.json
+settles by name. An image with no labels at all (dpage/pgadmin4) ends there.
 """
 
 from __future__ import annotations
@@ -12,9 +14,11 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 
+from foss_audit.curated import Curated
 from foss_audit.licenses import classify_spdx
 from foss_audit.model import Item
 from foss_audit.scan_misc import unknown
+from foss_audit.upstream_license import upstream_license
 
 TIMEOUT = 20
 LICENSE_LABEL = "org.opencontainers.image.licenses"
@@ -170,8 +174,9 @@ def is_foreign_bare(labels: dict[str, str]) -> bool:
     return bool(links) and not any("kuhyx" in link.lower() for link in links)
 
 
-def make_item(repo: Repo, labels: dict[str, str], containers: list[Container]) -> Item:
-    """One Item; license from the label, else the official-image table, else unknown."""
+def make_item(repo: Repo, labels: dict[str, str], containers: list[Container], curated: Curated) -> Item:
+    """One Item; license from the label, else the official-image table, the source
+    repository (unless curated.json already settles the image), else unknown."""
     tags = sorted(repo.tags)
     version = ", ".join(tags) or None
     url = label_url(labels)
@@ -184,6 +189,10 @@ def make_item(repo: Repo, labels: dict[str, str], containers: list[Container]) -
     lic = labels.get(LICENSE_LABEL, "")
     if lic.upper() in NO_ASSERTION:
         lic = OFFICIAL.get(repo.name, "")
+    source = labels.get(URL_LABELS[0], "")
+    if not lic and source and curated.verdict_for(repo.name) is None:
+        lic, where = upstream_license(source.removesuffix(".git"))
+        note = f"{note}; {where}" if note else where
     if not lic:
         return unknown(repo.name, "docker", version=version, url=url, removeCommand=remove, note=note)
     verdict, reason = classify_spdx(repo.name, lic)
@@ -209,10 +218,11 @@ def scan_docker() -> list[Item]:
     ids = sorted({i for repo in repos.values() for i in repo.ids})
     labels = inspect_labels(ids) if ids else {}
     containers = list_containers()
+    curated = Curated.load()
     items = []
     for name in sorted(repos):
         found = repo_labels(repos[name], labels)
         if "/" not in name and name not in OFFICIAL and not is_foreign_bare(found):
             continue
-        items.append(make_item(repos[name], found, containers))
+        items.append(make_item(repos[name], found, containers, curated))
     return items
