@@ -12,13 +12,14 @@ remove command from scan_cache_maven_remove.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from foss_audit import cache_common
 from foss_audit.cache_common import CachedArtifact, CachedVersion, to_items
 from foss_audit.memo import NO_MEMO, Memo
 from foss_audit.model import Item
-from foss_audit.scan_cache_maven_decl import declarations
+from foss_audit.scan_cache_maven_decl import Decl, declarations
 from foss_audit.scan_cache_maven_graph import dependency_graph
 from foss_audit.scan_cache_maven_inherit import borrow
 from foss_audit.scan_cache_maven_pom import Gav
@@ -32,6 +33,8 @@ GRADLE = HOME / ".gradle/caches/modules-2/files-2.1"
 M2 = HOME / ".m2/repository"
 SRC = cache_common.SRC
 ARCHIVE_SUFFIXES = frozenset({".jar", ".aar"})
+# "group:artifact:version" inside quotes: a version a build file pins explicitly.
+PINNED = re.compile(r"""["']([\w.\-]+):([\w.\-]+):([^"'\s:]+)["']""")
 
 
 def _add(found: dict[Gav, VersionFiles], gav: Gav, path: Path) -> None:
@@ -95,11 +98,23 @@ def artifacts(versions: dict[Gav, VersionFiles], readings: Memo = NO_MEMO) -> li
     return list(arts.values())
 
 
+def used_versions(decls: dict[str, list[Decl]]) -> dict[str, set[str]]:
+    """Artifact -> versions ~/src build files pin explicitly (catalog and BOM versions are not known)."""
+    found: dict[str, set[str]] = {}
+    for name, lines in decls.items():
+        for decl in lines:
+            pinned = {v for g, a, v in PINNED.findall(decl.text) if f"{g}:{a}" == name}
+            if pinned:
+                found.setdefault(name, set()).update(pinned)
+    return found
+
+
 def scan_maven_cache() -> list[Item]:
     """One Item per group:artifact cached by Gradle or Maven, each with a removal for good."""
     versions = cached_versions()
     arts = artifacts(versions, Memo.for_source("maven-cache"))
     decls = declarations(SRC)
-    items = to_items("maven-cache", arts, {name: {d.project for d in found} for name, found in decls.items()})
+    used_by = {name: {d.project for d in found} for name, found in decls.items()}
+    items = to_items("maven-cache", arts, used_by, used_versions(decls))
     add_removals(items, decls, dependency_graph(arts, versions), cache_dirs(versions, GRADLE, M2))
     return items

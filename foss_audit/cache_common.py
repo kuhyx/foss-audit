@@ -5,7 +5,9 @@ cache into `CachedArtifact`s (one per package, every cached version with the
 license it declares) and `to_items` turns them into one Item per package:
 
 - the verdict is the WORST over all cached versions, so a relicense in one
-  version (MIT -> BSL) is never hidden by a free newer one;
+  version (MIT -> BSL) is never hidden by a free newer one; when the builds'
+  declared versions are known (`in_use`), only those are scored and the stale
+  rest stay in the note;
 - a free package whose newest version depends at runtime on a non-free one in
   the same cache is `foss-partial`, naming that dependency;
 - `requiredBy` lists the ~/src projects whose lockfile or build file names the
@@ -142,16 +144,26 @@ def _differing_licenses(versions: list[CachedVersion]) -> str:
     return "licenses differ by version: " + "; ".join(f"{v.version} {v.license or '?'}" for v in versions)
 
 
-def artifact_item(source: Source, art: CachedArtifact, used_by: list[str]) -> Item:
-    """One Item for a package: worst verdict over its versions, newest first."""
+def artifact_item(
+    source: Source, art: CachedArtifact, used_by: list[str], in_use: frozenset[str] = frozenset()
+) -> Item:
+    """One Item for a package: worst verdict over its versions, newest first.
+
+    `in_use` are the versions ~/src builds declare; those alone are scored when
+    any of them is cached, else every cached version is.
+    """
     versions = sorted(art.versions, key=lambda v: version_key(v.version), reverse=True)
     judged = [(classify_version(v), v) for v in versions]
-    (verdict, reason), worst = max(judged, key=lambda j: SEVERITY[j[0][0]])
-    newest = versions[0]
+    scored = [j for j in judged if j[1].version in in_use] or judged
+    (verdict, reason), worst = max(scored, key=lambda j: SEVERITY[j[0][0]])
+    lead = scored[0][1]
     notes = [n for n in (_differing_licenses(versions),) if n]
-    if worst is not newest and verdict != "foss":
+    if len(scored) < len(judged):
+        stale = [v.version for _, v in judged if all(v is not s for _, s in scored)]
+        notes.append(f"not scored: {', '.join(stale)} (no ~/src build declares them)")
+    if worst is not lead and verdict != "foss":
         reason = f"{worst.version}: {reason}"
-    notes.append(f"license from {newest.license_from}")
+    notes.append(f"license from {lead.license_from}")
     if not used_by:
         notes.append("no ~/src lockfile or build file names it (transitive or stale)")
     return Item(
@@ -159,7 +171,7 @@ def artifact_item(source: Source, art: CachedArtifact, used_by: list[str]) -> It
         source=source,
         verdict=verdict,
         version=", ".join(v.version for v in versions),
-        license=newest.license,
+        license=lead.license,
         reason=reason,
         url=art.url,
         requiredBy=sorted(used_by),
@@ -205,11 +217,20 @@ def inherit_from_deps(arts: list[CachedArtifact]) -> None:
                 cv.license, cv.license_from, cv.inherited = _from_deps(art.name, cv, own)
 
 
-def to_items(source: Source, artifacts: Iterable[CachedArtifact], used_by: dict[str, set[str]]) -> list[Item]:
+def to_items(
+    source: Source,
+    artifacts: Iterable[CachedArtifact],
+    used_by: dict[str, set[str]],
+    in_use: dict[str, set[str]] | None = None,
+) -> list[Item]:
     """Items for a whole cache, then mark free ones with a non-free dependency."""
     arts = list(artifacts)
     inherit_from_deps(arts)
-    items = {a.name: artifact_item(source, a, list(used_by.get(a.name, ()))) for a in arts}
+    declared = in_use or {}
+    items = {
+        a.name: artifact_item(source, a, list(used_by.get(a.name, ())), frozenset(declared.get(a.name, ())))
+        for a in arts
+    }
     nonfree = {name for name, item in items.items() if item.verdict == "nonfree"}
     for art in arts:
         item = items[art.name]
