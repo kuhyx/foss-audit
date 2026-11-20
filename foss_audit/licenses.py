@@ -26,7 +26,7 @@ FREE_PAT = re.compile(
     r"^(MIT|BSD|GPL|PHP-3\.0|LGPL|AGPL|Apache|APACHE|apache|MPL|ISC|Zlib|zlib|ZLIB|CC0|Unlicense|WTFPL"
     r"|PSF|Python|python|Artistic|PerlArtistic|FSFAP|FSFULLR|X11|HPND|ICU|OFL|BSL-1\.0"
     r"|0BSD|NCSA|NTP|CC-BY-(SA-)?[0-9]|CC-BY-SA|CC-PDM|CC-PDDC|EPL|CPL|CECILL|curl|libpng"
-    r"|libtiff|IJG|FTL|bzip2|PostgreSQL|Ruby|OpenSSL|TCL|Sleepycat|ZPL|AFL|Unicode"
+    r"|libtiff|IJG|FTL|bzip2|PostgreSQL|Minpack|Ruby|OpenSSL|TCL|Sleepycat|ZPL|AFL|Unicode"
     r"|GFDL|FDL|SGI-B|SMLNJ|Linux-|LLVM-exception|GCC-exception|Qt-GPL|Bison|PCRE2"
     r"|Autoconf|Libtool|Font|Bitstream|Beerware|MIT-|libselinux|ImageMagick|QPL|CDDL"
     r"|SISSL|TCP-wrappers|SunPro|NAIST|MPICH|BSD2|GPL2|GPL3|LGPL2|LGPL3|custom:(BSD|ZLIB|zlib"

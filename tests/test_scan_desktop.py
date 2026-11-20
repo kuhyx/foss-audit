@@ -122,7 +122,7 @@ def test_locate(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     target = program(home / "bin/tool")
     assert scan_desktop.locate(str(target)) == target
     assert scan_desktop.locate(str(home / "bin/missing")) is None
-    monkeypatch.setattr(shutil, "which", lambda cmd: str(target) if cmd == "tool" else None)
+    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: str(target) if cmd == "tool" else None)
     assert scan_desktop.locate("tool") == target
     assert scan_desktop.locate("ghost") is None
 

@@ -19,6 +19,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from foss_audit.desktop_webapp import dangling_item
 from foss_audit.licenses import classify_text
 from foss_audit.model import NO_LICENSE, Item
 from foss_audit.own_license import (
@@ -153,7 +154,8 @@ def locate(command: str) -> Path | None:
     """The file a command names: an existing path, or the first match on PATH."""
     if "/" in command:
         return Path(command) if os.path.exists(command) else None
-    found = shutil.which(command)
+    # The systemd service's PATH lacks ~/.local/bin, where user installs live.
+    found = shutil.which(command) or shutil.which(command, path=str(HOME / ".local/bin"))
     return Path(found) if found else None
 
 
@@ -211,17 +213,6 @@ def target_item(name: str, launcher: Launcher, target: Path) -> Item:
     return removing(item, *remove)
 
 
-def dangling_item(name: str, launcher: Launcher, command: str) -> Item:
-    """Item for a launcher whose target is gone; removing the .desktop file fixes it."""
-    return unknown(
-        name,
-        "desktop",
-        note=f"launcher without target: {command}",
-        dangling=True,
-        removeCommand=f"rm {quote(launcher.path)}",
-    )
-
-
 def scan_desktop() -> list[Item]:
     """Items for launchers whose target nothing else scans, plus dead launchers."""
     dead: list[tuple[str, Launcher, str]] = []
@@ -245,5 +236,5 @@ def scan_desktop() -> list[Item]:
     # One pacman call for all of it: a package's own launcher for an optional,
     # uninstalled program is the package's business (rm would only be undone).
     owned = owned_by_pacman([str(t) for _, _, t in survivors] + [str(ln.path) for _, ln, _ in dead])
-    items = [dangling_item(*d) for d in dead if str(d[1].path) not in owned]
+    items = [dangling_item(n, ln.path, ln.exec_line, cmd) for n, ln, cmd in dead if str(ln.path) not in owned]
     return items + [target_item(*s) for s in survivors if str(s[2]) not in owned]
