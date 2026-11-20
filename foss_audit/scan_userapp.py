@@ -2,16 +2,15 @@
 
 Installers that bypass every package manager (GitKraken's `gk`, Tachidesk's
 `kcef`, Blender Launcher, the gh Copilot CLI) leave an ELF executable in
-`~/.local/share/<app>/`. One item per top-level directory with an executable
-ELF (not a `.so`) within three levels, licensed by its LICENSE/COPYING file,
-else "nonfree" until data/curated.json says otherwise.
+`~/.local/share/<app>/`. One item per top-level directory with an executable ELF
+(not a `.so`) within three levels, licensed by its LICENSE/COPYING file, else
+"nonfree" until data/curated.json says otherwise.
 
-The walk stays cheap: no node_modules, VCS or cache trees, no symlinks, and
-only the 4-byte ELF magic is read (license files, capped at 20 kB, aside).
-Dirs another scanner owns (Steam, flatpak, pipx, uv, Wine/lutris) and kuhy's
-own code are left alone. Installs that are not "one directory, one program"
-(gh Copilot, Android SDK, Prism's JREs, Proton builds, Godot export templates,
-the Actions runner, mangatl's llama.cpp) get one item each.
+The walk stays cheap: no node_modules, VCS or cache trees, no symlinks, only the
+ELF magic is read (licenses aside). Dirs another scanner owns (Steam, flatpak, pipx,
+uv, Wine/lutris) and kuhy's own code are left alone. Installs that are not "one
+directory, one program" (gh Copilot, Android SDK, Prism's JREs, Proton, Godot
+templates, Actions runner, llama.cpp) get one item each; a dir of git clones, one per clone.
 """
 
 from __future__ import annotations
@@ -29,6 +28,7 @@ from foss_audit.model import Item
 from foss_audit.own_license import identify, is_kuhy_repo, origin_of, repo_root
 from foss_audit.scan_android import scan_android_sdk, scan_foss_android_sdk
 from foss_audit.scan_misc import unknown
+from foss_audit.scan_userapp_group import group_items
 
 SOURCE: Final = "user-app"
 HOME = Path.home()
@@ -120,10 +120,15 @@ def scan_apps() -> list[Item]:
     items: list[Item] = []
     linked = linked_from_local_bin()
     for top in sorted(p for p in share().iterdir() if p.is_dir() and not p.is_symlink()):
-        if top.name.lower() in OTHER_SCANNERS | SPECIAL or any(t.is_relative_to(top) for t in linked):
+        if top.name.lower() in OTHER_SCANNERS | SPECIAL:
             continue
-        programs = elf_programs(top)
-        if programs and not is_own(top, programs):
+        if (group := group_items(top, HOME, linked)) is not None:
+            items += group
+        elif (
+            not any(t.is_relative_to(top) for t in linked)
+            and (programs := elf_programs(top))
+            and not is_own(top, programs)
+        ):
             items.append(licensed(top.name, programs[0], top, removeCommand=rm_rf(top)))
     return items
 
