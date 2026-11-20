@@ -649,6 +649,25 @@
       "effortReason": "CUDA ecosystem; PyTorch/ollama need it on NVIDIA",
       "lockIn": "Hardware-locked to the RTX 3090"
     },
+    "cuda-bindings": {
+      "names": [
+        "PyTorch CPU build (Arch python-pytorch, BSD-3-Clause)",
+        "Vulkan runtimes: stable-diffusion.cpp (MIT), ncnn (BSD-3-Clause), chatterbox ONNX/ggml (MIT)",
+        "tinygrad NV backend with Mesa NAK compiler (MIT)"
+      ],
+      "candidates": [
+        "python-pytorch",
+        "stable-diffusion.cpp-vulkan-bin",
+        "stable-diffusion.cpp-vulkan-git",
+        "ncnn",
+        "python-tinygrad"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Pulled in by CUDA torch. cuda-bindings is Apache-2.0 from 13.4.1 / 12.9.8 (NVIDIA/cuda-python PR #2293); sufler/tts locks 13.4.4. Only stale cached 13.3.1, 13.2.0, 12.9.7, 12.9.4 are non-free. Dropping it means a torch without CUDA: CPU torch is an index/venv switch per repo; Vulkan runtimes need a model port",
+      "lockIn": "Binds proprietary libcuda; the real lock-in is the nvidia-* wheels. CPU torch loses the 3090 (diffusion/TTS much slower) and still shows as 'torch' in the scan; Vulkan runtimes drop diffusers/peft and chatterbox-tts 0.1.7; tinygrad needs every model rewritten",
+      "onlySource": "pip-cache"
+    },
     "cudnn": {
       "names": [
         "MIOpen (AMD only)",

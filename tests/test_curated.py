@@ -87,3 +87,12 @@ def test_curated_license_is_appended_and_note_survives() -> None:
     assert "note" not in items[0].to_json()
     assert items[1].license == "ISC"
     assert Item(name="n", source="steam", verdict="nonfree", note="only").to_json()["reason"] == "only"
+
+
+def test_real_file_has_pip_cache_cuda_alternatives() -> None:
+    real = Curated.load()
+    alt = real.alternative_for(Item(name="cuda-bindings", source="pip-cache", verdict="nonfree"))
+    assert alt is not None
+    assert "python-pytorch" in alt["candidates"]
+    # onlySource keeps the pip-cache research off any other source.
+    assert real.alternative_for(Item(name="cuda-bindings", source="pip-user", verdict="nonfree")) is None
