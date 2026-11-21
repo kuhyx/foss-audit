@@ -1583,8 +1583,8 @@
       "candidates": [],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "CPU microcode",
-      "lockIn": "Closed on any hardware"
+      "effortReason": "CPU microcode: AMD signs it and LICENSE.amd-ucode bans reverse engineering; no free x86 microcode exists (checked 2026-11-21)",
+      "lockIn": "Closed on any x86 CPU; without the package the 7900X3D keeps the BIOS revision 0x0a601206 instead of 0x0a60120a, so only BIOS updates bring microcode fixes"
     },
     "xone-dongle-firmware": {
       "names": [
