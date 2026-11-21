@@ -656,7 +656,7 @@
     "opencl-nvidia": {
       "names": [
         "rusticl in opencl-mesa 26.3 (MIT AND BSD-3-Clause AND SGI-B-2.0) on the Radeon 610M iGPU via radeonsi (fit partial, effort S): free GPU OpenCL today, but a 2-CU iGPU, and the RTX 3090 needs the nouveau swap before rusticl can drive it",
-        "PoCL 7.2 (MIT, upstream LICENSE) on the 7900X3D CPU (fit partial, effort S): full OpenCL 3.0 on 12 cores, no GPU",
+        "PoCL 7.2 (MIT, upstream LICENSE) on the 7900X3D CPU (fit partial, effort S): OpenCL 3.0 on 12 cores; its RTX 3090 device runs through PoCL's CUDA backend on NVIDIA's closed libcuda, so only the CPU device is free",
         "rusticl on the RTX 3090 via nouveau (fit partial, effort M): only after the nvidia-utils swap to NVK"
       ],
       "candidates": [
