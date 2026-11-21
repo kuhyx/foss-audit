@@ -31,6 +31,9 @@ from foss_audit.licenses import classify_spdx, classify_text, tokens
         ("php", "PHP-3.01", "foss"),
         ("php-legacy", "PHP-3.0", "foss"),
         ("eigen", "MPL-2.0 Apache-2.0 BSD-3-Clause Minpack LGPL-2.1-only OR LGPL-2.1-or-later", "foss"),
+        # Arch spells The Unlicense in caps; npm's "UNLICENSED" means no licence at all.
+        ("kernel-modules-hook", "UNLICENSE", "foss"),
+        ("npm-style", "UNLICENSED", "nonfree"),
     ],
 )
 def test_classify_spdx(name: str, expr: str, verdict: str) -> None:

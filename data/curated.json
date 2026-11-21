@@ -25,6 +25,10 @@
       "foss",
       "COPYING.MinGW-w64*: ZPL-2.1 overall, BSD/MIT/public-domain parts; Arch labels it LicenseRef-custom"
     ],
+    "kernel-modules-hook": [
+      "foss",
+      "The Unlicense (upstream LICENSE, checked 2026-11-21); Arch spells it UNLICENSE. Upstream last pushed 2023-11 but the hook is tiny and Arch still ships it in extra"
+    ],
     "gamescope": [
       "foss",
       "BSD-2-Clause; bundled ReShade effect compiler is BSD-3-Clause"
