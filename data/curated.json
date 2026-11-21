@@ -1308,16 +1308,18 @@
     },
     "cudnn": {
       "names": [
-        "MIOpen (AMD only)",
-        "oneDNN (CPU)"
+        "Non-CUDA builds from extra: opencv (Apache-2.0) for opencv-cuda, onnxruntime-cpu (MIT) for onnxruntime-cuda (fit good, effort S): both conflict with the CUDA builds, so the swap replaces them; nothing here (gmic, krita-plugin-gmic, vtk optional) needs GPU DNN",
+        "ncnn (BSD-3-Clause) on Vulkan for neural-net inference on the RTX 3090 (fit partial, effort L): models must be converted and callers rewritten",
+        "MIOpen (MIT, now in ROCm/rocm-libraries) (fit none, effort XL): AMD GPUs only"
       ],
       "candidates": [
-        "onednn"
+        "opencv",
+        "onnxruntime-cpu"
       ],
-      "fit": "none",
-      "effort": "XL",
-      "effortReason": "Vendor-tuned DNN kernels",
-      "lockIn": "Hardware-locked to the RTX 3090"
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Package swap; licences checked 2026-11-21 from upstream LICENSE files",
+      "lockIn": "Lose CUDA-accelerated OpenCV and ONNX inference; CPU paths stay"
     },
     "nsight-*": {
       "names": [
