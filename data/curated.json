@@ -653,15 +653,18 @@
     },
     "cuda": {
       "names": [
-        "ROCm (AMD only)",
-        "ZLUDA (AMD only)",
-        "Vulkan compute (llama.cpp/ncnn)"
+        "Vulkan backends on the RTX 3090: ollama-vulkan (MIT) for ollama-cuda, waifu2x-ncnn-vulkan (MIT, ncnn BSD-3-Clause) for waifu2x-converter-cpp-cuda-git; ggml-vulkan and stable-diffusion.cpp-vulkan are already installed (fit good, effort S): same GGUF models, no CUDA, but still the proprietary nvidia-utils Vulkan driver",
+        "chipStar (MIT): builds CUDA/HIP source to SPIR-V for OpenCL or Level Zero (fit partial, effort L): only for code you compile yourself, cannot run prebuilt CUDA binaries, needs a SPIR-V OpenCL driver",
+        "ZLUDA (Apache-2.0/MIT): runs CUDA binaries on AMD GPUs (fit none, effort XL): no use on an NVIDIA card"
       ],
-      "candidates": [],
-      "fit": "none",
-      "effort": "XL",
-      "effortReason": "CUDA ecosystem; PyTorch/ollama need it on NVIDIA",
-      "lockIn": "Hardware-locked to the RTX 3090"
+      "candidates": [
+        "ollama-vulkan",
+        "waifu2x-ncnn-vulkan"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Swap ollama-cuda and waifu2x to Vulkan packages from extra; onnxruntime-cuda and opencv-cuda (cudnn group) also pull cuda. Licences checked 2026-11-21 from upstream LICENSE files",
+      "lockIn": "None for models; lose CUDA-only speed paths (speed on the 3090 is measured at install)"
     },
     "cuda-bindings": {
       "names": [
