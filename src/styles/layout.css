@@ -26,6 +26,12 @@
   white-space: nowrap;
 }
 
+.topbar .logo {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
 .scan-meta {
   display: flex;
   flex-wrap: wrap;

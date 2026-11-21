@@ -1,2 +1,5 @@
+overrides:
+  '@emnapi/runtime': 1.11.3
+  '@emnapi/core': 1.11.3
 minimumReleaseAgeExclude:
   - astro@7.4.6

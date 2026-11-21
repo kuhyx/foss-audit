@@ -48,6 +48,7 @@ function buildId(): string {
     <title>{title}</title>
     <meta content={description} name="description" />
     <meta content={buildId()} name="build-id" />
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
     <Fragment set:html={headTags} />
     <slot name="head" />
   </head>
