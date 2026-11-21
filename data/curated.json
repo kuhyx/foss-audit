@@ -630,30 +630,43 @@
     },
     "nvidia-utils": {
       "names": [
-        "NVK (Mesa)",
-        "nouveau"
+        "NVK + nouveau: vulkan-nouveau 26.3 (MIT AND BSD-3-Clause AND SGI-B-2.0, Mesa docs/license.rst) on the in-kernel nouveau driver (fit partial, effort M): Vulkan 1.4 on Turing and newer incl. the RTX 3090; needs the GSP blob from linux-firmware-nvidia (LicenseRef-nvidia), so not blob-free",
+        "nouveau GL (Mesa, MIT) + xf86-video-nouveau (already installed) for desktop only (fit partial, effort M): OpenGL via Zink on NVK; no CUDA, no NVENC"
       ],
       "candidates": [
         "vulkan-nouveau"
       ],
       "fit": "partial",
-      "effort": "XL",
-      "effortReason": "GPU driver",
-      "lockIn": "NVK ~40-70% of proprietary perf, no RT/DLSS (2026)"
+      "effort": "M",
+      "effortReason": "Driver swap: nvidia-open-dkms out, nouveau in, reboot; the kernel driver decides, so both stacks cannot run at once. Checked 2026-11-21",
+      "lockIn": "Phoronix (Mesa 26.2, 2026-07): gap to the NVIDIA driver is closing but still significant in most newer games, over 2x on an RTX 5080 in 2026-03; lose CUDA, NVENC and the nvidia-settings tools"
+    },
+    "lib32-nvidia-utils": {
+      "names": [
+        "lib32-vulkan-nouveau 26.3 (MIT AND BSD-3-Clause AND SGI-B-2.0) with lib32-mesa (already installed) (fit partial, effort M): 32-bit Vulkan/GL for Steam on NVK; only works after the nvidia-utils swap to nouveau"
+      ],
+      "candidates": [
+        "lib32-vulkan-nouveau"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Follows the nvidia-utils driver swap; Steam accepts any lib32 Vulkan/GL driver. Checked 2026-11-21",
+      "lockIn": "Same NVK speed gap as nvidia-utils; still needs the linux-firmware-nvidia GSP blob"
     },
     "opencl-nvidia": {
       "names": [
-        "rusticl (Mesa)",
-        "PoCL"
+        "rusticl in opencl-mesa 26.3 (MIT AND BSD-3-Clause AND SGI-B-2.0) on the Radeon 610M iGPU via radeonsi (fit partial, effort S): free GPU OpenCL today, but a 2-CU iGPU, and the RTX 3090 needs the nouveau swap before rusticl can drive it",
+        "PoCL 7.2 (MIT, upstream LICENSE) on the 7900X3D CPU (fit partial, effort S): full OpenCL 3.0 on 12 cores, no GPU",
+        "rusticl on the RTX 3090 via nouveau (fit partial, effort M): only after the nvidia-utils swap to NVK"
       ],
       "candidates": [
-        "opencl-rusticl-mesa",
+        "opencl-mesa",
         "pocl"
       ],
       "fit": "partial",
-      "effort": "XL",
-      "effortReason": "GPU compute stack",
-      "lockIn": "Needs NVK for GPU; PoCL is CPU"
+      "effort": "S",
+      "effortReason": "Both install next to opencl-nvidia through ocl-icd; only cuda requires opencl-nvidia. Checked 2026-11-21",
+      "lockIn": "Lose OpenCL on the RTX 3090 until the driver swap; rusticl needs RUSTICL_ENABLE=radeonsi"
     },
     "cuda": {
       "names": [
@@ -1578,6 +1591,38 @@
       "effort": "S",
       "effortReason": "A skill loader is a small script",
       "lockIn": ""
+    },
+    "linux-firmware-amd": {
+      "names": [],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Device firmware: AMD SEV (EPYC), Ryzen AI NPU and AMD TEE blobs; no free firmware exists for any of them (checked 2026-11-21)",
+      "lockIn": "Likely unused here: the 7900X3D has no NPU and consumer Ryzen has no SEV; only the PSP TEE driver could load amdtee blobs"
+    },
+    "linux-firmware-amdgpu": {
+      "names": [],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Device firmware: amdgpu loads PSP/SMU/DMUB/VCN blobs to start the GPU; no free replacement exists (checked 2026-11-21)",
+      "lockIn": "Without it the Radeon 610M iGPU does not start; the display runs on the RTX 3090, so it only costs iGPU compute such as rusticl on radeonsi"
+    },
+    "linux-firmware-realtek": {
+      "names": [],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Device firmware: rtl_nic PHY patches for the RTL8125B NIC (r8169); no free replacement exists (checked 2026-11-21)",
+      "lockIn": "r8169 treats the patch as optional, so the 2.5GbE port should still link without it, minus Realtek's PHY fixes"
+    },
+    "linux-firmware-whence": {
+      "names": [],
+      "candidates": [],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "Licence text (WHENCE) for the other linux-firmware packages; it carries no code",
+      "lockIn": "Goes away only with every linux-firmware-* package"
     },
     "linux-firmware*": {
       "names": [],
