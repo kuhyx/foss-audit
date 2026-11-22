@@ -87,7 +87,7 @@
     ],
     "steam": [
       "nonfree",
-      "Steam Subscriber Agreement: non-exclusive licence for personal, non-commercial use (shipped copy of https://store.steampowered.com/subscriber_agreement/, checked 2026-11-22)"
+      "Steam Subscriber Agreement: non-exclusive licence for personal, non-commercial use (shipped copy of https://store.steampowered.com/subscriber_agreement/, checked 2026-11-22); the client stays even when games run on proton-cachyos-native: VAC anti-cheat runs inside it (54 of the 1048 library games use anti-cheat), and it still runs its own helper in its bundled runtime steamrt64/pv-runtime and injects its overlay into the game (seen with game 1201270 on this machine, 2026-11-22)"
     ],
     "steamcmd": [
       "nonfree",
@@ -181,7 +181,12 @@
     ],
     "Proton*": [
       "foss-partial",
-      "Top level BSD-3-Clause (LICENSE.proton), each component under its own free licence (LICENSE or COPYING per directory; no closed DLL found in the local build); Valve ships it only through Steam under the Steam Subscriber Agreement (ValveSoftware/Proton, checked 2026-11-22)"
+      "Top level BSD-3-Clause (LICENSE.proton), Wine, DXVK, vkd3d-proton and the fonts under their own free licences, but lsteamclient/ vendors 91 versions of Valve's Steamworks SDK headers (lsteamclient/steamworks_sdk_099u ... steamworks_sdk_165) under the proprietary Steamworks SDK licence in lsteamclient/LICENSE, and the local build ships lsteamclient.dll/.so compiled from them (files/lib/wine/*/); Valve ships it only through Steam under the Steam Subscriber Agreement (ValveSoftware/Proton experimental_11.0 at 4ec46bc6, proton_11.0 at 1f089f56, checked 2026-11-22)",
+      "LicenseRef-Steamworks-SDK"
+    ],
+    "Steam Linux Runtime 4.0": [
+      "foss-partial",
+      "Debian-based container runtime: Valve's scripts are MIT, each package keeps its own licence (ValveSoftware/steam-runtime COPYING), its apt repo also has a non-free component; distributed under the Steam Subscriber Agreement, checked 2026-11-22; not needed for Windows games on proton-cachyos-native: with 4183110 (Steam Linux Runtime 4.0) moved away, Steam launched game 1201270 and did not reinstall it (this machine, 2026-11-22)"
     ],
     "Steam Linux Runtime*": [
       "foss-partial",
@@ -189,7 +194,7 @@
     ],
     "Steamworks Common Redistributables": [
       "nonfree",
-      "Windows redistributables (DirectX Jun2010 cabs, VC++ 2022 packages) under Microsoft Software License Terms (https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files, checked 2026-11-22)",
+      "Windows redistributables (DirectX Jun2010 cabs, VC++ 2022 packages) under Microsoft Software License Terms (https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files, checked 2026-11-22); with 228980 moved away and game 1201270 mapped to proton-cachyos-native, Steam launched the game and created no manifest or download for it (this machine, 2026-11-22)",
       "LicenseRef-Microsoft-Redistributable"
     ],
     "CPLEX*": [
@@ -563,6 +568,14 @@
       "BSD-3-Clause Proton glue + Wine (LGPL), DXVK (zlib), vkd3d-proton (LGPL); bundled fonts OFL-1.1, AV1 patent grant (PATENTS.AV1)",
       "LGPL-2.1 Zlib OFL-1.1"
     ],
+    "proton-cachyos-native": [
+      "foss-partial",
+      "CachyOS/proton-cachyos tag cachyos-11.0-20261015-native (commit 05ce581f, read 2026-11-22): LICENSE.proton BSD-3-Clause; Wine LGPL-2.1-or-later, DXVK zlib, vkd3d-proton LGPL-2.1-or-later, GStreamer LGPL-2.1, FFmpeg LGPL-2.1-or-later built without GPL or non-free flags, fonts OFL-1.1. Partial because lsteamclient/ vendors 91 versions of Valve's Steamworks SDK headers under the proprietary SDK licence in lsteamclient/LICENSE; protonfixes downloads non-free redistributables at run time for about 200 game fixes unless PROTONFIXES_DISABLE is set; wine-gecko, wine-mono, ICU, xalia and ZLUDA ship as prebuilt binaries. Not verified: wine-gecko's own licence file, unzip, cabextract, the nvapi headers, the gst-plugins-rs crates, Wine's bundled fluidsynth and sqlite3",
+      "BSD-3-Clause LGPL-2.1-or-later Zlib OFL-1.1 LicenseRef-Steamworks-SDK",
+      {
+        "homepage": "https://github.com/CachyOS/proton-cachyos"
+      }
+    ],
     "godot export templates": [
       "foss",
       "MIT: Godot Engine export templates, built from the engine source; the folder ships no license file",
@@ -666,14 +679,15 @@
     },
     "steamcmd": {
       "names": [
-        "DepotDownloader 3.4.0 (GPL-2.0, release 2025-05-09, last commit 2026-11-17): depot and workshop downloads over the Steam protocol"
+        "DepotDownloader 3.4.0 (GPL-2.0, release 2025-05-09, last commit 2026-11-17): depot and workshop downloads over the Steam protocol",
+        "steam-game-installer: reads app info from Steam's local appinfo.vdf cache and writes the appmanifest itself"
       ],
       "candidates": [
         "steamdepotdownloader-bin"
       ],
-      "fit": "partial",
-      "effort": "M",
-      "effortReason": "steam-game-installer downloads with DepotDownloader but still needs steamcmd to create an app manifest that Steam has not written (checked 2026-11-22)",
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "Removed, not needed: steam-game-installer downloads with DepotDownloader, now reads app info from Steam's local appinfo.vdf cache and writes the appmanifest itself, so nothing calls steamcmd any more; only uninstalling it is left (checked 2026-11-22)",
       "lockIn": "Both need a Steam account on the Steam network; steamctl (MIT) was dropped, last push 2023-12"
     },
     "steam*": {
@@ -694,7 +708,7 @@
       "fit": "none",
       "effort": "XL",
       "effortReason": "Store, DRM and library are Valve's service; no FOSS client speaks to them except the download-only DepotDownloader (checked 2026-11-22)",
-      "lockIn": "Steam-DRM and Steamworks games only run through Steam"
+      "lockIn": "Steam-DRM and Steamworks games only run through Steam; the client stays even with proton-cachyos-native: VAC anti-cheat runs inside it (54 of 1048 library games use anti-cheat), it runs its own helper in steamrt64/pv-runtime and injects its overlay (checked 2026-11-22)"
     },
     "nvidia-utils": {
       "names": [
@@ -1745,9 +1759,11 @@
       "names": [
         "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13): builtin replacement DLLs for most redistributable runtimes",
         "DXVK 3.1.1 (Zlib, release 2026-09-15) and vkd3d-proton 3.1 (LGPL-2.1, release 2026-10-28): the Direct3D layers Proton ships",
-        "Wine-Mono 11.3.0 (MIT/LGPL mix, release 2026-08-17): replaces the .NET runtime"
+        "Wine-Mono 11.3.0 (MIT/LGPL mix, release 2026-08-17): replaces the .NET runtime",
+        "proton-cachyos-native installed by steam-game-installer (plain Windows games without anti-cheat or shared depots): with 228980 moved away and game 1201270 mapped to it, Steam launched the game and created no manifest or download for the redistributables"
       ],
       "candidates": [
+        "proton-cachyos-native",
         "wine",
         "wine-mono",
         "dxvk-bin",
@@ -1756,16 +1772,18 @@
       ],
       "fit": "partial",
       "effort": "S",
-      "effortReason": "Proton and Wine already carry free builds of these runtimes; only a game that insists on Microsoft's native DLLs still needs the originals (checked 2026-11-22)",
-      "lockIn": "Steam reinstalls it as a dependency of Windows games, although the local Proton - Experimental already ships dxvk, vkd3d-proton and wine-mono"
+      "effortReason": "Proton and Wine already carry free builds of these runtimes, and a game mapped to proton-cachyos-native and installed by steam-game-installer runs without 228980; only a game that insists on Microsoft's native DLLs still needs the originals (this machine, game 1201270, checked 2026-11-22)",
+      "lockIn": "Steam reinstalls it as a dependency of Windows games it installs itself; games with anti-cheat or shared depots still go through Steam's installer"
     },
     "Proton*": {
       "names": [
+        "proton-cachyos-native cachyos-11.0-20261015-native installed by steam-game-installer (plain Windows games without anti-cheat or shared depots): a prebuilt WoW64 build that needs no lib32 packages, and its toolmanifest.vdf has no require_tool_appid, so no Steam Linux Runtime; still foss-partial (lsteamclient, protonfixes downloads, prebuilt binaries)",
         "GE-Proton11-12 (same LICENSE and LICENSE.proton BSD-3-Clause layout as Valve's, release 2026-11-03): a community build of the same source, run as a Steam compatibility tool",
-        "proton-cachyos cachyos-11.0-20261015-slr (same licence layout, release 2026-10-20)",
+        "proton-cachyos cachyos-11.0-20261015-slr (same licence layout, release 2026-10-20; its toolmanifest.vdf requires 4183110, Steam Linux Runtime 4.0)",
         "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13) with DXVK 3.1.1 (Zlib, release 2026-09-15) and vkd3d-proton 3.1 (LGPL-2.1, release 2026-10-28): the pieces Proton bundles, usable without Steam"
       ],
       "candidates": [
+        "proton-cachyos-native",
         "proton-ge-custom-bin",
         "proton-cachyos",
         "wine",
@@ -1774,8 +1792,26 @@
       ],
       "fit": "partial",
       "effort": "S",
-      "effortReason": "Dropping a GE-Proton or proton-cachyos build into compatibilitytools.d and choosing it per game is quick, but I did not audit their binaries and they also run inside Valve's Steam Linux Runtime (checked 2026-11-22)",
-      "lockIn": "The Steam client still launches it, and Proton Experimental requires Steam Linux Runtime 4.0 (toolmanifest.vdf require_tool_appid 4183110)",
+      "effortReason": "Proven on this machine with game 1201270 (2026-11-22): Steam honours a per-game CompatToolMapping to proton-cachyos-native (compat_log showed only that tool), the game process shared the host mount namespace and mapped host /usr/lib/libc.so.6, libvulkan, the NVIDIA driver and DXVK d3d11.dll, and with 1493710 (Proton Experimental), 4183110 (Steam Linux Runtime 4.0) and 228980 (Redistributables) moved away Steam started, launched the game and created no manifest or download for them",
+      "lockIn": "The Steam client still launches it and runs its own helper in steamrt64/pv-runtime; Proton Experimental and the -slr variant require Steam Linux Runtime 4.0 (toolmanifest.vdf require_tool_appid 4183110), the native build does not; games with anti-cheat or shared depots stay on Steam's own Proton",
+      "onlySource": "steam"
+    },
+    "Steam Linux Runtime 4.0": {
+      "names": [
+        "Custom runtime from the ValveSoftware/steam-runtime scripts (MIT per COPYING, last push 2026-09-28, no releases) and docs/building-custom-runtime.md: assembled from Debian source packages",
+        "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13) with DXVK 3.1.1 (Zlib): runs Windows games on host libraries with no container",
+        "Host Arch libraries for native Linux games, with no runtime container",
+        "proton-cachyos-native installed by steam-game-installer (plain Windows games without anti-cheat or shared depots): runs on host libraries with no container; its toolmanifest.vdf has no require_tool_appid"
+      ],
+      "candidates": [
+        "proton-cachyos-native",
+        "wine",
+        "dxvk-bin"
+      ],
+      "fit": "partial",
+      "effort": "S",
+      "effortReason": "For Windows games, proven on this machine with game 1201270 (2026-11-22): mapped to proton-cachyos-native, the game shared the host mount namespace and, with 4183110 moved away, Steam started, launched it and did not reinstall the runtime; a native Linux game built for this runtime still needs it, and a self-built runtime is L work",
+      "lockIn": "Steam installs it as the base of Proton Experimental and the -slr proton-cachyos, and its own client helper still runs in the separate steamrt64/pv-runtime",
       "onlySource": "steam"
     },
     "Steam Linux Runtime*": {
@@ -1792,6 +1828,22 @@
       "effort": "L",
       "effortReason": "No ready free build of the container: you build and test a runtime yourself, and games compiled against Valve's runtime break on host libraries (checked 2026-11-22)",
       "lockIn": "Steam installs it as the base of Proton Experimental and of native Linux games, and Valve's pressure-vessel containers expect it",
+      "onlySource": "steam"
+    },
+    "proton-cachyos-native": {
+      "names": [
+        "PROTONFIXES_DISABLE=1 in the game's launch options (same build): stops protonfixes downloading non-free redistributables at run time; lsteamclient and the prebuilt wine-gecko, wine-mono, ICU, xalia and ZLUDA stay",
+        "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13) with DXVK 3.1.1 (Zlib, release 2026-09-15) and vkd3d-proton 3.1 (LGPL-2.1, release 2026-10-28) outside Steam: no lsteamclient, so a game that calls the Steamworks API does not start"
+      ],
+      "candidates": [
+        "wine",
+        "dxvk-bin",
+        "vkd3d-proton-bin"
+      ],
+      "fit": "partial",
+      "effort": "S",
+      "effortReason": "PROTONFIXES_DISABLE is one launch option; dropping lsteamclient means leaving Steam for plain Wine, which only suits games without Steamworks calls (checked 2026-11-22)",
+      "lockIn": "Steam launches it, and lsteamclient is the bridge between the game and the Steam client",
       "onlySource": "steam"
     },
     "7zip": {
@@ -2257,14 +2309,15 @@
       "pacman:lib32-nvidia-utils",
       "steam:Steam Linux Runtime 4.0",
       "steam:Proton Experimental",
+      "steam:proton-cachyos-native",
       "steam:Steamworks Common Redistributables",
-      "aur:steamcmd",
       "npm-cache:@anthropic-ai/claude-agent-sdk",
       "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64",
       "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64-musl",
       "desktop:osu!",
       "local-bin:claude",
       "pacman:7zip",
+      "aur:steamcmd",
       "docker:cleanup-plate/bash32"
     ],
     "effort": [
@@ -2276,23 +2329,24 @@
       "steam:Librarian: Tidy Up the Arcane Library!",
       "pacman:linux-firmware-amd",
       "pacman:linux-firmware-whence",
-      "steam:Steam Linux Runtime 4.0",
       "pacman:nvidia-utils",
       "local-bin:claude",
       "pacman:lib32-nvidia-utils",
-      "aur:steamcmd",
       "desktop:osu!",
+      "steam:Steam Linux Runtime 4.0",
       "steam:Proton Experimental",
+      "steam:proton-cachyos-native",
       "steam:Steamworks Common Redistributables",
       "npm-cache:@anthropic-ai/claude-agent-sdk",
       "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64",
       "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64-musl",
       "pacman:7zip",
+      "aur:steamcmd",
       "docker:cleanup-plate/bash32"
     ],
     "reasons": {
       "pacman:amd-ucode": "No free CPU microcode exists and every boot loads it, so no fit and XL to replace",
-      "pacman:steam": "No free client or store, and the whole game library depends on it",
+      "pacman:steam": "No free client or store, the whole game library depends on it, and VAC runs inside it (54 of 1048 games use anti-cheat)",
       "pacman:linux-firmware-amdgpu": "The GPU does not run without this closed firmware and no free blob exists",
       "pacman:linux-firmware-realtek": "Closed NIC and Bluetooth firmware, no free replacement",
       "pacman:linux-firmware-amd": "Closed AMD firmware blobs with no free equivalent",
@@ -2301,10 +2355,11 @@
       "pacman:linux-firmware-whence": "Only the licence index of the firmware, no free replacement and no blob of its own",
       "pacman:nvidia-utils": "Closed userspace driver, partly replaceable by nouveau and NVK at M effort",
       "pacman:lib32-nvidia-utils": "32-bit half of the closed driver, same partial route as nvidia-utils",
-      "steam:Steam Linux Runtime 4.0": "Free Debian-based container under Steam's licence, a self-built runtime is L work and Proton Experimental requires it",
-      "steam:Proton Experimental": "Free source (BSD-3 top level) shipped under Steam's licence, GE-Proton or proton-cachyos swap in at S but run in the same runtime",
-      "steam:Steamworks Common Redistributables": "Microsoft redistributables that Wine and Proton already replace, S effort",
-      "aur:steamcmd": "Closed Steam downloader, DepotDownloader covers downloads only, M effort",
+      "steam:Steam Linux Runtime 4.0": "Free Debian-based container under Steam's licence; Windows games on proton-cachyos-native run without it, S effort",
+      "steam:Proton Experimental": "Free source except the vendored Steamworks SDK headers, shipped under Steam's licence; proton-cachyos-native swaps in at S with no runtime container",
+      "steam:proton-cachyos-native": "Free build except the Steamworks SDK headers, protonfixes downloads and prebuilt blobs; PROTONFIXES_DISABLE is S, dropping lsteamclient means leaving Steam",
+      "steam:Steamworks Common Redistributables": "Microsoft redistributables that Wine and Proton already replace; games on proton-cachyos-native run without them, S effort",
+      "aur:steamcmd": "Not needed any more: steam-game-installer writes the appmanifest itself, so removing it is S",
       "npm-cache:@anthropic-ai/claude-agent-sdk": "Proprietary SDK cache entry, partial fit, S effort to drop it",
       "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64": "Proprietary SDK binary cache entry, partial fit, S effort to drop it",
       "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64-musl": "Proprietary SDK binary cache entry, partial fit, S effort to drop it",

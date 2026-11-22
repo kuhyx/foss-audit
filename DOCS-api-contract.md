@@ -162,8 +162,7 @@ Software no package manager tracks (`scan_unowned.py`):
   until `curated.json` says otherwise. Skipped: Steam, flatpak, pipx, uv, Wine/lutris
   prefixes, apps a `~/.local/bin` symlink points into, and kuhy's own code. Special items:
   `gh-copilot`, `android-sdk` (`~/sdk/Android/Sdk`, nonfree "Android SDK License"),
-  `PrismLauncher java runtimes` (foss when OpenJDK), one item per
-  `Steam/compatibilitytools.d/*` (GE-Proton), `godot export templates`,
+  `PrismLauncher java runtimes` (foss when OpenJDK), `godot export templates`,
   `github actions-runner` and `llama.cpp (llama-server)` (mangatl's vendored copy). Every one
   is `rm -rf <dir>`; the runner first runs `(cd <runner> && sudo ./svc.sh uninstall)` for each
   runner installed as a service, and its removeVia says to deregister it on GitHub.
@@ -191,7 +190,10 @@ Steam apps (offline; the store site is blocked) are licensed
 local `appcache/appinfo.vdf` lists an app-specific EULA, plus the recognised ids of the
 install root's LICENSE/COPYING files (Proton: `BSD OFL-1.1`). The reason ends with
 `EULA: <name> <url>` and `bundled components: <id>: a, b; …` from a `licenses/` folder;
-that tail survives a curated reason. A curated verdict entry may carry a third element,
+that tail survives a curated reason. Each folder in `~/.steam/steam/compatibilitytools.d`
+(GE-Proton, proton-cachyos) is a `steam` item too, id `steam:<folder name>`: no Subscriber
+Agreement (Steam does not ship it), the root LICENSE ids (`foss` when any, else `nonfree`
+until curated), the last field of its `version` file, `rm -rf <folder>`. A curated verdict entry may carry a third element,
 a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`), and, as the last element, an object `{"homepage": url, "license": text, "version": text}` (all keys optional) that fills gaps:
 `homepage` fills an item `url` that is empty or `unknown`, `license` fills a licence that is empty or `none found`, `version` fills a version that is empty or `unknown`;
 neither ever replaces a scanned value (the third-element license is appended first, so it counts as scanned).

@@ -5,11 +5,16 @@ of that the scanner reports what it can find locally: an app-specific EULA
 from Steam's app cache, the install root's own LICENSE files (Proton's BSD),
 and the free components a game bundles in a `licenses/` folder. Offline on
 purpose: the store site is blocked in /etc/hosts.
+
+Each folder in ~/.steam/steam/compatibilitytools.d (GE-Proton, proton-cachyos)
+is a Steam compat tool and an item here too; the user-app scanner skips it. The
+id is the folder name, never the display name, which embeds the version.
 """
 
 from __future__ import annotations
 
 import re
+import shlex
 from collections import defaultdict
 from pathlib import Path
 
@@ -19,6 +24,8 @@ from foss_audit.own_license import LICENSE_FILE, TEXT_IDS, identify
 from foss_audit.steam_appinfo import eulas_for
 
 STEAM_APPS = Path.home() / ".local/share/Steam/steamapps"
+COMPAT_TOOLS = Path.home() / ".steam/steam/compatibilitytools.d"
+NO_TOOL_LICENSE = "no license file shipped (proprietary unless curated)"
 ACF_FIELD = re.compile(r'^\s*"(name|appid|buildid|installdir)"\s+"([^"]*)"', re.MULTILINE)
 SSA = "LicenseRef-Steam-Subscriber-Agreement"
 # Folders where games collect the licenses of the libraries and fonts they ship.
@@ -62,8 +69,36 @@ def bundled_note(root: Path) -> str:
     )
 
 
+def tool_version(tool: Path) -> str | None:
+    """Last field of the tool's `version` file ("<timestamp> <name>"), None without one."""
+    version = tool / "version"
+    fields = version.read_text(errors="replace").split() if version.is_file() else []
+    return fields[-1] if fields else None
+
+
+def scan_compat_tools() -> list[Item]:
+    """One Item per compat tool folder; Steam does not ship these, so no Subscriber Agreement."""
+    items = []
+    for tool in sorted(t for t in COMPAT_TOOLS.glob("*") if t.is_dir()):
+        ids = root_licenses(tool)
+        found = f"LICENSE files: {', '.join(ids)}" if ids else NO_TOOL_LICENSE
+        items.append(
+            Item(
+                name=tool.name,
+                version=tool_version(tool),
+                source="steam",
+                verdict="foss" if ids else "nonfree",
+                license=" ".join(ids),
+                reason=f"Steam compatibility tool; {found}",
+                note=bundled_note(tool),
+                removeCommand=f"rm -rf {shlex.quote(str(tool))}",
+            ),
+        )
+    return items
+
+
 def scan_steam() -> list[Item]:
-    """One Item per appmanifest; licenses as described in the module docstring."""
+    """One Item per appmanifest and per compat tool; licenses as described in the module docstring."""
     manifests: list[dict[str, str]] = [
         dict(ACF_FIELD.findall(acf.read_text(errors="replace"))) | {"_stem": acf.stem}
         for acf in sorted(STEAM_APPS.glob("appmanifest_*.acf"))
@@ -92,4 +127,4 @@ def scan_steam() -> list[Item]:
                 removeCommand=f"steam steam://uninstall/{appid}",
             ),
         )
-    return items
+    return items + scan_compat_tools()

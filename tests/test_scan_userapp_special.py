@@ -1,4 +1,4 @@
-"""The special-cased installs (gh Copilot, Android SDK, Prism, Proton, Godot, runner, llama.cpp)."""
+"""The special-cased installs (gh Copilot, Android SDK, Prism, Godot, runner, llama.cpp)."""
 
 from __future__ import annotations
 
@@ -60,17 +60,11 @@ def test_prism_java_runtimes(home: Path) -> None:
     assert item.reason.endswith("not recognisably OpenJDK")
 
 
-def test_proton_tools(home: Path) -> None:
-    tools = home / ".local/share/Steam/compatibilitytools.d"
-    assert scan_userapp.scan_proton_tools() == []
-    write(tools / "GE-Proton11-7/LICENSE", "Redistribution and use in source and binary forms\n", 0o644)
-    write(tools / "GE-Proton11-7/LICENSE.OFL", "SIL Open Font License\n", 0o644)
-    write(tools / "NoLicense/proton", "x")
-    write(tools / "stray.txt", "x", 0o644)
-    items = by_name(scan_userapp.scan_proton_tools())
-    assert sorted(items) == ["GE-Proton11-7", "NoLicense"]
-    assert (items["GE-Proton11-7"].verdict, items["GE-Proton11-7"].license) == ("foss", "BSD")
-    assert items["NoLicense"].verdict == "nonfree"
+def test_compat_tools_belong_to_the_steam_scanner(home: Path) -> None:
+    tool = home / ".local/share/Steam/compatibilitytools.d/GE-Proton11-7"
+    write(tool / "LICENSE", "Redistribution and use in source and binary forms\n", 0o644)
+    write(tool / "files/bin/wine")
+    assert scan_userapp.scan_user_apps() == []
 
 
 def test_godot_export_templates(home: Path) -> None:
@@ -127,11 +121,6 @@ def test_curated_verdicts_for_unlicensed_installs(home: Path) -> None:
     write(home / "sdk/Android/Sdk/licenses/android-sdk-license", "abc\n", 0o644)
     write(share / "godot/export_templates/4.7.2.stable/version.txt", "4.7.2.stable\n", 0o644)
     write(home / "services/actions-runner/a/bin/Runner.Listener")
-    write(
-        share / "Steam/compatibilitytools.d/GE-Proton11-7/LICENSE",
-        "Redistribution and use in source and binary forms\n",
-        0o644,
-    )
     items = by_name(apply(scan_userapp.scan_user_apps(), Curated.load()))
     verdicts = {name: item.verdict for name, item in items.items()}
     assert verdicts == {
@@ -140,7 +129,6 @@ def test_curated_verdicts_for_unlicensed_installs(home: Path) -> None:
         "Tachidesk": "foss",
         "gh-copilot": "nonfree",
         "android-sdk": "nonfree",
-        "GE-Proton11-7": "foss",
         "godot export templates": "foss",
         "github actions-runner": "foss",
     }

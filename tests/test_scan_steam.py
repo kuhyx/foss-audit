@@ -1,4 +1,4 @@
-"""Steam manifests: Subscriber Agreement, EULAs, root LICENSE files, bundled parts."""
+"""Steam manifests (Subscriber Agreement, EULAs, root LICENSE files, bundled parts) and compat tools."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ def acf(appid: str, name: str, installdir: str | None) -> str:
 def steam(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(scan_steam, "STEAM_APPS", tmp_path)
     monkeypatch.setattr(steam_appinfo, "APPINFO", tmp_path / "appinfo.vdf")
+    monkeypatch.setattr(scan_steam, "COMPAT_TOOLS", tmp_path / "compatibilitytools.d")
     return tmp_path
 
 
@@ -67,3 +68,27 @@ def test_no_manifests_skips_the_cache(steam: Path, monkeypatch: pytest.MonkeyPat
 
     monkeypatch.setattr(scan_steam, "eulas_for", boom)
     assert scan_steam.scan_steam() == []
+
+
+def test_compat_tools_are_steam_items(steam: Path) -> None:
+    tools = steam / "compatibilitytools.d"
+    (tools / "GE-Proton11-7/licenses").mkdir(parents=True)
+    (tools / "GE-Proton11-7/LICENSE").write_text(BSD)
+    (tools / "GE-Proton11-7/LICENSE.OFL").write_text("SIL Open Font License\n")
+    (tools / "GE-Proton11-7/licenses/fonts.txt").write_text("Fonts under the SIL Open Font License")
+    (tools / "GE-Proton11-7/version").write_text("1762000000 GE-Proton11-7\n")
+    (tools / "proton-cachyos-native").mkdir()
+    (tools / "proton-cachyos-native/version").write_text("cachyos-11.0-20261015-native\n")
+    (tools / "bare").mkdir()
+    (tools / "stray.txt").write_text("x")
+    by = {i.id: i for i in scan_steam.scan_steam()}
+    assert sorted(by) == ["steam:GE-Proton11-7", "steam:bare", "steam:proton-cachyos-native"]
+    ge = by["steam:GE-Proton11-7"]
+    assert (ge.verdict, ge.license, ge.version) == ("foss", "BSD OFL-1.1", "GE-Proton11-7")
+    assert ge.reason == "Steam compatibility tool; LICENSE files: BSD, OFL-1.1"
+    assert ge.note == "bundled components: OFL-1.1: fonts"
+    assert ge.removeCommand == f"rm -rf {tools / 'GE-Proton11-7'}"
+    cachy = by["steam:proton-cachyos-native"]
+    assert (cachy.verdict, cachy.license, cachy.version) == ("nonfree", "", "cachyos-11.0-20261015-native")
+    assert cachy.reason == "Steam compatibility tool; no license file shipped (proprietary unless curated)"
+    assert (by["steam:bare"].version, by["steam:bare"].url) == (None, None)

@@ -7,10 +7,11 @@ Installers that bypass every package manager (GitKraken's `gk`, Tachidesk's
 "nonfree" until data/curated.json says otherwise.
 
 The walk stays cheap: no node_modules, VCS or cache trees, no symlinks, only the
-ELF magic is read (licenses aside). Dirs another scanner owns (Steam, flatpak, pipx,
-uv, Wine/lutris) and kuhy's own code are left alone. Installs that are not "one
-directory, one program" (gh Copilot, Android SDK, Prism's JREs, Proton, Godot
-templates, Actions runner, llama.cpp) get one item each; a dir of git clones, one per clone.
+ELF magic is read (licenses aside). Dirs another scanner owns (Steam and its
+compatibilitytools.d, flatpak, pipx, uv, Wine/lutris) and kuhy's own code are left
+alone. Installs that are not "one directory, one program" (gh Copilot, Android SDK,
+Prism's JREs, Godot templates, Actions runner, llama.cpp) get one item each; a dir
+of git clones, one per clone.
 """
 
 from __future__ import annotations
@@ -186,12 +187,6 @@ def scan_prism_java() -> list[Item]:
     ]
 
 
-def scan_proton_tools() -> list[Item]:
-    """Custom Proton builds (GE-Proton...) in Steam's compatibilitytools.d."""
-    tools = share() / "Steam/compatibilitytools.d"
-    return [licensed(t.name, t, t, removeCommand=rm_rf(t)) for t in sorted(tools.glob("*")) if t.is_dir()]
-
-
 def scan_godot_templates() -> list[Item]:
     """Godot export templates: one item, with every installed engine version."""
     root = share() / "godot/export_templates"
@@ -242,7 +237,6 @@ def scan_user_apps() -> list[Item]:
         scan_android_sdk,
         scan_foss_android_sdk,
         scan_prism_java,
-        scan_proton_tools,
         scan_godot_templates,
         scan_actions_runner,
         scan_llama_cpp,

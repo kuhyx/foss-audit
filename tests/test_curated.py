@@ -118,3 +118,36 @@ def test_real_file_curates_every_cuda_wheel() -> None:
         assert alt is not None, name
         assert "python-pytorch" in alt["candidates"], name
         assert real.alternative_for(Item(name=name, source="pip-user", verdict="nonfree")) is None, name
+
+
+def test_real_file_curates_proton_cachyos_native_as_ranked_partial() -> None:
+    version = "cachyos-11.0-20261015-native"
+    item = Item(name="proton-cachyos-native", source="steam", verdict="nonfree", version=version)
+    apply([item], Curated.load())
+    assert item.verdict == "foss-partial"
+    assert "lsteamclient" in item.reason and "PROTONFIXES_DISABLE" in item.reason
+    assert "LicenseRef-Steamworks-SDK" in item.license
+    assert item.url == "https://github.com/CachyOS/proton-cachyos"
+    assert item.alternative is not None
+    assert (item.unranked, bool(item.fitRank), bool(item.effortRank)) == (False, True, True)
+
+
+def test_real_file_steam_tools_carry_the_native_proton_proofs() -> None:
+    real = Curated.load()
+    proton = real.verdict_for("Proton Experimental")
+    assert proton is not None and "lsteamclient/LICENSE" in proton[1]
+    for name in ("Proton Experimental", "Steam Linux Runtime 4.0", "Steamworks Common Redistributables"):
+        alt = real.alternative_for(Item(name=name, source="steam", verdict="nonfree"))
+        assert alt is not None and "proton-cachyos-native" in alt["candidates"], name
+    # The proof covers Steam Linux Runtime 4.0 only; scout and soldier serve native Linux games.
+    scout = real.alternative_for(
+        Item(name="Steam Linux Runtime 1.0 (scout)", source="steam", verdict="nonfree")
+    )
+    assert scout is not None and "proton-cachyos-native" not in scout["candidates"]
+    assert scout["effort"] == "L"
+    scout_verdict = real.verdict_for("Steam Linux Runtime 1.0 (scout)")
+    assert scout_verdict is not None and "4183110" not in scout_verdict[1]
+    steamcmd = real.alternative_for(Item(name="steamcmd", source="aur", verdict="nonfree"))
+    assert steamcmd is not None and "not needed" in steamcmd["effortReason"]
+    steam = real.verdict_for("steam")
+    assert steam is not None and "VAC" in steam[1]
