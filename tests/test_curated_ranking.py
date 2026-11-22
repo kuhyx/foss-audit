@@ -151,3 +151,11 @@ def test_load_defaults_and_real_file(tmp_path: Path) -> None:
     assert list(real)[-1] == "ranking"
     assert set(real["ranking"]) == {"fit", "effort", "reasons"}
     assert Curated.load().ranking.fit == real["ranking"]["fit"]
+
+
+def test_curated_version_fills_only_a_blank_version() -> None:
+    fill = {"version": "2026.920.0"}
+    c = Curated(verdicts={"v*": ["nonfree", "r", fill]}, alternatives={}, ranking=Ranking([], [], {}))
+    blank, unknown, scanned = item("v1", version=None), item("v2", version="unknown"), item("v3", version="9")
+    apply([blank, unknown, scanned], c)
+    assert (blank.version, unknown.version, scanned.version) == ("2026.920.0", "2026.920.0", "9")

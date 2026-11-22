@@ -50,7 +50,7 @@ class Curated:
         )
 
     def verdict_for(self, name: str) -> list[Any] | None:
-        """[verdict, reason, license append?, {"homepage", "license"}?] of the first matching glob."""
+        """[verdict, reason, license append?, {"homepage", "license", "version"}?] of the first glob match."""
         return next((v for k, v in self.verdicts.items() if fnmatchcase(name, k)), None)
 
     def alternative_entry(self, item: Item) -> tuple[bool, dict[str, Any] | None]:
@@ -91,7 +91,9 @@ def positions(order: list[str], present: set[str]) -> dict[str, int]:
 
 
 def fill_gaps(item: Item, extra: dict[str, str]) -> None:
-    """Curated `homepage` / `license` of a verdict entry: they fill a gap, never override a scanned value."""
+    """Curated `homepage` / `license` / `version` of a verdict entry: fills a gap, never overrides a scan."""
+    if "version" in extra and (item.version or "").strip().lower() in BLANK_VERSIONS:
+        item.version = extra["version"]
     if "homepage" in extra and (item.url or "").strip().lower() in BLANK_URLS:
         item.url = extra["homepage"]
     if "license" in extra and item.license.strip().lower() in BLANK_LICENSES:

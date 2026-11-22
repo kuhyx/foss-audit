@@ -192,8 +192,8 @@ local `appcache/appinfo.vdf` lists an app-specific EULA, plus the recognised ids
 install root's LICENSE/COPYING files (Proton: `BSD OFL-1.1`). The reason ends with
 `EULA: <name> <url>` and `bundled components: <id>: a, b; …` from a `licenses/` folder;
 that tail survives a curated reason. A curated verdict entry may carry a third element,
-a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`), and, as the last element, an object `{"homepage": url, "license": text}` (both keys optional) that fills gaps:
-`homepage` fills an item `url` that is empty or `unknown`, `license` fills a licence that is empty or `none found`;
+a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`), and, as the last element, an object `{"homepage": url, "license": text, "version": text}` (all keys optional) that fills gaps:
+`homepage` fills an item `url` that is empty or `unknown`, `license` fills a licence that is empty or `none found`, `version` fills a version that is empty or `unknown`;
 neither ever replaces a scanned value (the third-element license is appended first, so it counts as scanned).
 
 `.desktop` launchers (`scan_desktop.py`, source `desktop`): the `Exec` target of every

@@ -442,7 +442,8 @@
       "Code MIT (ppy/osu LICENCE); osu-resources (skins, samples, fonts) CC-BY-NC-4.0 (ppy/osu-resources LICENCE.md), both checked 2026-11-22",
       "MIT",
       {
-        "homepage": "https://github.com/ppy/osu"
+        "homepage": "https://github.com/ppy/osu",
+        "version": "2026.920.0-lazer"
       }
     ],
     "cleanup-plate/bash32": [
