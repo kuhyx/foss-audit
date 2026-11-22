@@ -35,12 +35,13 @@ describe("sortItems", () => {
     expect(names(sortItems(same, { desc: true, id: "source" }))).toEqual(["x1", "x2", "x3"]);
   });
 
-  it("sorts rank columns and keeps absent values last whichever way", () => {
-    const fits = (isDesc: boolean): string[] =>
-      sortItems(ITEMS, { desc: isDesc, id: "fit" }).map((item) => item.alternative?.fit ?? "-");
-    expect(fits(false)).toEqual(["drop-in", "good", "good", ...Array.from({ length: 6 }, () => "-")]);
-    expect(fits(true).slice(0, 3)).toEqual(["good", "good", "drop-in"]);
-    expect(fits(true).at(-1)).toBe("-");
+  it("sorts the fit and effort columns by rank and keeps unranked items last whichever way", () => {
+    const ranks = (isDesc: boolean, id: string, key: "effortRank" | "fitRank"): (null | number)[] =>
+      sortItems(ITEMS, { desc: isDesc, id }).map((item) => item[key]);
+    expect(ranks(false, "fit", "fitRank")).toEqual([1, 2, 3, 4, ...Array.from({ length: 5 }, () => null)]);
+    expect(ranks(true, "fit", "fitRank")).toEqual([4, 3, 2, 1, ...Array.from({ length: 5 }, () => null)]);
+    expect(ranks(false, "effort", "effortRank")).toEqual([1, 2, 3, 4, ...Array.from({ length: 5 }, () => null)]);
+    expect(ranks(true, "effort", "effortRank").at(-1)).toBeNull();
   });
 
   it("puts a missing licence last, ascending and descending", () => {
@@ -63,7 +64,7 @@ describe("COLUMNS", () => {
   it("renders the cell text of each column", () => {
     const row = (item: Parameters<(typeof COLUMNS)[number]["text"]>[0]): string[] => COLUMNS.map((column) => column.text(item));
     expect(row(CHROME)).toEqual([
-      "google-chrome", "5.2.0-1", "aur", "Non-free", "custom:chrome", "explicit", "", "", "Chromium", "Drop-in", "XL", "ungoogled-chromium-bin",
+      "google-chrome", "5.2.0-1", "aur", "Non-free", "custom:chrome", "explicit", "", "", "Chromium", "2", "2", "ungoogled-chromium-bin",
     ]);
     expect(row(UNRAR).slice(5, 8)).toEqual(["dependency", "", "1"]);
     expect(byId("orphan").text(makeItem({ orphan: true }))).toBe("orphan");
@@ -78,6 +79,8 @@ describe("COLUMNS", () => {
     }
     expect(COLUMNS.map((column) => column.text(bare)).filter((_, index) => index !== 3)).toEqual(["bash", "—", "pacman", "—", "explicit", "", "", "", "", "", ""]);
     expect(byId("alternative").text(makeItem({ alternative: { ...CHROME.alternative!, names: [] } }))).toBe("");
-    expect(byId("effort").sortKey(makeItem({ alternative: { ...CHROME.alternative!, effort: null } }))).toBeUndefined();
+    expect(byId("effort").sortKey(makeItem({ effortRank: 3 }))).toBe(3);
+    expect(byId("fit").sortKey(makeItem({ fitRank: 5 }))).toBe(5);
+    expect(byId("fit").text(makeItem({ fitRank: 5 }))).toBe("5");
   });
 });

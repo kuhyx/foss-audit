@@ -22,18 +22,22 @@ export function makeItem(overrides: Partial<RemovableItem> = {}): RemovableItem 
   return {
     alternative: null,
     dangling: false,
+    effortRank: null,
     explicit: true,
+    fitRank: null,
     id: `${source}:${name}`,
     license: "GPL-3.0-or-later",
     loose: false,
     name,
     orphan: false,
     own: false,
+    rankReason: null,
     reason: "GPL-3.0-or-later",
     removeCommand: `sudo pacman -Rns ${name}`,
     removeVia: "",
     requiredBy: [],
     source,
+    unranked: false,
     url: null,
     verdict: "foss",
     version: "5.2.0-1",
@@ -50,8 +54,11 @@ export const CHROME = makeItem({
     lockIn: "Google Sync",
     names: ["Chromium", "Firefox"],
   }),
+  effortRank: 2,
+  fitRank: 2,
   license: "custom:chrome",
   name: "google-chrome",
+  rankReason: "a browser engine is a huge build",
   reason: "custom:chrome",
   source: "aur",
   url: "https://www.google.com/chrome",
@@ -61,7 +68,9 @@ export const CHROME = makeItem({
 // unrar: non-free, good alternative installed, but something still needs it.
 export const UNRAR = makeItem({
   alternative: makeAlternative({ fit: "good", installed: ["libarchive"], names: ["libarchive"] }),
+  effortRank: 1,
   explicit: false,
+  fitRank: 3,
   license: "custom:unrar",
   name: "unrar",
   requiredBy: ["file-roller"],
@@ -71,6 +80,8 @@ export const UNRAR = makeItem({
 // A Steam app: reverse dependencies are not tracked for this source.
 export const STEAM_GAME = makeItem({
   alternative: makeAlternative({ fit: "good", installed: ["0ad"], names: ["0 A.D."] }),
+  effortRank: 3,
+  fitRank: 1,
   license: "",
   name: "Some Game",
   reason: "Steam app",
@@ -80,11 +91,25 @@ export const STEAM_GAME = makeItem({
   version: null,
 });
 
-export const FIRMWARE = makeItem({ name: "linux-firmware", reason: "firmware blob", verdict: "nonfree" });
+export const FIRMWARE = makeItem({
+  effortRank: 4,
+  fitRank: 4,
+  name: "linux-firmware",
+  reason: "firmware blob",
+  verdict: "nonfree",
+});
 export const OWN_SCRIPT = makeItem({ name: "backup.sh", own: true, removeCommand: null, source: "local-bin" });
 export const ORPHAN_LIB = makeItem({ explicit: false, name: "libfoo", orphan: true });
-export const PARTIAL = makeItem({ name: "unar", verdict: "foss-partial" });
-export const MYSTERY = makeItem({ license: "", loose: true, name: "mystery", reason: "no license found", source: "opt", verdict: "nonfree" });
+export const PARTIAL = makeItem({ name: "unar", unranked: true, verdict: "foss-partial" });
+export const MYSTERY = makeItem({
+  license: "",
+  loose: true,
+  name: "mystery",
+  reason: "no license found",
+  source: "opt",
+  unranked: true,
+  verdict: "nonfree",
+});
 export const DEAD_LAUNCHER = makeItem({
   dangling: true,
   license: "",

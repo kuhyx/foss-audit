@@ -4,9 +4,11 @@ import type { HeaderCheck } from "../lib/selection.ts";
 import type { SortState } from "../lib/url-state.ts";
 
 import { COLUMNS } from "../lib/columns.ts";
+import { type RankKind, rankLabel, type RankTotals, unrankedLabel } from "../lib/rank.ts";
+import { isToReplace } from "../lib/verdict.ts";
 import { ROW_HEIGHT } from "../lib/virtual.ts";
 import { html } from "./dom.ts";
-import { effortMark, fitMark, GLYPH, type GlyphName, named } from "./glyph.ts";
+import { glyph, GLYPH, type GlyphName, named, rankMark } from "./glyph.ts";
 import { verdictBadge } from "./verdict-badge.ts";
 
 const ARIA_SORT = { asc: "ascending", desc: "descending" } as const;
@@ -42,37 +44,77 @@ function nameCell(item: Item): (Node | string)[] {
   return cell;
 }
 
-// Enum cells are glyphs (spoken as the old word); names, versions, licences and alternatives are content.
-function glyphCell(column: Column, item: Item): Node | null {
+// The rank number, or the warning glyph for an unranked item; FOSS rows and rows without rank fields stay empty.
+function rankCell(kind: RankKind, item: Item, totals: RankTotals): Node | null {
+  if (!isToReplace(item)) return null;
+  if (item.unranked) return named("warning", unrankedLabel(kind));
+  const rank = kind === "fit" ? item.fitRank : item.effortRank;
+  const spoken = rankLabel(kind, item, totals);
+  return rank === null || spoken === null ? null : rankMark(rank, spoken, item.rankReason);
+}
+
+function textNode(text: string): Node | null {
+  return text === "" ? null : document.createTextNode(text);
+}
+
+// On a to-replace row an empty answer is painted ("none": ∅ ✕ 0); FOSS rows keep their empty cells.
+function noneCell(column: Column, item: Item): Node | null {
   const alt = item.alternative;
+  const isReplace = isToReplace(item);
+  switch (column.id) {
+    case "alternative": {
+      return isReplace && (alt?.names.length ?? 0) === 0 ? named("empty", "No alternative") : textNode(column.text(item));
+    }
+    case "installed": {
+      return isReplace && (alt?.installed.length ?? 0) === 0 ? named("empty", "Nothing installed") : textNode(column.text(item));
+    }
+    case "orphan": {
+      if (item.orphan) return named("orphan", "orphan");
+      return isReplace ? glyph(GLYPH.no, "not an orphan") : null;
+    }
+    default: {
+      // requiredBy: the only other column that gets here.
+      return textNode(isReplace ? String(item.requiredBy.length) : column.text(item));
+    }
+  }
+}
+
+// Enum cells are glyphs (spoken as the old word); names, versions, licences and alternatives are content.
+function glyphCell(column: Column, item: Item, totals: RankTotals): Node | null {
   switch (column.id) {
     case "effort": {
-      return alt?.effort == null ? null : effortMark(alt.effort);
+      return rankCell("effort", item, totals);
     }
     case "fit": {
-      return alt === null ? null : fitMark(alt.fit);
+      return rankCell("fit", item, totals);
     }
     case "kind": {
       return named(item.explicit ? "explicit" : "dependency", column.text(item));
-    }
-    case "orphan": {
-      return item.orphan ? named("orphan", "orphan") : null;
     }
     case "verdict": {
       return verdictBadge(item.verdict);
     }
     default: {
-      return null;
+      return noneCell(column, item);
     }
   }
 }
 
-const GLYPH_COLUMNS: ReadonlySet<string> = new Set(["effort", "fit", "kind", "orphan", "verdict"]);
+const GLYPH_COLUMNS: ReadonlySet<string> = new Set([
+  "alternative",
+  "effort",
+  "fit",
+  "installed",
+  "kind",
+  "orphan",
+  "requiredBy",
+  "verdict",
+]);
 
-function cellContent(column: Column, item: Item): (Node | string)[] {
+function cellContent(column: Column, item: Item, totals: RankTotals): (Node | string)[] {
   if (column.id === "name") return nameCell(item);
   if (!GLYPH_COLUMNS.has(column.id)) return [column.text(item)];
-  const node = glyphCell(column, item);
+  const node = glyphCell(column, item, totals);
   return node === null ? [] : [node];
 }
 
@@ -110,9 +152,9 @@ export function showHeaderCheck(box: HTMLInputElement, state: HeaderCheck): void
   box.indeterminate = state === "some";
 }
 
-export function buildRow(item: Item, index: number): HTMLElement {
+export function buildRow(item: Item, index: number, totals: RankTotals): HTMLElement {
   const check = html("input", { "aria-label": `Select ${item.name}`, class: "check", tabindex: -1, type: "checkbox" });
-  const cells = COLUMNS.map((column) => html("div", { class: "td", role: "cell" }, ...cellContent(column, item)));
+  const cells = COLUMNS.map((column) => html("div", { class: "td", role: "cell" }, ...cellContent(column, item, totals)));
   const row = html(
     "div",
     { "aria-rowindex": index + 2, class: "tr row", "data-id": item.id, role: "row", tabindex: -1 },

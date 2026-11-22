@@ -2,45 +2,8 @@ import "./items-table.ts";
 import { closeItem, openItem, setSort } from "../client/actions.ts";
 import { resetStore, store } from "../client/store.ts";
 import { DEAD_LAUNCHER, ITEMS, makeItem } from "../test/fixtures.ts";
+import { box, column, FIT, head, LETTERS, NAME, rows, stubScrollTop } from "../test/items-table-helpers.ts";
 import { click, find, mount, paintedWords, press, showTable, spoken } from "../test/table-setup.ts";
-
-const NAME = 1;
-const FIT = 10;
-const LETTERS = ["d", "a", "e", "c", "b"].map((name) => makeItem({ name }));
-
-function rows(root: ParentNode): HTMLElement[] {
-  return [...root.querySelectorAll<HTMLElement>(".tr.row")];
-}
-
-function column(root: ParentNode, index: number): string[] {
-  return rows(root).map((row) => spoken(row.querySelectorAll(".td")[index] ?? document.createTextNode("")));
-}
-
-function box(root: ParentNode, name: string): HTMLInputElement {
-  return find<HTMLInputElement>(root, `input[aria-label="Select ${name}"]`);
-}
-
-function header(root: ParentNode): HTMLInputElement {
-  return find<HTMLInputElement>(root, 'input[aria-label="Select all shown"]');
-}
-
-function head(root: ParentNode, label: string): HTMLElement {
-  const found = [...root.querySelectorAll<HTMLElement>(".th-button")].find((button) => button.getAttribute("aria-label") === label);
-  if (found === undefined) throw new Error(`no ${label} header`);
-  return found;
-}
-
-function stubScrollTop(scroller: HTMLElement): { top: number } {
-  const position = { top: 0 };
-  Object.defineProperty(scroller, "scrollTop", {
-    configurable: true,
-    get: () => position.top,
-    set: (value: number) => {
-      position.top = value;
-    },
-  });
-  return position;
-}
 
 beforeEach(() => {
   resetStore();
@@ -83,7 +46,7 @@ describe("items-table", () => {
     const text = (name: string): string => spoken(rows(table).find((row) => row.textContent.includes(name))!);
     expect(text("Some Game")).toContain("—");
     expect(text("Some Game")).toContain("0ad");
-    expect(text("Some Game")).toContain("Fit: Good");
+    expect(text("Some Game")).toContain("Fit: Good, rank 1 of 4");
     expect(text("unrar")).toContain("dependency");
     expect(text("libfoo")).toContain("orphan");
     expect(text("backup.sh")).toContain("kuhy's own code");
@@ -101,8 +64,12 @@ describe("items-table", () => {
     expect(marked).toHaveLength(1);
     expect(marked[0]?.getAttribute("aria-sort")).toBe("ascending");
     setSort({ desc: true, id: "fit" });
-    expect(column(table, FIT).filter((fit) => fit !== "").slice(0, 3)).toEqual(["Fit: Good", "Fit: Good", "Fit: Drop-in"]);
-    expect(column(table, FIT).at(-1)).toBe("");
+    expect(column(table, FIT).filter((fit) => fit !== "").slice(0, 3)).toEqual([
+      "Fit: None, rank 4 of 4",
+      "Fit: Good, rank 3 of 4",
+      "Fit: Drop-in, rank 2 of 4",
+    ]);
+    expect(column(table, FIT).at(-1)).toBe("Fit: not ranked yet");
     expect(find(table, '.th[aria-sort="descending"] .sort-mark').textContent).toBe("▼");
   });
 
@@ -268,92 +235,5 @@ describe("items-table", () => {
     showTable(LETTERS.slice(0, 2));
     expect(rows(table)).toHaveLength(2);
     expect(find(table, ".tbody").style.height).toBe("80px");
-  });
-});
-
-describe("items-table selection", () => {
-  const checked = (): string[] => [...store.getState().selection.ids].toSorted((a, b) => a.localeCompare(b));
-
-  it("toggles a row from its checkbox without opening the detail panel", () => {
-    showTable(ITEMS);
-    const table = mount("items-table");
-    click(box(table, "unrar"));
-    expect(checked()).toEqual(["pacman:unrar"]);
-    expect(box(table, "unrar").checked).toBe(true);
-    expect(store.getState().url.selected).toBeNull();
-    click(box(table, "unrar"));
-    expect(checked()).toEqual([]);
-  });
-
-  it("keeps the row checkboxes out of the tab order and focus on the row", () => {
-    showTable(ITEMS);
-    const table = mount("items-table");
-    expect(box(table, "bash").tabIndex).toBe(-1);
-    click(box(table, "bash"));
-    expect(document.activeElement).toBe(rows(table)[0]);
-  });
-
-  it("shift-selects the range in the current sorted order", () => {
-    showTable(LETTERS, { sort: { desc: false, id: "name" } });
-    const table = mount("items-table");
-    click(box(table, "b"));
-    click(box(table, "d"), { shiftKey: true });
-    expect(checked()).toEqual(["pacman:b", "pacman:c", "pacman:d"]);
-  });
-
-  it("shift-selects the range in the current filtered order", () => {
-    showTable(LETTERS);
-    const table = mount("items-table");
-    showTable(LETTERS.filter((item) => item.name !== "e"));
-    click(box(table, "d"));
-    click(box(table, "c"), { shiftKey: true });
-    expect(checked()).toEqual(["pacman:a", "pacman:c", "pacman:d"]);
-  });
-
-  it("selects every shown row from the header, indeterminate when partial", () => {
-    showTable(LETTERS);
-    const table = mount("items-table");
-    expect(header(table).checked).toBe(false);
-    click(box(table, "a"));
-    expect(header(table).indeterminate).toBe(true);
-    click(header(table));
-    expect(checked()).toHaveLength(5);
-    expect(header(table).checked).toBe(true);
-    expect(header(table).indeterminate).toBe(false);
-    click(header(table));
-    expect(checked()).toEqual([]);
-  });
-
-  it("keeps the selection across a filter change and adds to it", () => {
-    const google = [makeItem({ name: "com.google.a" }), makeItem({ name: "com.google.b" })];
-    const firebase = [makeItem({ name: "firebase-x" })];
-    showTable(google);
-    const table = mount("items-table");
-    click(header(table));
-    showTable(firebase);
-    expect(header(table).checked).toBe(false);
-    click(header(table));
-    expect(checked()).toEqual(["pacman:com.google.a", "pacman:com.google.b", "pacman:firebase-x"]);
-    click(header(table));
-    expect(checked()).toEqual(["pacman:com.google.a", "pacman:com.google.b"]);
-  });
-
-  it("toggles the focused row with Space and extends with Shift+Space", () => {
-    showTable(LETTERS, { sort: { desc: false, id: "name" } });
-    const table = mount("items-table");
-    const row = (name: string): HTMLElement => find(table, `.tr.row[data-id="pacman:${name}"]`);
-    press(row("a"), " ");
-    expect(checked()).toEqual(["pacman:a"]);
-    press(row("c"), " ", { shiftKey: true });
-    expect(checked()).toEqual(["pacman:a", "pacman:b", "pacman:c"]);
-    press(row("a"), " ");
-    expect(checked()).toEqual(["pacman:b", "pacman:c"]);
-  });
-
-  it("ignores Space on the scroller when no row has focus", () => {
-    showTable(LETTERS);
-    const table = mount("items-table");
-    press(find(table, ".table-scroll"), " ");
-    expect(checked()).toEqual([]);
   });
 });

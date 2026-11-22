@@ -105,25 +105,39 @@ def test_to_json_carries_the_four_fields() -> None:
     )
 
 
-def test_curated_homepage_fills_only_an_empty_url() -> None:
+FILL = {"homepage": "https://cur.example", "license": "Curated terms"}
+
+
+def test_curated_homepage_and_license_fill_only_gaps() -> None:
     c = Curated(
         verdicts={
-            "empty": ["nonfree", "r", "", "https://cur.example"],
-            "set": ["nonfree", "r", "L", "https://cur.example"],
-            "unk": ["nonfree", "r", "", "https://cur.example"],
+            "empty": ["nonfree", "r", FILL],
+            "set": ["nonfree", "r", "L", FILL],
+            "unk": ["nonfree", "r", FILL],
+            "none": ["nonfree", "r", FILL],
+            "only-home": ["nonfree", "r", {"homepage": "https://cur.example"}],
         },
         alternatives={},
         ranking=Ranking([], [], {}),
     )
     empty = item("empty", url=None, license="")
-    unknown = item("unk", url="unknown")
-    scanned = item("set", url="https://scanned.example", license="")
-    apply([empty, scanned, unknown], c)
-    assert empty.url == "https://cur.example"
-    assert empty.license == ""
-    assert scanned.url == "https://scanned.example"
-    assert scanned.license == "L"
-    assert unknown.url == "https://cur.example"
+    unknown = item("unk", url="unknown", license="none found")
+    scanned = item("set", url="https://scanned.example", license="MIT")
+    appended = item("none", url="", license="")
+    only_home = item("only-home", url=None, license="")
+    apply([empty, scanned, unknown, appended, only_home], c)
+    assert (empty.url, empty.license) == ("https://cur.example", "Curated terms")
+    assert (unknown.url, unknown.license) == ("https://cur.example", "Curated terms")
+    assert (scanned.url, scanned.license) == ("https://scanned.example", "MIT L")
+    assert (only_home.url, only_home.license) == ("https://cur.example", "")
+
+
+def test_third_element_license_still_counts_before_the_fill() -> None:
+    c = Curated(verdicts={"x": ["nonfree", "r", "Extra", FILL]}, alternatives={}, ranking=Ranking([], [], {}))
+    thing = item("x", license="", url=None)
+    apply([thing], c)
+    assert thing.license == "Extra"
+    assert thing.url == "https://cur.example"
 
 
 def test_load_defaults_and_real_file(tmp_path: Path) -> None:

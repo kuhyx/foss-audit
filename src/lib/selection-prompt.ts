@@ -29,6 +29,9 @@ export interface ItemGroup<T extends Item = Item> {
   readonly label: string;
 }
 
+// Only for items the scanner flags `unranked`: a column is blank or the item is in neither ranking list.
+const RANK_STEP = `- 3. rank (only items marked \`unranked: yes\`): fill every column (version, licence, homepage, alternative, fit, effort, lock-in) from primary sources, then insert the id into \`ranking.fit\` and \`ranking.effort\` in ${REPO}/data/curated.json at the place that fits (1 = heaviest: worst fit, most effort ... last = lightest, no ties) with a one-line entry in \`ranking.reasons\`; renumber nothing by hand, the scanner counts list positions.`;
+
 const FOSS_HEADING = "### already FOSS: confirm it is still used; if not, print its remove command";
 
 function alternativeKey(item: Item): null | string {
@@ -90,7 +93,8 @@ export function groupItems<T extends Item>(items: readonly T[]): ItemGroup<T>[] 
 function itemLines(item: RemovableItem, mode: null | string): string[] {
   const suffix = mode === null ? "" : `: ${mode}`;
   const via = item.removeVia === "" ? [] : [`- remove via: ${item.removeVia}`];
-  return ["", `#### ${item.name} (\`${item.id}\`)${suffix}`, ...factLines(item), ...via];
+  const unranked = item.unranked ? ["- unranked: yes"] : [];
+  return ["", `#### ${item.name} (\`${item.id}\`)${suffix}`, ...factLines(item), ...via, ...unranked];
 }
 
 function groupSections(groups: readonly ItemGroup<RemovableItem>[]): string[] {
@@ -114,6 +118,7 @@ export function buildSelectionPrompt(items: readonly RemovableItem[]): string {
   const groups = groupItems(candidates);
   const hasCandidates = candidates.length > 0;
   const hasFoss = foss.length > 0;
+  const hasUnranked = candidates.some((item) => item.unranked);
 
   const replaceMust = hasCandidates
     ? [
@@ -121,6 +126,7 @@ export function buildSelectionPrompt(items: readonly RemovableItem[]): string {
         RESEARCH_STEP,
         suggestStep("stop and ask me which one to install for the whole group (or move on, for research-only items)"),
         INSTALL_STEP,
+        ...(hasUnranked ? [RANK_STEP] : []),
         "- must not: install anything for a group before I have picked from its step 1.",
       ]
     : [];
@@ -132,6 +138,7 @@ export function buildSelectionPrompt(items: readonly RemovableItem[]): string {
   const replaceDone = hasCandidates
     ? [
         "- every group has a curated.json entry per item with verified licences, committed in that repo with `.venv/bin/python -m pytest -q` green.",
+        ...(hasUnranked ? ["- every unranked item is in `ranking.fit` and `ranking.effort` of data/curated.json with a reason, and its rescanned entry no longer says `unranked`."] : []),
         `- every installable group I picked for shows its alternative under \`alternative.installed\` in \`${SCAN}\`.`,
       ]
     : [];

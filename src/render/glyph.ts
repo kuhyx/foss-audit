@@ -87,6 +87,11 @@ export function effortMark(effort: Effort): HTMLElement {
   return glyph(EFFORT_BARS[effort], `Effort: ${EFFORT_LABELS[effort]}`, "bars");
 }
 
+// The fit/effort rank as a number in the bars' colour. The reason rides along as aria-description only: never painted.
+export function rankMark(rank: number, spoken: string, reason: null | string): HTMLElement {
+  return html("span", { "aria-description": reason, "aria-label": spoken, class: "rank", role: "img" }, String(rank));
+}
+
 // ✓ or ✕, spoken as the full statement.
 export function yesNoMark(isYes: boolean, spoken: string): HTMLElement {
   return named(isYes ? "yes" : "no", isYes ? `yes: ${spoken}` : "no");

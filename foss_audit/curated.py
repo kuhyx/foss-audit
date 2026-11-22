@@ -14,6 +14,7 @@ CURATED_PATH = Path(__file__).resolve().parent.parent / "data" / "curated.json"
 # Scan values that mean "nobody has filled this column in".
 BLANK_VERSIONS = frozenset({"", "unknown"})
 BLANK_URLS = frozenset({"", "unknown"})
+BLANK_LICENSES = frozenset({"", "none found"})
 
 
 @dataclass
@@ -29,7 +30,7 @@ class Ranking:
 class Curated:
     """Parsed curated.json; keys are fnmatch globs, first match wins."""
 
-    verdicts: dict[str, list[str]]
+    verdicts: dict[str, list[Any]]
     alternatives: dict[str, dict[str, Any]]
     ranking: Ranking = field(default_factory=Ranking)
 
@@ -48,8 +49,8 @@ class Curated:
             ),
         )
 
-    def verdict_for(self, name: str) -> list[str] | None:
-        """[verdict, reason(, license(, homepage))] for the first matching glob, else None."""
+    def verdict_for(self, name: str) -> list[Any] | None:
+        """[verdict, reason, license append?, {"homepage", "license"}?] of the first matching glob."""
         return next((v for k, v in self.verdicts.items() if fnmatchcase(name, k)), None)
 
     def alternative_entry(self, item: Item) -> tuple[bool, dict[str, Any] | None]:
@@ -89,6 +90,14 @@ def positions(order: list[str], present: set[str]) -> dict[str, int]:
     return {item_id: place for place, item_id in enumerate(kept, 1)}
 
 
+def fill_gaps(item: Item, extra: dict[str, str]) -> None:
+    """Curated `homepage` / `license` of a verdict entry: they fill a gap, never override a scanned value."""
+    if "homepage" in extra and (item.url or "").strip().lower() in BLANK_URLS:
+        item.url = extra["homepage"]
+    if "license" in extra and item.license.strip().lower() in BLANK_LICENSES:
+        item.license = extra["license"]
+
+
 def has_blank_column(item: Item, has_entry: bool) -> bool:
     """True when version, licence, homepage or the curated alternative is not filled in."""
     return (
@@ -108,14 +117,13 @@ def apply(items: list[Item], curated: Curated) -> list[Item]:
         # Never let a curated glob override kuhy's own code: its verdict comes
         # from his LICENSE files.
         if hit and not item.own:
-            item.verdict, item.reason = hit[0], hit[1]  # type: ignore[assignment]
-            # An optional third element names a license the files do not
+            item.verdict, item.reason = hit[0], hit[1]
+            # An optional third string names a license the files do not
             # state; it is added to what the scanner found, never replaces it.
-            if len(hit) > 2:
+            if len(hit) > 2 and isinstance(hit[2], str):
                 item.license = f"{item.license} {hit[2]}".strip()
-            # An optional fourth element is the homepage; it only fills a gap.
-            if len(hit) > 3 and (item.url or "").strip().lower() in BLANK_URLS:
-                item.url = hit[3]
+            if isinstance(hit[-1], dict):
+                fill_gaps(item, hit[-1])
         if item.own or item.verdict not in NEEDS_ALTERNATIVE:
             continue
         entries[item.id], alt = curated.alternative_entry(item)
