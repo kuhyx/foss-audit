@@ -1,12 +1,16 @@
 #!/bin/bash
 
 # ============================================================================
-# E2E: the all-items multi-select, on a saved real scan, in headless Chromium.
+# E2E: the all-items multi-select and the full UI, in headless Chromium.
 #
-#   scripts/e2e_selection.sh [scan.json]     default /tmp/fa_scan.json
+#   scripts/e2e_selection.sh [scan.json]     default fixtures/e2e_scan.json
 #
-# Make the inputs first, each its own (slow) step:
+# The default is a small committed scan (real rows, plus a 3-item npm @scope
+# group, a ranked and an unranked to-replace row), so the result does not
+# change when software is removed from the host. A live scan also works, but
+# fails closed when it lacks what a step needs (e.g. a multi-item prompt group):
 #   .venv/bin/python -m foss_audit.scan > /tmp/fa_scan.json    (~30 s)
+# Build first:
 #   pnpm run build                                             (dist/)
 #
 # Serves the scan file through the real backend (--scan-file, no live scan)
@@ -24,7 +28,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 readonly REPO_DIR
-readonly SCAN_FILE="${1:-/tmp/fa_scan.json}"
+readonly SCAN_FILE="${1:-${REPO_DIR}/fixtures/e2e_scan.json}"
 readonly API_PORT="${E2E_API_PORT:-5291}"
 readonly UI_PORT="${E2E_UI_PORT:-5290}"
 readonly SHOT_DIR="${E2E_SHOT_DIR:-/tmp}"
@@ -81,7 +85,7 @@ wait_for() {
 }
 
 preflight() {
-    [[ -r "$SCAN_FILE" ]] || die "no scan file ${SCAN_FILE}; make one: .venv/bin/python -m foss_audit.scan > ${SCAN_FILE}"
+    [[ -r "$SCAN_FILE" ]] || die "no scan file ${SCAN_FILE}"
     [[ -f "${REPO_DIR}/dist/index.html" ]] || die "no dist/; run: pnpm run build"
     local stale
     stale="$(find "${REPO_DIR}/src" "${REPO_DIR}/astro.config.mjs" -newer "${REPO_DIR}/dist/index.html" -print -quit)"
