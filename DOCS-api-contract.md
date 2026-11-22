@@ -78,6 +78,10 @@ Response body:
 | `url` | string \| null | upstream homepage |
 | `requiredBy` | string[] | pacman reverse deps; `*-cache` sources: the `~/src/<repo>` projects whose lockfile or build file names it; else `[]` |
 | `alternative` | `Alternative` \| null | only set for non-FOSS items with a curated entry |
+| `fitRank` | int \| null | 1-based place in `ranking.fit` of `data/curated.json` among the to-replace items (below) this scan contains; 1 = worst fit, N = best. Ids the scan lacks are skipped, so the numbers run 1..N without gaps. `null` for FOSS and own items and for an item missing from the list |
+| `effortRank` | int \| null | same for `ranking.effort`; 1 = most effort, N = least |
+| `rankReason` | string \| null | `ranking.reasons[id]`; the UI never paints it (aria and Claude prompt only) |
+| `unranked` | boolean | to-replace item that lacks `fitRank` or `effortRank`, or has a blank column: `version` empty or `unknown`, `license` empty, `url` empty or `unknown`, or no curated alternative entry matched (an explicit curated `null` counts as filled: researched, none). `false` for every other item. The UI tolerates a scan file without these four fields (`null`/`false`) |
 | `removeCommand` | string \| null | only in the saved scan and `POST /api/remove`, not in `GET /api/scan`; e.g. `sudo pacman -Rns google-chrome`; UI only copies it, never runs it. Every scanner sets it: `null` is a bug (a test enforces it) |
 | `removeVia` | string | same as `removeCommand`; why the command has its shape, e.g. `~/src/sufler via torch → nvidia-cudnn-cu13`; `""` when plain (UI schema tolerates its absence) |
 
@@ -90,6 +94,12 @@ Response body:
 - `nonfree` — proprietary, freeware, EULA, source-available (BSL, NPSL), firmware
   blobs (reason starts `firmware blob:`), and anything with no license grant at all
   (reason `no license (all rights reserved)` or `unrecognised license: …`)
+
+To-replace items (the ranked set) are `nonfree` and `foss-partial` items that are not `own`.
+`data/curated.json` ends with `"ranking": {"fit": [id, ...], "effort": [id, ...], "reasons": {id: "one line"}}`,
+ids (`<source>:<name>`) ordered heaviest first; a repeated id counts once. The ranks are applied when the scan
+runs (`curated.apply`), so a saved scan keeps the old ranks until the next rescan. A new to-replace item
+appears in no list, so it is `unranked` until a Claude session researches it and inserts its id.
 
 A checkout counts as kuhy's when its remote is under `github.com/kuhyx/`, or when it
 has no remote at all and sits directly under `~/src` (local-only repos); a repo with
@@ -107,6 +117,8 @@ ever hand-assigned for kuhy's code in `data/curated.json`.
 pnpm global shims in `~/.local/bin` (a non-ELF `sh` file whose `exec` line runs
 `"$basedir…/…/node_modules/<pkg>/…"`) are traced to that package and licensed by its
 `package.json` / LICENSE: `own=false`, `loose=false`, reason `pnpm shim -> <package dir>`.
+
+A `~/.local/bin` symlink into a `.../versions/<ver>` path (claude's native install) takes `<ver>` as its `version` when the scanner found none.
 
 Native `~/.local/bin` binaries that name their own terms (claude: "Anthropic's
 Commercial Terms") get that as a `LicenseRef-*` license, reason `-> <target>; binary cites …`.
@@ -180,7 +192,8 @@ local `appcache/appinfo.vdf` lists an app-specific EULA, plus the recognised ids
 install root's LICENSE/COPYING files (Proton: `BSD OFL-1.1`). The reason ends with
 `EULA: <name> <url>` and `bundled components: <id>: a, b; …` from a `licenses/` folder;
 that tail survives a curated reason. A curated verdict entry may carry a third element,
-a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`).
+a license appended to the scanned one (`LicenseRef-Microsoft-Redistributable`), and a fourth, the
+homepage: it fills an item `url` that is empty or `unknown` and never replaces a scanned one (use `""` as the third element to skip the license).
 
 `.desktop` launchers (`scan_desktop.py`, source `desktop`): the `Exec` target of every
 launcher in `~/.local/share/applications`, `/usr/share/applications`,

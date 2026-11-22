@@ -2139,5 +2139,6 @@
       "lockIn": "Per-title proprietary content",
       "onlySource": "steam"
     }
-  }
+  },
+  "ranking": { "fit": [], "effort": [], "reasons": {} }
 }

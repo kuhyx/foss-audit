@@ -217,3 +217,27 @@ def test_local_bin_binary_citing_its_terms(home: Path) -> None:
     assert claude.reason == f"-> {native}; binary cites Anthropic-Commercial-Terms"
     assert by["plain"].license == ""
     assert cited_terms(bin_dir / "plain") == ""
+
+
+def test_local_bin_symlink_into_versions_dir_takes_the_version(home: Path) -> None:
+    bin_dir = home / ".local/bin"
+    bin_dir.mkdir(parents=True)
+    native = home / ".local/share/claude/versions/2.1.150"
+    native.parent.mkdir(parents=True)
+    native.write_bytes(ELF + b"// a Beta product per Anthropic's Commercial Terms of Service.")
+    (bin_dir / "claude").symlink_to(native)
+    (bin_dir / "copy").write_bytes(native.read_bytes())
+    by = {i.name: i for i in scan_misc.scan_local_bin()}
+    assert by["claude"].version == "2.1.150"
+    assert by["copy"].version is None
+    assert scan_misc.version_from_link(bin_dir / "copy") is None
+    assert scan_misc.version_from_link(bin_dir / "nope") is None
+    deeper = home / ".opt/versions/3.4/bin/tool"
+    deeper.parent.mkdir(parents=True)
+    deeper.write_bytes(ELF)
+    (bin_dir / "tool").symlink_to(deeper)
+    assert scan_misc.version_from_link(bin_dir / "tool") == "3.4"
+    plain = home / "x/versions"
+    plain.mkdir(parents=True)
+    (bin_dir / "vdir").symlink_to(plain)
+    assert scan_misc.version_from_link(bin_dir / "vdir") is None
