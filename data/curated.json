@@ -61,9 +61,45 @@
       "nonfree",
       "firmware blob: Xbox wireless dongle firmware extracted from Microsoft's driver"
     ],
+    "amd-ucode": [
+      "nonfree",
+      "firmware blob: AMD LICENSE.amd-ucode: binary-only redistribution, no reverse engineering (https://gitlab.com/kernel-firmware/linux-firmware/-/blob/main/LICENSES/LICENSE.amd-ucode, checked 2026-11-22)"
+    ],
+    "nvidia-utils": [
+      "nonfree",
+      "firmware blob: NVIDIA Driver License Agreement: no reverse engineering, no modification (shipped copy of https://www.nvidia.com/en-us/drivers/nvidia-license/, checked 2026-11-22); the open kernel modules are mostly MIT (github.com/NVIDIA/open-gpu-kernel-modules COPYING) but this userspace and its GSP firmware are not"
+    ],
+    "linux-firmware-amd": [
+      "nonfree",
+      "firmware blob: AMD LICENSE.amd-sev, LICENSE.amdnpu, LICENSE.amd_pmf: binary-only redistribution, no reverse engineering (https://gitlab.com/kernel-firmware/linux-firmware/-/blob/main/LICENSES/, checked 2026-11-22)"
+    ],
+    "linux-firmware-amdgpu": [
+      "nonfree",
+      "firmware blob: AMD LICENSE.amdgpu and LICENSE.amdisp: binary-only redistribution, no reverse engineering (https://gitlab.com/kernel-firmware/linux-firmware/-/blob/main/LICENSES/LICENSE.amdgpu, checked 2026-11-22)"
+    ],
+    "linux-firmware-realtek": [
+      "nonfree",
+      "firmware blob: Realtek LICENSE.r8169 (rtl_nic) and LICENCE.rtlwifi_firmware.txt: redistribution of the binary unmodified, with the notice (https://gitlab.com/kernel-firmware/linux-firmware/-/blob/main/LICENSES/LICENSE.r8169, checked 2026-11-22)"
+    ],
+    "linux-firmware-whence": [
+      "nonfree",
+      "firmware blob: plain-text catalogue of firmware origins and licences, no code and no grant of its own (https://gitlab.com/kernel-firmware/linux-firmware/-/blob/main/WHENCE, checked 2026-11-22); free in practice, kept non-free because it states no licence"
+    ],
+    "steam": [
+      "nonfree",
+      "Steam Subscriber Agreement: non-exclusive licence for personal, non-commercial use (shipped copy of https://store.steampowered.com/subscriber_agreement/, checked 2026-11-22)"
+    ],
+    "steamcmd": [
+      "nonfree",
+      "Steam Subscriber Agreement: non-exclusive licence for personal, non-commercial use (shipped copy of https://store.steampowered.com/subscriber_agreement/, checked 2026-11-22)"
+    ],
+    "A Space for the Unbound": [
+      "nonfree",
+      "Proprietary commercial game (Unity Windows build run through Proton), licensed under the Steam Subscriber Agreement (https://store.steampowered.com/app/1201270, checked 2026-11-22)"
+    ],
     "lib32-nvidia-utils": [
       "nonfree",
-      "firmware blob: NVIDIA proprietary userspace driver (32-bit)"
+      "firmware blob: NVIDIA Driver License Agreement: no reverse engineering, no modification (shipped copy of https://www.nvidia.com/en-us/drivers/nvidia-license/, checked 2026-11-22); 32-bit userspace driver"
     ],
     "aic94xx-firmware": [
       "nonfree",
@@ -137,7 +173,7 @@
     ],
     "claude": [
       "nonfree",
-      "Claude Code native install (proprietary)"
+      "Claude Code: © Anthropic PBC, all rights reserved, use subject to the Commercial Terms of Service (LICENSE.md of https://github.com/anthropics/claude-code, checked 2026-11-22); installed 2.1.330 is the latest release"
     ],
     "Proton*": [
       "foss-partial",
@@ -149,7 +185,7 @@
     ],
     "Steamworks Common Redistributables": [
       "nonfree",
-      "Windows redistributables (DirectX, VC++)",
+      "Windows redistributables (DirectX Jun2010 cabs, VC++ 2022 packages) under Microsoft Software License Terms (https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files, checked 2026-11-22)",
       "LicenseRef-Microsoft-Redistributable"
     ],
     "CPLEX*": [
@@ -528,7 +564,7 @@
     ],
     "@anthropic-ai/claude-agent-sdk*": [
       "nonfree",
-      "Accepted non-free (kuhy 2026-11-20): Anthropic PBC, all rights reserved, use per https://code.claude.com/docs/en/legal-and-compliance (package.json: SEE LICENSE IN README.md/LICENSE.md); Claude tooling, no FOSS replacement. Claude Code itself is installed separately; clearing this npm cache does not affect it"
+      "Accepted non-free (kuhy 2026-11-20): Anthropic PBC, all rights reserved, use per https://code.claude.com/docs/en/legal-and-compliance (package.json: SEE LICENSE IN README.md/LICENSE.md); Claude tooling, no FOSS replacement. Claude Code itself is installed separately; clearing this npm cache does not affect it. Re-checked 2026-11-22: LICENSE.md in github.com/anthropics/claude-agent-sdk-typescript says all rights reserved, use subject to Anthropic's Commercial Terms of Service"
     ],
     "dpage/pgadmin4": [
       "foss",
@@ -557,20 +593,22 @@
     },
     "claude": {
       "names": [
-        "opencode",
-        "Goose",
-        "aider",
-        "qwen-code"
+        "opencode 2.3.2 (MIT, release 2026-11-18, installed)",
+        "Qwen Code 0.28.3 (Apache-2.0, release 2026-11-21, installed)",
+        "Goose 1.60.2 (Apache-2.0, release 2026-11-20)",
+        "Gemini CLI 0.70.0 (Apache-2.0, release 2026-11-19)"
       ],
       "candidates": [
         "opencode",
-        "aider",
         "qwen-code",
-        "goose"
+        "goose-cli-bin",
+        "goose-cli",
+        "goose-desktop-bin",
+        "gemini-cli"
       ],
       "fit": "good",
       "effort": "M",
-      "effortReason": "Harness is replaceable; porting hooks/skills/MCP setup is the work",
+      "effortReason": "Harness is replaceable and opencode and Qwen Code are already installed, so porting hooks, skills and MCP setup is the work (checked 2026-11-22)",
       "lockIn": "The model itself is not replaceable"
     },
     "google-chrome": {
@@ -610,27 +648,41 @@
       "effortReason": "Same account and servers; only the client changes",
       "lockIn": "FOSS shell around Discord's proprietary service (Vesktop/Dorion load Discord's own web JS); third-party clients break Discord ToS"
     },
-    "steam*": {
+    "steamcmd": {
       "names": [
-        "Heroic",
-        "Lutris",
-        "itch app",
-        "DepotDownloader"
+        "DepotDownloader 3.4.0 (GPL-2.0, release 2025-05-09, last commit 2026-11-17): depot and workshop downloads over the Steam protocol"
       ],
       "candidates": [
-        "heroic-games-launcher-bin",
-        "lutris",
-        "itch-setup-bin",
         "steamdepotdownloader-bin"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "steam-game-installer downloads with DepotDownloader but still needs steamcmd to create an app manifest that Steam has not written (checked 2026-11-22)",
+      "lockIn": "Both need a Steam account on the Steam network; steamctl (MIT) was dropped, last push 2023-12"
+    },
+    "steam*": {
+      "names": [
+        "Lutris 0.5.22 (GPL-3.0, release 2026-02-25, commit 2026-11-22): runs games from GOG, Epic, itch and local installs",
+        "Heroic 2.22.4 (GPL-3.0, release 2026-10-15): GOG, Epic and Amazon libraries, not Steam's",
+        "itch app 26.22.0 (MIT, release 2026-10-06)",
+        "umu-launcher 1.4.4 (GPL-3.0, release 2026-07-25): runs Proton games without the Steam client, but not Steamworks DRM titles"
+      ],
+      "candidates": [
+        "lutris",
+        "heroic-games-launcher",
+        "heroic-games-launcher-bin",
+        "itch-bin",
+        "itch-setup-bin",
+        "umu-launcher"
       ],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "Store, DRM and library are Valve's service",
-      "lockIn": "Steam-DRM games only run through Steam"
+      "effortReason": "Store, DRM and library are Valve's service; no FOSS client speaks to them except the download-only DepotDownloader (checked 2026-11-22)",
+      "lockIn": "Steam-DRM and Steamworks games only run through Steam"
     },
     "nvidia-utils": {
       "names": [
-        "NVK + nouveau: vulkan-nouveau 26.3 (MIT AND BSD-3-Clause AND SGI-B-2.0, Mesa docs/license.rst) on the in-kernel nouveau driver (fit partial, effort M): Vulkan 1.4 on Turing and newer incl. the RTX 3090; needs the GSP blob from linux-firmware-nvidia (LicenseRef-nvidia), so not blob-free",
+        "NVK + nouveau: vulkan-nouveau 26.3.1 (MIT AND BSD-3-Clause AND SGI-B-2.0, Mesa docs/license.rst; Mesa release 2026-11-18) on the in-kernel nouveau driver (fit partial, effort M): conformant Vulkan 1.4 per docs.mesa3d.org/drivers/nvk.html, runs on Turing and newer incl. the RTX 3090; needs the GSP blob from linux-firmware-nvidia (LicenseRef-nvidia), so not blob-free",
         "nouveau GL (Mesa, MIT) + xf86-video-nouveau (already installed) for desktop only (fit partial, effort M): OpenGL via Zink on NVK; no CUDA, no NVENC"
       ],
       "candidates": [
@@ -638,20 +690,20 @@
       ],
       "fit": "partial",
       "effort": "M",
-      "effortReason": "Driver swap: nvidia-open-dkms out, nouveau in, reboot; the kernel driver decides, so both stacks cannot run at once. Checked 2026-11-21",
-      "lockIn": "Phoronix (Mesa 26.2, 2026-07): gap to the NVIDIA driver is closing but still significant in most newer games, over 2x on an RTX 5080 in 2026-03; lose CUDA, NVENC and the nvidia-settings tools"
+      "effortReason": "Driver swap: nvidia-open-dkms out, nouveau in, reboot; the kernel driver decides, so both stacks cannot run at once (checked 2026-11-22)",
+      "lockIn": "Phoronix (Mesa 26.2, 2026-07): gap to the NVIDIA driver is closing but still significant in most newer games, and you lose CUDA, NVENC and nvidia-settings; the Rust nova driver is not built into the 7.3.5 Arch kernel"
     },
     "lib32-nvidia-utils": {
       "names": [
-        "lib32-vulkan-nouveau 26.3 (MIT AND BSD-3-Clause AND SGI-B-2.0) with lib32-mesa (already installed) (fit partial, effort M): 32-bit Vulkan/GL for Steam on NVK; only works after the nvidia-utils swap to nouveau"
+        "lib32-vulkan-nouveau 26.3.1 (MIT AND BSD-3-Clause AND SGI-B-2.0, Arch multilib) with lib32-mesa (already installed) (fit partial, effort M): 32-bit Vulkan/GL for Steam on NVK; only works after the nvidia-utils swap to nouveau"
       ],
       "candidates": [
         "lib32-vulkan-nouveau"
       ],
       "fit": "partial",
       "effort": "M",
-      "effortReason": "Follows the nvidia-utils driver swap; Steam accepts any lib32 Vulkan/GL driver. Checked 2026-11-21",
-      "lockIn": "Same NVK speed gap as nvidia-utils; still needs the linux-firmware-nvidia GSP blob"
+      "effortReason": "Follows the nvidia-utils driver swap; Steam accepts any lib32 Vulkan/GL driver (checked 2026-11-22)",
+      "lockIn": "Same NVK speed gap as nvidia-utils, and the nouveau stack still needs the linux-firmware-nvidia blob (not installed yet)"
     },
     "opencl-nvidia": {
       "names": [
@@ -1597,31 +1649,31 @@
       "candidates": [],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "Device firmware: AMD SEV (EPYC), Ryzen AI NPU and AMD TEE blobs; no free firmware exists for any of them (checked 2026-11-21)",
-      "lockIn": "Likely unused here: the 7900X3D has no NPU and consumer Ryzen has no SEV; only the PSP TEE driver could load amdtee blobs"
+      "effortReason": "Device firmware: AMD SEV (EPYC), Ryzen AI NPU and AMD TEE blobs; no free firmware exists for any of them (checked 2026-11-22)",
+      "lockIn": "Likely unused here: the 7900X3D has no NPU or SEV, so at most an amdtee blob could load"
     },
     "linux-firmware-amdgpu": {
       "names": [],
       "candidates": [],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "Device firmware: amdgpu loads PSP/SMU/DMUB/VCN blobs to start the GPU; no free replacement exists (checked 2026-11-21)",
-      "lockIn": "Without it the Radeon 610M iGPU does not start; the display runs on the RTX 3090, so it only costs iGPU compute such as rusticl on radeonsi"
+      "effortReason": "Device firmware: amdgpu loads PSP/SMU/DMUB/VCN blobs to start the GPU; no free replacement exists (checked 2026-11-22)",
+      "lockIn": "Without it the Radeon 610M iGPU does not start, but the display runs on the RTX 3090, so it only costs iGPU compute and video decode"
     },
     "linux-firmware-realtek": {
       "names": [],
       "candidates": [],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "Device firmware: rtl_nic PHY patches for the RTL8125B NIC (r8169); no free replacement exists (checked 2026-11-21)",
-      "lockIn": "r8169 treats the patch as optional, so the 2.5GbE port should still link without it, minus Realtek's PHY fixes"
+      "effortReason": "Device firmware: rtl_nic PHY patches for the RTL8125B NIC (r8169); no free replacement exists (checked 2026-11-22)",
+      "lockIn": "ethtool shows rtl8125b-2_0.0.2 loaded on enp6s0; r8169 treats the patch as optional, so the 2.5GbE port should still link without it, minus Realtek's PHY fixes"
     },
     "linux-firmware-whence": {
       "names": [],
       "candidates": [],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "Licence text (WHENCE) for the other linux-firmware packages; it carries no code",
+      "effortReason": "Licence text (WHENCE) for the other linux-firmware packages; it carries no code (checked 2026-11-22)",
       "lockIn": "Goes away only with every linux-firmware-* package"
     },
     "linux-firmware*": {
@@ -1637,8 +1689,8 @@
       "candidates": [],
       "fit": "none",
       "effort": "XL",
-      "effortReason": "CPU microcode: AMD signs it and LICENSE.amd-ucode bans reverse engineering; no free x86 microcode exists (checked 2026-11-21)",
-      "lockIn": "Closed on any x86 CPU; without the package the 7900X3D keeps the BIOS revision 0x0a601206 instead of 0x0a60120a, so only BIOS updates bring microcode fixes"
+      "effortReason": "CPU microcode is AMD-signed and LICENSE.amd-ucode bans reverse engineering; no free x86 microcode exists (checked 2026-11-22)",
+      "lockIn": "Closed on any x86 CPU; the 2026-11-20 boot log shows the package lifting the 7900X3D from 0x0a601206 to 0x0a60120a, so without it only BIOS updates bring fixes"
     },
     "xone-dongle-firmware": {
       "names": [
@@ -1673,7 +1725,24 @@
       "effortReason": "",
       "lockIn": ""
     },
-    "Steamworks Common Redistributables": null,
+    "Steamworks Common Redistributables": {
+      "names": [
+        "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13): builtin replacement DLLs for most redistributable runtimes",
+        "DXVK 3.1.1 (Zlib, release 2026-09-15) and vkd3d-proton 3.1 (LGPL-2.1, release 2026-10-28): the Direct3D layers Proton ships",
+        "Wine-Mono 11.3.0 (MIT/LGPL mix, release 2026-08-17): replaces the .NET runtime"
+      ],
+      "candidates": [
+        "wine",
+        "wine-mono",
+        "dxvk-bin",
+        "vkd3d-proton-bin",
+        "Proton - Experimental"
+      ],
+      "fit": "partial",
+      "effort": "S",
+      "effortReason": "Proton and Wine already carry free builds of these runtimes; only a game that insists on Microsoft's native DLLs still needs the originals (checked 2026-11-22)",
+      "lockIn": "Steam reinstalls it as a dependency of Windows games, although the local Proton - Experimental already ships dxvk, vkd3d-proton and wine-mono"
+    },
     "Proton*": null,
     "Steam Linux Runtime*": null,
     "libfdk-aac": {
@@ -1985,7 +2054,42 @@
       "lockIn": "None; Tesseract reads phone photos of book pages worse than ML Kit, so page-number hits need re-checking on real photos",
       "onlySource": "maven-cache"
     },
-    "@anthropic-ai/claude-agent-sdk*": null,
+    "@anthropic-ai/claude-agent-sdk-linux-x64*": {
+      "names": [
+        "@opencode-ai/sdk 1.19.6 (MIT, 2026-11-17): drives the opencode harness, closest to the Agent SDK",
+        "@openai/agents 0.22.0 (MIT, 2026-11-12)",
+        "@google/adk 2.5.0 (Apache-2.0, 2026-11-12)",
+        "ai 7.0.179, the Vercel AI SDK (Apache-2.0, 2026-11-20)"
+      ],
+      "candidates": [
+        "@opencode-ai/sdk",
+        "@openai/agents",
+        "@google/adk",
+        "ai"
+      ],
+      "fit": "partial",
+      "effort": "S",
+      "effortReason": "Native Claude Code binary fetched as the SDK's optional dependency; it goes when the SDK goes, and nothing under ~/src names the SDK (checked 2026-11-22)",
+      "lockIn": "Only runs the Claude models through Anthropic's service; the musl build never runs on glibc Arch"
+    },
+    "@anthropic-ai/claude-agent-sdk*": {
+      "names": [
+        "@opencode-ai/sdk 1.19.6 (MIT, 2026-11-17): drives the opencode harness, closest to the Agent SDK",
+        "@openai/agents 0.22.0 (MIT, 2026-11-12)",
+        "@google/adk 2.5.0 (Apache-2.0, 2026-11-12)",
+        "ai 7.0.179, the Vercel AI SDK (Apache-2.0, 2026-11-20)"
+      ],
+      "candidates": [
+        "@opencode-ai/sdk",
+        "@openai/agents",
+        "@google/adk",
+        "ai"
+      ],
+      "fit": "partial",
+      "effort": "S",
+      "effortReason": "The cache holds only the 0.2.128 tarballs and no project under ~/src names the SDK, so nothing needs a port; API shapes differ from the free SDKs (checked 2026-11-22)",
+      "lockIn": "Wraps the proprietary Claude Code binary and its agent loop; free SDKs take other models but lack its built-in tools and permission system"
+    },
     "org.json:json": {
       "names": [
         "Nothing to replace: stleary/JSON-java is Public Domain (LICENSE says 'Public Domain.'; the 20240303 pom says Public Domain; pushed 2026-10-31, newest 20260814). Checked 2026-11-20",
@@ -2001,6 +2105,21 @@
       "effortReason": "In use 20240303 is Public Domain. The scan graph shows AGP (com.android.tools.build:gradle) -> com.google.crypto.tink:tink -> org.json:json in every Android project, so only the two old versions can go; phone-focus-mode also declares it",
       "lockIn": "None",
       "onlySource": "maven-cache"
+    },
+    "A Space for the Unbound": {
+      "names": [
+        "ScummVM 2026.4.0 (GPL-3.0, release 2026-10-11): runs point-and-click adventures; the free games it hosts are freeware, not FOSS",
+        "Endless Sky 0.11.4 (GPL-3.0 code, CC art, release 2026-10-31): story-driven exploration"
+      ],
+      "candidates": [
+        "scummvm",
+        "endless-sky"
+      ],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "A proprietary story game: no FOSS title offers its content, a substitute would be a new game (checked 2026-11-22)",
+      "lockIn": "Per-title proprietary content",
+      "onlySource": "steam"
     },
     "*": {
       "names": [
