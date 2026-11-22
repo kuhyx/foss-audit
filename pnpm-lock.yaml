@@ -179,6 +179,9 @@ importers:
 
   .:
     dependencies:
+      '@kuhyx/kuhy-credit':
+        specifier: github:kuhyx/utils#kuhy-credit-v0.3.0&path:/kuhy_credit/web
+        version: https://codeload.github.com/kuhyx/utils/tar.gz/c3946412729991bf1e9c3b6a5cc55dbe80419fc0#path:/kuhy_credit/web
       '@kuhyx/web-ui':
         specifier: github:kuhyx/utils#web_ui-v0.5.0&path:/web_ui
         version: https://codeload.github.com/kuhyx/utils/tar.gz/decf5824e609b099f9455be93c4d09b4c1fd6cae#path:/web_ui(astro@7.4.13(@types/node@26.6.6)(yaml@2.9.1))
@@ -823,6 +826,11 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@kuhyx/kuhy-credit@https://codeload.github.com/kuhyx/utils/tar.gz/c3946412729991bf1e9c3b6a5cc55dbe80419fc0#path:/kuhy_credit/web':
+    resolution: {gitHosted: true, integrity: sha512-XplMnwV6o8n3JS9juJGetBJhcn0PksNbp5gBQPs73NbXLsqxw3Cit04ke/xLFZjOufreRtCh1JMsOQzIza7Xiw==, path: /kuhy_credit/web, tarball: https://codeload.github.com/kuhyx/utils/tar.gz/c3946412729991bf1e9c3b6a5cc55dbe80419fc0}
+    version: 0.3.0
+    engines: {node: '>=24', pnpm: '>=10'}
 
   '@kuhyx/web-ui@https://codeload.github.com/kuhyx/utils/tar.gz/decf5824e609b099f9455be93c4d09b4c1fd6cae#path:/web_ui':
     resolution: {gitHosted: true, integrity: sha512-Uf0AXSh0DaeI/mC7UpgpGrty1g0FlLOIUBtYh1I/qSWiJ/oQeUKoAHfOW/eTJzWurVFLTQMQgP4DFfmBgaz1fw==, path: /web_ui, tarball: https://codeload.github.com/kuhyx/utils/tar.gz/decf5824e609b099f9455be93c4d09b4c1fd6cae}
@@ -3458,6 +3466,8 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
+
+  '@kuhyx/kuhy-credit@https://codeload.github.com/kuhyx/utils/tar.gz/c3946412729991bf1e9c3b6a5cc55dbe80419fc0#path:/kuhy_credit/web': {}
 
   '@kuhyx/web-ui@https://codeload.github.com/kuhyx/utils/tar.gz/decf5824e609b099f9455be93c4d09b4c1fd6cae#path:/web_ui(astro@7.4.13(@types/node@26.6.6)(yaml@2.9.1))':
     dependencies:
