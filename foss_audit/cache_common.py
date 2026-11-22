@@ -90,6 +90,14 @@ def classify_version(cv: CachedVersion) -> tuple[Verdict, str]:
     return classify_text(cv.license)
 
 
+def _is_dir(entry: os.DirEntry[str]) -> bool:
+    """`entry.is_dir()`, False for a symlink loop (ELOOP) or other unreadable link."""
+    try:
+        return entry.is_dir()
+    except OSError:
+        return False
+
+
 def project_files(names: Iterable[str], root: Path = SRC, depth: int = PROJECT_DEPTH) -> list[Path]:
     """Files matching the glob patterns `names` at most `depth` levels under ~/src (bounded, no deep walk).
 
@@ -112,7 +120,7 @@ def project_files(names: Iterable[str], root: Path = SRC, depth: int = PROJECT_D
         for entry in entries:
             if level and any(fnmatch.fnmatchcase(entry.name, pattern) for pattern in plain):
                 found.append(Path(entry.path))
-            if level < depth and entry.name != "node_modules" and entry.is_dir():
+            if level < depth and entry.name != "node_modules" and _is_dir(entry):
                 pending.append((entry.path, level + 1))
     return sorted(p for p in set(found) if p.is_file() and "node_modules" not in p.parts)
 

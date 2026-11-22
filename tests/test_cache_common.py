@@ -201,3 +201,13 @@ def test_a_package_that_ships_code_never_inherits() -> None:
     assert {i.name: i for i in items}[
         "tkwidgets"
     ].reason == "no license (all rights reserved); checked package.json"
+
+
+def test_project_files_survives_a_self_looping_symlink(tmp_path: Path) -> None:
+    """A `.venv -> .venv` loop in one repo must not drop every cache item."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".venv").symlink_to(repo / ".venv")
+    (repo / "package-lock.json").write_text("{}")
+    found = project_files(["package-lock.json", "sub/package.json"], root=tmp_path)
+    assert found == [repo / "package-lock.json"]
