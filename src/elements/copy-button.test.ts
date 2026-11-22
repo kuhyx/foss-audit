@@ -78,4 +78,9 @@ describe("copy-button", () => {
     expect(none.querySelector('span[aria-label="No remove command"]')).not.toBeNull();
     expect(none.querySelector("button")).toBeNull();
   });
+
+  it("names its icon in one hover word", () => {
+    const element = mount({ command: "rm x" });
+    expect(element.querySelector("button")?.getAttribute("title")).toBe("Copy");
+  });
 });

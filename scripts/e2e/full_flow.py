@@ -19,14 +19,10 @@ from typing import Any
 
 from cdp import Browser
 from page import Page
+from steps import check, run_steps
 
 # Text that means a value leaked into the page unformatted (R9).
 LEAK = r"/\[object Object\]|\bundefined\b|\bNaN\b/"
-
-
-def check(condition: bool, message: str) -> None:
-    if not condition:
-        raise AssertionError(message)
 
 
 class Flow:
@@ -227,11 +223,6 @@ class Flow:
         self.notes.append("no console errors, no [object Object]/undefined/NaN")
 
 
-def say(line: str) -> None:
-    sys.stdout.write(f"{line}\n")
-    sys.stdout.flush()
-
-
 def main() -> int:
     url, scan_path, fail_png = sys.argv[1:4]
     items = json.loads(Path(scan_path).read_text())["items"]
@@ -247,23 +238,7 @@ def main() -> int:
         ("/nope is a real 404", flow.not_found),
         ("no console errors or leaked values", flow.health),
     ]
-    failed = 0
-    try:
-        for number, (title, step) in enumerate(steps, 1):
-            say(f"step {number}/{len(steps)}: {title}")
-            try:
-                step()
-            except (AssertionError, RuntimeError) as err:
-                browser.screenshot(fail_png)
-                say(f"FAIL step {number}/{len(steps)}: {err}\n  shot: {fail_png}")
-                failed += 1
-                if "--keep-going" in sys.argv:
-                    continue
-                return 1
-            say(f"  ok: {flow.notes[-1]}")
-        return 1 if failed else 0
-    finally:
-        browser.close()
+    return run_steps(browser, steps, flow.notes, fail_png)
 
 
 if __name__ == "__main__":

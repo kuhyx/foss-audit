@@ -24,7 +24,7 @@ export class ErrorBanner extends StoreElement {
       this.teardown();
       return;
     }
-    const dismiss = html("button", { "aria-label": "Dismiss", class: "btn", type: "button" }, GLYPH.close);
+    const dismiss = html("button", { "aria-label": "Dismiss", class: "btn", title: "Dismiss", type: "button" }, GLYPH.close);
     dismiss.addEventListener("click", dismissBanner);
     const list = html("ul", {}, ...messages.map((message) => item(message)));
     this.replaceChildren(html("div", { class: "banner", role: "alert" }, list, dismiss));

@@ -21,7 +21,7 @@ const PICTURES: Readonly<Record<string, readonly [string, string]>> = {
 };
 
 function sheet(): HTMLElement {
-  const close = html("button", { "aria-label": "Close", autofocus: true, class: "btn", type: "button" }, "✕");
+  const close = html("button", { "aria-label": "Close", autofocus: true, class: "btn", title: "Close", type: "button" }, "✕");
   close.addEventListener("click", closeHelp);
   const rows = SHORTCUTS.map(([key, what]) => {
     const [cap, action] = PICTURES[key] ?? [key, "•"];

@@ -144,7 +144,7 @@ export class DetailPanel extends StoreElement {
 
   #render(item: Item): void {
     this.teardown();
-    const close = html("button", { "aria-label": "Close details (Esc)", class: "btn", type: "button" }, icon("✕"));
+    const close = html("button", { "aria-label": "Close details (Esc)", class: "btn", title: "Close", type: "button" }, icon("✕"));
     close.addEventListener("click", closeItem);
     const heading = html("h3", { "aria-label": "Remove", id: "remove-heading" }, icon("🗑"));
     const remove = html("section", { "aria-labelledby": "remove-heading", class: "panel-section" }, heading);

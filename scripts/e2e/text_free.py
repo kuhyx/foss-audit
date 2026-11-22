@@ -46,9 +46,11 @@ PROBE = """
     }
   }
   for (const el of document.body.querySelectorAll('[placeholder], [title]')) {
+    // A title of one word is the allowed hover name of an icon; anything longer is chrome.
     for (const a of ['placeholder', 'title']) {
       const v = el.getAttribute(a);
-      if (v && /[A-Za-z]{2,}/.test(v)) out.push([el.tagName.toLowerCase() + '@' + a, v]);
+      const oneWordTip = a === 'title' && /^[A-Za-z-]{1,20}$/.test(v ?? '');
+      if (v && !oneWordTip && /[A-Za-z]{2,}/.test(v)) out.push([el.tagName.toLowerCase() + '@' + a, v]);
     }
   }
   return out;

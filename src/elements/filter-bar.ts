@@ -93,8 +93,8 @@ function build(items: readonly Item[]): Bar {
   const present = [...countBy(items, (item) => item.source)].toSorted(([a], [b]) => SOURCES.indexOf(a) - SOURCES.indexOf(b));
   const count = document.createTextNode("");
   const total = document.createTextNode("");
-  const reset = html("button", { "aria-label": "Reset filters", class: "btn", "data-reset": true, type: "button" }, icon("Reset filters"));
-  const toggle = html("button", { "aria-expanded": "false", "aria-label": "Filters", class: "btn filter-toggle", type: "button" }, icon("Filters"));
+  const reset = html("button", { "aria-label": "Reset filters", class: "btn", "data-reset": true, title: "Reset", type: "button" }, icon("Reset filters"));
+  const toggle = html("button", { "aria-expanded": "false", "aria-label": "Filters", class: "btn filter-toggle", title: "Filters", type: "button" }, icon("Filters"));
   const result = html("p", { "aria-live": "polite", class: "result-count" }, html("strong", {}, count), " ", html("span", { "aria-hidden": "true", class: "muted" }, "/ "), html("span", { class: "muted" }, total));
   const row = html("div", { class: "facet-row" }, toggle, ...FACETS.map(([facet, label, options]) => segmented(facet, label, options)), result, reset);
   const root = html(

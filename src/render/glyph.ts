@@ -1,7 +1,8 @@
 /**
  * The UI's picture vocabulary (textgate: nothing kuhy sees is a word unless he
  * asked). Every symbol here is painted; its old wording lives on only as the
- * spoken name (`aria-label` on role="img"), never as a tooltip.
+ * spoken name (`aria-label` on role="img"), plus at most one hover word
+ * (`title`) on an icon-only control.
  *
  * One symbol per meaning across views: the table header, the detail panel
  * field and the filter facet for the same thing all use the same glyph.
@@ -49,6 +50,8 @@ export const GLYPH = {
 export type GlyphName = keyof typeof GLYPH;
 
 export const VIEW_GLYPHS: Readonly<Record<View, string>> = { summary: "📊", table: "▦", wins: "⚡" };
+
+export const VIEW_TIPS: Readonly<Record<View, string>> = { summary: "Summary", table: "Table", wins: "Wins" };
 
 // Fullness is freeness: the shape carries the verdict without its colour.
 export const VERDICT_SHAPES: Readonly<Record<Verdict, string>> = {

@@ -12,33 +12,8 @@ import { headerCheck } from "../lib/selection.ts";
 import { nextSort, sortItems } from "../lib/sort.ts";
 import { arrowTarget, ROW_HEIGHT, scrollTopToReveal, visibleRange } from "../lib/virtual.ts";
 import { html } from "../render/dom.ts";
-import {
-  buildEmpty,
-  buildHeader,
-  buildHeaderCheckbox,
-  buildRow,
-  showHeaderCheck,
-  showRow,
-  showSort,
-} from "../render/table-rows.ts";
-
-type Mode = "empty" | "none" | "table";
-
-interface Table {
-  readonly body: HTMLElement;
-  readonly header: HTMLElement;
-  readonly headerBox: HTMLInputElement;
-  readonly observer: ResizeObserver;
-  readonly scroller: HTMLElement;
-}
-
-function rowOf(target: EventTarget | null): HTMLElement | null {
-  return target instanceof Element ? target.closest<HTMLElement>(".tr.row") : null;
-}
-
-function isArrow(key: string): key is ArrowKey {
-  return key === "ArrowDown" || key === "ArrowUp";
-}
+import { buildEmpty, buildHeader, buildHeaderCheckbox, buildRow, showHeaderCheck, showRow, showSort } from "../render/table-rows.ts";
+import { isArrow, type Mode, rowOf, type Table } from "./items-table-dom.ts";
 
 export class ItemsTable extends StoreElement {
   #adopted: null | readonly Item[] = null;

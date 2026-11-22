@@ -40,7 +40,7 @@ export class SelectionBar extends StoreElement {
 
   #build(): Bar {
     const count = document.createTextNode("");
-    const clear = html("button", { "aria-label": "Clear", class: "link", type: "button" }, "✕");
+    const clear = html("button", { "aria-label": "Clear", class: "link", title: "Clear", type: "button" }, "✕");
     clear.addEventListener("click", () => {
       clearSelection();
     });

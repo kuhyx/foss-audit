@@ -57,6 +57,8 @@ describe("filter-bar", () => {
     expect(paintedWords(bar).filter((word) => !SOURCE_WORDS.has(word))).toEqual([]);
     expect(find(bar, ".result-count strong").textContent).toBe("9");
     expect(find<HTMLButtonElement>(bar, "[data-reset]").disabled).toBe(true);
+    expect(bar.querySelector("[data-reset]")?.getAttribute("title")).toBe("Reset");
+    expect(bar.querySelector(".filter-toggle")?.getAttribute("title")).toBe("Filters");
   });
 
   it("shows 0 for a verdict the scan does not contain", () => {

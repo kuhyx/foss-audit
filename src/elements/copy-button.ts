@@ -62,7 +62,7 @@ export class CopyButton extends HTMLElement {
       return;
     }
     const title = this.getAttribute("label") ?? "Copy remove command";
-    const button = html("button", { "aria-label": title, class: "btn", type: "button" }, this.getAttribute("button-text") ?? "⧉");
+    const button = html("button", { "aria-label": title, class: "btn", title: "Copy", type: "button" }, this.getAttribute("button-text") ?? "⧉");
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       void this.#copy();

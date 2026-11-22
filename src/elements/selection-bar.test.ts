@@ -41,6 +41,7 @@ describe("selection-bar", () => {
     setRowsChecked([CHROME.id, BASH.id], true);
     expect(find(bar, ".selection-count").textContent).toBe('2');
     expect(find(bar, ".selection-bar > .link").getAttribute('aria-label')).toBe('Clear');
+    expect(find(bar, ".selection-bar > .link").getAttribute("title")).toBe("Clear");
     expect(find(bar, "section").getAttribute("aria-label")).toBe("Selection");
     click(find(bar, ".selection-bar > .link"));
     expect(bar.childElementCount).toBe(0);
