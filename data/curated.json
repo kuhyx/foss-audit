@@ -173,15 +173,19 @@
     ],
     "claude": [
       "nonfree",
-      "Claude Code: © Anthropic PBC, all rights reserved, use subject to the Commercial Terms of Service (LICENSE.md of https://github.com/anthropics/claude-code, checked 2026-11-22); installed 2.1.330 is the latest release"
+      "Claude Code: © Anthropic PBC, all rights reserved, use subject to the Commercial Terms of Service (LICENSE.md of https://github.com/anthropics/claude-code, checked 2026-11-22); installed 2.1.330 is the latest release",
+      {
+        "homepage": "https://github.com/anthropics/claude-code",
+        "license": "© Anthropic PBC. All rights reserved; use subject to the Commercial Terms of Service"
+      }
     ],
     "Proton*": [
       "foss-partial",
-      "BSD-3 glue + Wine/DXVK/vkd3d (free); shipped through Steam"
+      "Top level BSD-3-Clause (LICENSE.proton), each component under its own free licence (LICENSE or COPYING per directory; no closed DLL found in the local build); Valve ships it only through Steam under the Steam Subscriber Agreement (ValveSoftware/Proton, checked 2026-11-22)"
     ],
     "Steam Linux Runtime*": [
       "foss-partial",
-      "Mostly Debian FOSS libraries, distributed under the Steam Subscriber Agreement"
+      "Debian-based container runtime: Valve's scripts are MIT, each package keeps its own licence (ValveSoftware/steam-runtime COPYING), its apt repo also has a non-free component; distributed under the Steam Subscriber Agreement, checked 2026-11-22"
     ],
     "Steamworks Common Redistributables": [
       "nonfree",
@@ -435,8 +439,19 @@
     ],
     "osu!*": [
       "foss-partial",
-      "Code MIT; osu-resources (skins, samples, fonts) CC-BY-NC-4.0",
-      "MIT"
+      "Code MIT (ppy/osu LICENCE); osu-resources (skins, samples, fonts) CC-BY-NC-4.0 (ppy/osu-resources LICENCE.md), both checked 2026-11-22",
+      "MIT",
+      {
+        "homepage": "https://github.com/ppy/osu"
+      }
+    ],
+    "cleanup-plate/bash32": [
+      "nonfree",
+      "Local test image built by cleanup-plate/scripts/test_bash32.sh (FROM bash:3.2, apk add python3). It has no licence label and the repo (private, Sepci0/cleanup-plate) has no LICENSE, so no licence is granted. Every layer is free: bash 3.2.57 GPL-2.0-or-later (shell.c in the GNU tarball), Alpine packages, python3 PSF-2.0; checked 2026-11-22",
+      {
+        "homepage": "https://github.com/Sepci0/cleanup-plate",
+        "license": "none declared; layers are bash 3.2.57 GPL-2.0-or-later, Alpine packages, python3 PSF-2.0"
+      }
     ],
     "Gale": [
       "foss",
@@ -1736,15 +1751,87 @@
         "wine-mono",
         "dxvk-bin",
         "vkd3d-proton-bin",
-        "Proton - Experimental"
+        "Proton Experimental"
       ],
       "fit": "partial",
       "effort": "S",
       "effortReason": "Proton and Wine already carry free builds of these runtimes; only a game that insists on Microsoft's native DLLs still needs the originals (checked 2026-11-22)",
       "lockIn": "Steam reinstalls it as a dependency of Windows games, although the local Proton - Experimental already ships dxvk, vkd3d-proton and wine-mono"
     },
-    "Proton*": null,
-    "Steam Linux Runtime*": null,
+    "Proton*": {
+      "names": [
+        "GE-Proton11-12 (same LICENSE and LICENSE.proton BSD-3-Clause layout as Valve's, release 2026-11-03): a community build of the same source, run as a Steam compatibility tool",
+        "proton-cachyos cachyos-11.0-20261015-slr (same licence layout, release 2026-10-20)",
+        "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13) with DXVK 3.1.1 (Zlib, release 2026-09-15) and vkd3d-proton 3.1 (LGPL-2.1, release 2026-10-28): the pieces Proton bundles, usable without Steam"
+      ],
+      "candidates": [
+        "proton-ge-custom-bin",
+        "proton-cachyos",
+        "wine",
+        "dxvk-bin",
+        "vkd3d-proton-bin"
+      ],
+      "fit": "partial",
+      "effort": "S",
+      "effortReason": "Dropping a GE-Proton or proton-cachyos build into compatibilitytools.d and choosing it per game is quick, but I did not audit their binaries and they also run inside Valve's Steam Linux Runtime (checked 2026-11-22)",
+      "lockIn": "The Steam client still launches it, and Proton Experimental requires Steam Linux Runtime 4.0 (toolmanifest.vdf require_tool_appid 4183110)",
+      "onlySource": "steam"
+    },
+    "Steam Linux Runtime*": {
+      "names": [
+        "Custom runtime from the ValveSoftware/steam-runtime scripts (MIT per COPYING, last push 2026-09-28, no releases) and docs/building-custom-runtime.md: assembled from Debian source packages",
+        "Wine 11.22 (LGPL-2.1-or-later, release 2026-11-13) with DXVK 3.1.1 (Zlib): runs Windows games on host libraries with no container",
+        "Host Arch libraries for native Linux games, with no runtime container"
+      ],
+      "candidates": [
+        "wine",
+        "dxvk-bin"
+      ],
+      "fit": "partial",
+      "effort": "L",
+      "effortReason": "No ready free build of the container: you build and test a runtime yourself, and games compiled against Valve's runtime break on host libraries (checked 2026-11-22)",
+      "lockIn": "Steam installs it as the base of Proton Experimental and of native Linux games, and Valve's pressure-vessel containers expect it",
+      "onlySource": "steam"
+    },
+    "7zip": {
+      "names": [
+        "libarchive 3.8.11 (BSD-2-Clause, a few files BSD-3 or public domain per COPYING, release 2026-10-30, installed): bsdtar reads and writes 7z, zip and tar and reads RAR and RAR5 with its own decoder",
+        "The Unarchiver unar 1.10.8 (LGPL-2.1, release 2023-10-12, last push 2026-09-21, installed): extracts RAR, 7z, zip and older formats"
+      ],
+      "candidates": [
+        "libarchive",
+        "unarchiver"
+      ],
+      "fit": "good",
+      "effort": "S",
+      "effortReason": "Both replacements are already installed and no package requires 7zip; only scripts calling 7z or 7zz need new commands (checked 2026-11-22)",
+      "lockIn": "None: free tools only read RAR, as it is a closed format; p7zip was dropped, last release 2023-02 and it carries the same unRAR restriction"
+    },
+    "osu!*": {
+      "names": [
+        "osu!lazer with a CC0 resource set instead of osu-resources (code MIT, skins and samples from OpenGameArt and Freesound)",
+        "Etterna 0.75.1 (MIT per LICENSE, release 2026-09-08): keyboard rhythm game, bundled content not audited",
+        "OpenTaiko 0.7.0.18 (MIT, release 2026-11-22): taiko drum game that plays .tja charts"
+      ],
+      "candidates": [
+        "etterna",
+        "opentaiko"
+      ],
+      "fit": "partial",
+      "effort": "M",
+      "effortReason": "Skinning work for a CC0 resource set, or learning a different rhythm game that has none of osu!'s beatmaps (checked 2026-11-22)",
+      "lockIn": "Beatmaps, ranking and multiplayer live on ppy's servers; the NC licence only restricts commercial use"
+    },
+    "cleanup-plate/bash32": {
+      "names": [
+        "Docker Hub official bash:3.2 (bash 3.2.57 GPL-2.0-or-later, built by tianon/docker-bash, GPL-3.0, pushed 2026-11-10): already the base of this image, so the free base exists and is in use"
+      ],
+      "candidates": [],
+      "fit": "drop-in",
+      "effort": "S",
+      "effortReason": "Only the licence is missing: add LABEL org.opencontainers.image.licenses=\"GPL-2.0-or-later AND PSF-2.0\" and a source label to the two-line build in scripts/test_bash32.sh, or give cleanup-plate a LICENSE (checked 2026-11-22)",
+      "lockIn": "None"
+    },
     "libfdk-aac": {
       "names": [
         "FFmpeg native AAC encoder",
@@ -2121,6 +2208,21 @@
       "lockIn": "Per-title proprietary content",
       "onlySource": "steam"
     },
+    "Librarian*": {
+      "names": [
+        "GNOME Mahjongg 51.1 (GPL-3.0 per COPYING, release 2026-09-20): tile-matching puzzle, the nearest free sorting game",
+        "KMahjongg 26.08.3 (GPL-2.0-or-later per LICENSES, assets CC0 or GFDL, release 2026-11-02)"
+      ],
+      "candidates": [
+        "gnome-mahjongg",
+        "kmahjongg"
+      ],
+      "fit": "none",
+      "effort": "XL",
+      "effortReason": "A proprietary puzzle game: no FOSS title shelves books by rule, a substitute would be a new game (checked 2026-11-22)",
+      "lockIn": "Per-title proprietary content under the Steam Subscriber Agreement; the Steam store page is blocked on this machine on purpose, so no per-game EULA was read (steam_appinfo lists none)",
+      "onlySource": "steam"
+    },
     "*": {
       "names": [
         "FOSS games: OpenTTD, 0 A.D., Luanti, Xonotic, Wesnoth, Mindustry"
@@ -2140,5 +2242,75 @@
       "onlySource": "steam"
     }
   },
-  "ranking": { "fit": [], "effort": [], "reasons": {} }
+  "ranking": {
+    "fit": [
+      "pacman:amd-ucode",
+      "pacman:steam",
+      "pacman:linux-firmware-amdgpu",
+      "pacman:linux-firmware-realtek",
+      "pacman:linux-firmware-amd",
+      "steam:A Space for the Unbound",
+      "steam:Librarian: Tidy Up the Arcane Library!",
+      "pacman:linux-firmware-whence",
+      "pacman:nvidia-utils",
+      "pacman:lib32-nvidia-utils",
+      "steam:Steam Linux Runtime 4.0",
+      "steam:Proton Experimental",
+      "steam:Steamworks Common Redistributables",
+      "aur:steamcmd",
+      "npm-cache:@anthropic-ai/claude-agent-sdk",
+      "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64",
+      "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64-musl",
+      "desktop:osu!",
+      "local-bin:claude",
+      "pacman:7zip",
+      "docker:cleanup-plate/bash32"
+    ],
+    "effort": [
+      "pacman:amd-ucode",
+      "pacman:steam",
+      "pacman:linux-firmware-amdgpu",
+      "pacman:linux-firmware-realtek",
+      "steam:A Space for the Unbound",
+      "steam:Librarian: Tidy Up the Arcane Library!",
+      "pacman:linux-firmware-amd",
+      "pacman:linux-firmware-whence",
+      "steam:Steam Linux Runtime 4.0",
+      "pacman:nvidia-utils",
+      "local-bin:claude",
+      "pacman:lib32-nvidia-utils",
+      "aur:steamcmd",
+      "desktop:osu!",
+      "steam:Proton Experimental",
+      "steam:Steamworks Common Redistributables",
+      "npm-cache:@anthropic-ai/claude-agent-sdk",
+      "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64",
+      "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64-musl",
+      "pacman:7zip",
+      "docker:cleanup-plate/bash32"
+    ],
+    "reasons": {
+      "pacman:amd-ucode": "No free CPU microcode exists and every boot loads it, so no fit and XL to replace",
+      "pacman:steam": "No free client or store, and the whole game library depends on it",
+      "pacman:linux-firmware-amdgpu": "The GPU does not run without this closed firmware and no free blob exists",
+      "pacman:linux-firmware-realtek": "Closed NIC and Bluetooth firmware, no free replacement",
+      "pacman:linux-firmware-amd": "Closed AMD firmware blobs with no free equivalent",
+      "steam:A Space for the Unbound": "Proprietary story game, no FOSS title offers its content, a substitute is a new game",
+      "steam:Librarian: Tidy Up the Arcane Library!": "Proprietary puzzle game under the Steam Subscriber Agreement, no FOSS title offers its rules, a substitute is a new game",
+      "pacman:linux-firmware-whence": "Only the licence index of the firmware, no free replacement and no blob of its own",
+      "pacman:nvidia-utils": "Closed userspace driver, partly replaceable by nouveau and NVK at M effort",
+      "pacman:lib32-nvidia-utils": "32-bit half of the closed driver, same partial route as nvidia-utils",
+      "steam:Steam Linux Runtime 4.0": "Free Debian-based container under Steam's licence, a self-built runtime is L work and Proton Experimental requires it",
+      "steam:Proton Experimental": "Free source (BSD-3 top level) shipped under Steam's licence, GE-Proton or proton-cachyos swap in at S but run in the same runtime",
+      "steam:Steamworks Common Redistributables": "Microsoft redistributables that Wine and Proton already replace, S effort",
+      "aur:steamcmd": "Closed Steam downloader, DepotDownloader covers downloads only, M effort",
+      "npm-cache:@anthropic-ai/claude-agent-sdk": "Proprietary SDK cache entry, partial fit, S effort to drop it",
+      "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64": "Proprietary SDK binary cache entry, partial fit, S effort to drop it",
+      "npm-cache:@anthropic-ai/claude-agent-sdk-linux-x64-musl": "Proprietary SDK binary cache entry, partial fit, S effort to drop it",
+      "desktop:osu!": "Code MIT but resources CC-BY-NC, FOSS rhythm games lack its beatmaps, M effort, stale launcher with no install",
+      "local-bin:claude": "Proprietary harness but opencode and Qwen Code are installed, good fit, M effort to port hooks and skills",
+      "pacman:7zip": "Free except the unRAR decoder, libarchive and unar are installed, good fit, S effort",
+      "docker:cleanup-plate/bash32": "Only the licence label is missing, every layer is free, drop-in fit and S effort"
+    }
+  }
 }
