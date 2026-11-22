@@ -53,6 +53,22 @@ describe("parseScan", () => {
     expect(parseScan({ ...scan, items: [item] }).items[0]?.dangling).toBe(false);
   });
 
+  it("defaults the rank fields of a scan file that predates them to null and false", () => {
+    const scan = makeScan();
+    const rankKeys = new Set(["effortRank", "fitRank", "rankReason", "unranked"]);
+    const item = Object.fromEntries(Object.entries(scan.items[0] ?? {}).filter(([key]) => !rankKeys.has(key)));
+    const parsed = parseScan({ ...scan, items: [item] }).items[0];
+    expect([parsed?.fitRank, parsed?.effortRank, parsed?.rankReason, parsed?.unranked]).toEqual([null, null, null, false]);
+  });
+
+  it("keeps the ranks and the reason, and rejects a non-integer rank", () => {
+    const scan = makeScan();
+    const chrome = parseScan({ ...scan, items: [scan.items[1]] }).items[0];
+    expect([chrome?.fitRank, chrome?.effortRank, chrome?.rankReason]).toEqual([2, 2, "a browser engine is a huge build"]);
+    const body = { ...scan, items: [{ ...scan.items[1], fitRank: 1.5 }] };
+    expect(() => parseScan(body)).toThrow(/at "items\.0\.fitRank"/u);
+  });
+
   it("rejects a missing top-level field", () => {
     const scan: Partial<ReturnType<typeof makeScan>> = makeScan();
     delete scan.host;

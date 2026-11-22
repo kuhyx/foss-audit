@@ -18,43 +18,22 @@ from typing import Any
 
 from cdp import Browser
 from page import Page
+from prompt_groups import pick_group, prompt_groups
+from script_checks import check, script_ok
 
-GMS = "com.google.android.gms"
-NULL_TOKEN = re.compile(r"(^|\s)null(\s|$)", re.MULTILINE)
 SECTION = re.compile(r"^#### .* \(`([^`]+)`\)", re.MULTILINE)
 
 
-def check(condition: bool, message: str) -> None:
-    if not condition:
-        raise AssertionError(message)
-
-
-def prompt_ids(prompt: str, count: int, expected: set[str]) -> str:
+def prompt_ids(prompt: str, count: int, selected: list[dict[str, Any]], group_key: str) -> str:
+    expected = {item["id"] for item in selected}
     ids = SECTION.findall(prompt)
     check(len(ids) == count, f"prompt has {len(ids)} #### sections, the bar says {count}")
     check(set(ids) == expected, f"prompt ids differ from the selection: {sorted(set(ids) ^ expected)[:5]}")
-    group = re.search(rf"^### Group \d+ of \d+: .*{re.escape(GMS)}.*$", prompt, re.MULTILINE)
-    check(group is not None, f"no group heading names {GMS}")
+    label, members = prompt_groups(selected)[group_key]
+    heading = rf"^### Group \d+ of \d+: {re.escape(label)} \({len(members)} items\)$"
+    group = re.search(heading, prompt, re.MULTILINE)
+    check(group is not None, f"no group heading `{label} ({len(members)} items)` in the prompt")
     return group.group(0) if group else ""
-
-
-def has_command(lines: list[str], command: str) -> bool:
-    """Verbatim, or merged into one `<manager> a b c` line (remove-script.ts)."""
-    if command in lines:
-        return True
-    prefix, _, arg = command.rpartition(" ")
-    return any(line.startswith(f"{prefix} ") and arg in line[len(prefix) :].split() for line in lines)
-
-
-def script_ok(script: str, ids: set[str], items: dict[str, dict[str, Any]]) -> None:
-    check(script.startswith("#!/bin/bash\n"), f"script starts {script[:20]!r}")
-    check(NULL_TOKEN.search(script) is None, "script contains a bare `null`")
-    check(f"for {len(ids)} selected item" in script, "script header has the wrong item count")
-    lines = script.splitlines()
-    for item_id in sorted(ids):
-        command = items[item_id]["removeCommand"]
-        wanted = f"# no remove command: {item_id}" if command is None else command
-        check(has_command(lines, wanted), f"script lacks {wanted!r} for {item_id}")
 
 
 class Flow:
@@ -66,6 +45,7 @@ class Flow:
         self.items = items
         self.picked: set[str] = set()
         self.firebase: list[str] = []
+        self.group_key = ""
         self.notes: list[str] = []
 
     def haystack(self, item_id: str) -> str:
@@ -187,8 +167,24 @@ class Flow:
             f"check x {head_x:.1f}/{row_x:.1f}; bar end {bar_bottom:.0f}, table {table_top:.0f}"
         )
 
+    def select_group(self) -> None:
+        """Pick a multi-item prompt group from the scan and tick every member by
+        searching its id, so the prompt has a group whatever the host holds."""
+        self.group_key, (label, members) = pick_group(self.items.values())
+        for member in members:
+            self.p.search(member)
+            row = next((r for r in self.p.collect() if r["id"] == member), None)
+            check(row is not None, f"searching {member!r} does not show that item")
+            assert row is not None
+            if member not in self.picked:
+                self.p.click_row(row["index"])
+                self.picked.add(member)
+            self.expect_count(len(self.picked), f"group member {member}")
+        self.notes.append(f"{label}: {len(members)} members ticked, bar {self.p.count()}")
+
     def copy_prompt(self) -> None:
-        heading = prompt_ids(self.p.copy("Copy Claude prompt"), self.p.count(), self.picked)
+        selected = [self.items[i] for i in self.picked]
+        heading = prompt_ids(self.p.copy("Copy Claude prompt"), self.p.count(), selected, self.group_key)
         self.notes.append(f"prompt: {len(self.picked)} sections; {heading}")
 
     def copy_script(self) -> None:
@@ -214,6 +210,7 @@ def main() -> int:
         ("typo firbase: firebase rows ranked first", flow.typo_firbase),
         ("sort by name, shift+click rows 2..6", flow.shift_range),
         ("layout + screenshots", lambda: flow.layout(table_png, bar_png)),
+        ("tick every member of one prompt group (picked from the scan)", flow.select_group),
         ("Copy Claude prompt", flow.copy_prompt),
         ("Copy remove commands", flow.copy_script),
     ]

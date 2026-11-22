@@ -3,6 +3,7 @@ import type { View } from "../lib/url-state.ts";
 import type { AppState } from "./store.ts";
 
 import { applyFilter } from "../lib/filter.ts";
+import { type RankTotals, rankTotals } from "../lib/rank.ts";
 import { isEasyWin } from "../lib/verdict.ts";
 
 const NONE: readonly Item[] = [];
@@ -28,6 +29,13 @@ const filtered = memoize((items: readonly Item[], filter: AppState["url"]["filte
 
 export function selectResults(state: AppState): readonly Item[] {
   return filtered(selectItems(state), state.url.filter);
+}
+
+const totals = memoize((items: readonly Item[]) => rankTotals(items));
+
+// Over the whole scan, not the results: "rank 3 of 15" must not change with a filter.
+export function selectRankTotals(state: AppState): RankTotals {
+  return totals(selectItems(state));
 }
 
 const winners = memoize((items: readonly Item[]) => items.filter((item) => isEasyWin(item)));

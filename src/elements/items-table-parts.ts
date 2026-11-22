@@ -1,4 +1,6 @@
-// Types and DOM lookups for items-table.ts, kept apart to hold it under the line cap.
+/**
+Small shared pieces of the all-items table element: its mode, parts and event-target helpers.
+*/
 import type { ArrowKey } from "../lib/virtual.ts";
 
 export type Mode = "empty" | "none" | "table";

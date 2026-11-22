@@ -221,6 +221,22 @@ def classify_local_bin(path: Path, owners: dict[str, Path]) -> Item | None:
     )
 
 
+def version_from_link(path: Path) -> str | None:
+    """`<ver>` when `path` is a symlink into a `.../versions/<ver>` path, else None.
+
+    Self-updating native installs (claude: ~/.local/share/claude/versions/2.1.150)
+    keep one file or directory per version and link the newest into ~/.local/bin.
+    """
+    if not path.is_symlink():
+        return None
+    parts = path.resolve().parts
+    # The last `versions` that has a component after it names the version.
+    for index in range(len(parts) - 2, -1, -1):
+        if parts[index] == "versions":
+            return parts[index + 1]
+    return None
+
+
 def scan_local_bin() -> list[Item]:
     """Scripts and binaries in ~/.local/bin not owned by pipx/uv."""
     root = HOME / ".local/bin"
@@ -228,4 +244,7 @@ def scan_local_bin() -> list[Item]:
         return []
     owners = script_owners()
     found = [(p, classify_local_bin(p, owners)) for p in sorted(root.iterdir()) if p.exists()]
-    return [bin_remove(i, p, owners.get(str(p)), HOME) for p, i in found if i is not None]
+    items = [(p, bin_remove(i, p, owners.get(str(p)), HOME)) for p, i in found if i is not None]
+    for p, item in items:
+        item.version = item.version or version_from_link(p)
+    return [item for _, item in items]

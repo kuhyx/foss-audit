@@ -46,7 +46,7 @@ describe("items-table", () => {
     const text = (name: string): string => spoken(rows(table).find((row) => row.textContent.includes(name))!);
     expect(text("Some Game")).toContain("—");
     expect(text("Some Game")).toContain("0ad");
-    expect(text("Some Game")).toContain("Fit: Good");
+    expect(text("Some Game")).toContain("Fit: Good, rank 1 of 4");
     expect(text("unrar")).toContain("dependency");
     expect(text("libfoo")).toContain("orphan");
     expect(text("backup.sh")).toContain("kuhy's own code");
@@ -64,8 +64,12 @@ describe("items-table", () => {
     expect(marked).toHaveLength(1);
     expect(marked[0]?.getAttribute("aria-sort")).toBe("ascending");
     setSort({ desc: true, id: "fit" });
-    expect(column(table, FIT).filter((fit) => fit !== "").slice(0, 3)).toEqual(["Fit: Good", "Fit: Good", "Fit: Drop-in"]);
-    expect(column(table, FIT).at(-1)).toBe("");
+    expect(column(table, FIT).filter((fit) => fit !== "").slice(0, 3)).toEqual([
+      "Fit: None, rank 4 of 4",
+      "Fit: Good, rank 3 of 4",
+      "Fit: Drop-in, rank 2 of 4",
+    ]);
+    expect(column(table, FIT).at(-1)).toBe("Fit: not ranked yet");
     expect(find(table, '.th[aria-sort="descending"] .sort-mark').textContent).toBe("▼");
   });
 

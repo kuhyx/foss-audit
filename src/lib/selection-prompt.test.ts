@@ -99,6 +99,32 @@ describe("buildSelectionPrompt", () => {
   });
 });
 
+describe("unranked items", () => {
+  const RANK_STEP = /3\. rank/u;
+
+  it("add a rank step that fills every column and inserts the id into the ranking lists", () => {
+    const text = buildSelectionPrompt([CHROME, PARTIAL]);
+    expect(text).toMatch(RANK_STEP);
+    expect(text).toContain("version, licence, homepage, alternative, fit, effort, lock-in");
+    expect(text).toContain("`ranking.fit` and `ranking.effort`");
+    expect(text).toContain("data/curated.json");
+    expect(text).toContain("`ranking.reasons`");
+    expect(text).toMatch(/renumber nothing by hand/u);
+    expect(text.match(/- unranked: yes/gu)).toHaveLength(1);
+    expect(text).toContain("every unranked item is in `ranking.fit` and `ranking.effort`");
+  });
+
+  it("leave the prompt without a rank step when every item is ranked or already FOSS", () => {
+    const text = buildSelectionPrompt([CHROME, BASH]);
+    expect(text).not.toMatch(RANK_STEP);
+    expect(text).not.toContain("unranked");
+  });
+
+  it("do not touch the summary view's bulk prompt", () => {
+    expect(buildBulkPrompt([PARTIAL])).not.toContain("unranked");
+  });
+});
+
 describe("the summary view's bulk prompt", () => {
   it("still covers only the non-FOSS items", () => {
     const text = buildBulkPrompt(ITEMS);

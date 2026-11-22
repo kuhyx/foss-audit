@@ -1,11 +1,12 @@
 /**
  * Column definitions of the all-items table. Every column sorts. A sortKey is
- * a string, a rank number, or undefined for "absent" (sort.ts keeps those last).
+ * a string, a number (the Fit and Effort columns sort by the backend's rank,
+ * 1 = heaviest), or undefined for "absent" (sort.ts keeps those last).
  */
 import type { Item } from "./schema.ts";
 
-import { EFFORTS, FITS, VERDICTS } from "./schema.ts";
-import { FIT_LABELS, VERDICT_LABELS } from "./verdict.ts";
+import { VERDICTS } from "./schema.ts";
+import { VERDICT_LABELS } from "./verdict.ts";
 
 export type SortKey = number | string | undefined;
 
@@ -20,8 +21,8 @@ function orUndefined(value: null | string): string | undefined {
   return value === null || value === "" ? undefined : value;
 }
 
-function rankOf<T extends string>(vocabulary: readonly T[], value: T | undefined): number | undefined {
-  return value === undefined ? undefined : vocabulary.indexOf(value);
+function rankText(rank: null | number): string {
+  return rank === null ? "" : String(rank);
 }
 
 export const COLUMNS: readonly Column[] = [
@@ -72,14 +73,14 @@ export const COLUMNS: readonly Column[] = [
   {
     header: "Fit",
     id: "fit",
-    sortKey: (item) => rankOf(FITS, item.alternative?.fit),
-    text: (item) => (item.alternative === null ? "" : FIT_LABELS[item.alternative.fit]),
+    sortKey: (item) => item.fitRank ?? undefined,
+    text: (item) => rankText(item.fitRank),
   },
   {
     header: "Effort",
     id: "effort",
-    sortKey: (item) => rankOf(EFFORTS, item.alternative?.effort ?? undefined),
-    text: (item) => item.alternative?.effort ?? "",
+    sortKey: (item) => item.effortRank ?? undefined,
+    text: (item) => rankText(item.effortRank),
   },
   {
     header: "Alt. installed",

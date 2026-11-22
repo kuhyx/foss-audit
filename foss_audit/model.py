@@ -79,6 +79,15 @@ class Item:
     # Scanner-found detail (EULA link, bundled free parts) that a curated
     # reason must not wipe out; serialised as the tail of `reason`.
     note: str = ""
+    # 1-based place among this scan's to-replace items, 1 = heaviest (worst fit /
+    # most effort) ... N = lightest; None for FOSS items and items not ranked yet.
+    fitRank: int | None = None
+    effortRank: int | None = None
+    # One-line reason for the ranks from data/curated.json `ranking.reasons`.
+    rankReason: str | None = None
+    # A to-replace item that lacks a rank or has a blank column (version,
+    # licence, homepage, curated alternative): the next Claude session fills it.
+    unranked: bool = False
 
     @property
     def id(self) -> str:

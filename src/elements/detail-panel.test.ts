@@ -6,7 +6,7 @@ import type { Item } from "../lib/schema.ts";
 import "./detail-panel.ts";
 import { store } from "../client/store.ts";
 import { mount, resetDocument, showScan } from "../test/elements.ts";
-import { CHROME, DEAD_LAUNCHER, makeAlternative, makeScan, MYSTERY, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
+import { CHROME, DEAD_LAUNCHER, FIRMWARE, makeAlternative, makeScan, MYSTERY, OWN_SCRIPT, STEAM_GAME, UNRAR } from "../test/fixtures.ts";
 import { postedIds, stubRemove } from "../test/remove-stub.ts";
 
 const VIA = { ...CHROME, id: "aur:via", removeVia: "~/src/sufler via torch" };
@@ -45,6 +45,35 @@ describe("detail-panel", () => {
     expect(screen.getByText("Google Sync")).toBeInTheDocument();
     expect(await screen.findByText("sudo pacman -Rns google-chrome")).toBeInTheDocument();
     expect(document.querySelector(".panel copy-button")).not.toBeNull();
+  });
+
+  it("keeps the bars and puts the rank number beside them, never painting the reason", () => {
+    open(CHROME, [UNRAR, STEAM_GAME, FIRMWARE]);
+    expect(screen.getByRole("img", { name: "Fit: Drop-in" })).toBeInTheDocument();
+    const numbers = screen.getAllByRole("img", { name: "rank 2 of 4" });
+    expect(numbers.map((number) => number.textContent)).toEqual(["2", "2"]);
+    expect(numbers[0]).toHaveAttribute("aria-description", "a browser engine is a huge build");
+    expect(dialog()?.textContent).not.toContain("huge build");
+  });
+
+  it("shows the warning glyph beside the bars of an unranked item", () => {
+    open({ ...UNRAR, effortRank: null, fitRank: null, unranked: true });
+    expect(screen.getByRole("img", { name: "Fit: Good" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Fit: not ranked yet" })).toHaveTextContent("⚠");
+    expect(screen.getByRole("img", { name: "Effort: not ranked yet" })).toHaveTextContent("⚠");
+  });
+
+  it("shows the warning glyph alone when an unranked item has no alternative", () => {
+    open(MYSTERY);
+    expect(screen.getByRole("heading", { name: "FOSS alternative" })).toBeInTheDocument();
+    expect(screen.getByLabelText("No named alternative in the curated list.")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Fit: not ranked yet" })).toHaveTextContent("⚠");
+  });
+
+  it("shows a dash for the rank of a to-replace item without rank fields", () => {
+    open(DEAD_LAUNCHER);
+    expect(screen.getByRole("heading", { name: "FOSS alternative" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /rank/u })).toBeNull();
   });
 
   it("does not take focus when it opens", () => {

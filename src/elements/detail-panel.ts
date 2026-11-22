@@ -6,19 +6,21 @@
  */
 import type { RemoveFetch } from "../client/remove.ts";
 import type { AppState } from "../client/store.ts";
-import type { Alternative, Item } from "../lib/schema.ts";
+import type { RankKind, RankTotals } from "../lib/rank.ts";
+import type { Item } from "../lib/schema.ts";
 import type { Child } from "../render/dom.ts";
 
 import { closeItem } from "../client/actions.ts";
 import { withRemove } from "../client/remove-api.ts";
 import { watchRemove } from "../client/remove.ts";
-import { selectSelectedItem } from "../client/selectors.ts";
+import { selectRankTotals, selectSelectedItem } from "../client/selectors.ts";
 import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { buildItemPrompt, isPromptCandidate } from "../lib/claude-prompt.ts";
-import { hasTrackedDependants, isCacheSource, numberFormat } from "../lib/verdict.ts";
+import { rankPlace, unrankedLabel } from "../lib/rank.ts";
+import { hasTrackedDependants, isCacheSource, isToReplace, numberFormat } from "../lib/verdict.ts";
 import { buildButton, commandButton } from "../render/command.ts";
 import { html } from "../render/dom.ts";
-import { effortMark, fitMark, glyph, GLYPH, named, yesNoMark } from "../render/glyph.ts";
+import { effortMark, fitMark, glyph, GLYPH, named, rankMark, yesNoMark } from "../render/glyph.ts";
 import { verdictBadge } from "../render/verdict-badge.ts";
 
 function icon(symbol: string): Child {
@@ -61,13 +63,28 @@ function fields(item: Item): HTMLElement {
   );
 }
 
-function alternativeSection(alt: Alternative): HTMLElement {
+// The rank number, or the warning glyph for an unranked item; null when the item has neither.
+function rankBadge(kind: RankKind, item: Item, totals: RankTotals): HTMLElement | null {
+  if (item.unranked) return named("warning", unrankedLabel(kind));
+  const rank = kind === "fit" ? item.fitRank : item.effortRank;
+  return rank === null ? null : rankMark(rank, rankPlace(rank, totals[kind]), item.rankReason);
+}
+
+// The bars (when there is an alternative) with the badge beside them; a dash when there is neither.
+function rankField(bars: HTMLElement | null, badge: HTMLElement | null): HTMLElement {
+  const gap = bars === null || badge === null ? null : " ";
+  const dash = bars === null && badge === null ? "—" : null;
+  return html("span", { class: "rank-line" }, dash, bars, gap, badge);
+}
+
+function alternativeSection(item: Item, totals: RankTotals): HTMLElement {
+  const alt = item.alternative;
   const names =
-    alt.names.length === 0
+    alt === null || alt.names.length === 0
       ? html("p", { "aria-label": "No named alternative in the curated list.", class: "muted" }, icon("—"))
       : html("ol", { class: "alt-names" }, ...alt.names.map((name) => html("li", {}, name)));
   const installed =
-    alt.installed.length === 0
+    alt === null || alt.installed.length === 0
       ? null
       : html(
           "p",
@@ -76,13 +93,15 @@ function alternativeSection(alt: Alternative): HTMLElement {
           " ",
           [...new Set(alt.installed)].join(", "),
         );
+  const fit = rankField(alt === null ? null : fitMark(alt.fit), rankBadge("fit", item, totals));
+  const effort = rankField(alt?.effort == null ? null : effortMark(alt.effort), rankBadge("effort", item, totals));
   const facts = html(
     "dl",
     { class: "fields" },
-    field("Fit", icon(GLYPH.fit), fitMark(alt.fit)),
-    field("Build-it effort", icon(GLYPH.effort), alt.effort === null ? "—" : effortMark(alt.effort)),
-    field("Why that effort", icon("🧭"), orDash(alt.effortReason)),
-    field("Lock-in", icon("🔒"), orDash(alt.lockIn)),
+    field("Fit", icon(GLYPH.fit), fit),
+    field("Build-it effort", icon(GLYPH.effort), effort),
+    field("Why that effort", icon("🧭"), orDash(alt?.effortReason ?? null)),
+    field("Lock-in", icon("🔒"), orDash(alt?.lockIn ?? null)),
   );
   return section("alt-heading", "FOSS alternative", icon("🌿"), names, installed, facts);
 }
@@ -142,7 +161,7 @@ function removeBody(fetched: RemoveFetch, id: string): Node[] {
 export class DetailPanel extends StoreElement {
   #stopRemove: (() => void) | null = null;
 
-  #render(item: Item): void {
+  #render(item: Item, totals: RankTotals): void {
     this.teardown();
     const close = html("button", { "aria-label": "Close details (Esc)", class: "btn", title: "Close", type: "button" }, icon("✕"));
     close.addEventListener("click", closeItem);
@@ -154,7 +173,7 @@ export class DetailPanel extends StoreElement {
       fields(item),
       remove,
       requiredSection(item),
-      item.alternative === null ? null : alternativeSection(item.alternative),
+      item.alternative === null && !isToReplace(item) ? null : alternativeSection(item, totals),
       promptSection(item),
     );
     const head = html("div", { class: "panel-head" }, html("h2", { id: "panel-title" }, item.name), close);
@@ -182,7 +201,7 @@ export class DetailPanel extends StoreElement {
     if (!hasChanged(state, previous, shown)) return;
     const item = shown(state);
     if (item === null) this.teardown();
-    else this.#render(item);
+    else this.#render(item, selectRankTotals(state));
   }
 }
 

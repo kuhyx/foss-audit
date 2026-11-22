@@ -50,6 +50,12 @@ easy-wins,
   letter-spacing: -0.1em;
 }
 
+/* The rank number wears the bars' colour. */
+.rank {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
 #rescan[aria-busy="true"] {
   animation: spin 1.2s linear infinite;
 }

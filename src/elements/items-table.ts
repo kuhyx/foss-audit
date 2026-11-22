@@ -4,7 +4,7 @@ import type { SortState } from "../lib/url-state.ts";
 import type { ArrowKey, RowRange } from "../lib/virtual.ts";
 
 import { clickRow, openItem, setRowsChecked, setSort } from "../client/actions.ts";
-import { selectResults } from "../client/selectors.ts";
+import { selectRankTotals, selectResults } from "../client/selectors.ts";
 import { define, hasChanged, StoreElement } from "../client/store-element.ts";
 import { elementAt } from "../lib/array.ts";
 import { COLUMN_TRACKS } from "../lib/columns.ts";
@@ -12,8 +12,16 @@ import { headerCheck } from "../lib/selection.ts";
 import { nextSort, sortItems } from "../lib/sort.ts";
 import { arrowTarget, ROW_HEIGHT, scrollTopToReveal, visibleRange } from "../lib/virtual.ts";
 import { html } from "../render/dom.ts";
-import { buildEmpty, buildHeader, buildHeaderCheckbox, buildRow, showHeaderCheck, showRow, showSort } from "../render/table-rows.ts";
-import { isArrow, type Mode, rowOf, type Table } from "./items-table-dom.ts";
+import {
+  buildEmpty,
+  buildHeader,
+  buildHeaderCheckbox,
+  buildRow,
+  showHeaderCheck,
+  showRow,
+  showSort,
+} from "../render/table-rows.ts";
+import { isArrow, type Mode, rowOf, type Table } from "./items-table-parts.ts";
 
 export class ItemsTable extends StoreElement {
   #adopted: null | readonly Item[] = null;
@@ -150,7 +158,7 @@ export class ItemsTable extends StoreElement {
     for (let index = range.start; index < range.end; index += 1) {
       let node = this.#nodes.get(index);
       if (node === undefined) {
-        node = buildRow(elementAt(this.#sorted, index), index);
+        node = buildRow(elementAt(this.#sorted, index), index, selectRankTotals(state));
         this.#nodes.set(index, node);
       }
       if (node === cursor) cursor = cursor.nextElementSibling;

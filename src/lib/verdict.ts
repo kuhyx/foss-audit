@@ -73,6 +73,14 @@ export function isCacheSource(item: Item): boolean {
   return item.source.endsWith("-cache");
 }
 
+/**
+ * Non-free or partly-FOSS code that is not kuhy's own: the items the backend
+ * ranks, and the only rows whose "none" answers are painted instead of blank.
+ */
+export function isToReplace(item: Item): boolean {
+  return item.verdict !== "foss" && !item.own;
+}
+
 const EASY_FITS: ReadonlySet<Fit> = new Set<Fit>(["drop-in", "good"]);
 
 /**

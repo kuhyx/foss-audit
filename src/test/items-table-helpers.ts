@@ -1,11 +1,13 @@
-/**
-Row and header lookups shared by the items-table test files.
-*/
 import { makeItem } from "./fixtures.ts";
 import { find, spoken } from "./table-setup.ts";
 
 export const NAME = 1;
+export const ORPHAN = 7;
+export const REQUIRED_BY = 8;
+export const ALTERNATIVE = 9;
 export const FIT = 10;
+export const EFFORT = 11;
+export const INSTALLED = 12;
 export const LETTERS = ["d", "a", "e", "c", "b"].map((name) => makeItem({ name }));
 
 export function rows(root: ParentNode): HTMLElement[] {
