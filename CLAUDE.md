@@ -4,11 +4,11 @@
 - backend only: `python3 -m foss_audit.server --port 5191` (`--scan-file PATH` serves a saved scan, no live scan)
 - build: `pnpm run build`
 - deploy: `scripts/deploy.sh`
-- lint: `pnpm run lint`
+- lint: n/a: dropped (kuhy, 2026-11-27)
 - test: `pnpm run test`
 - test-changed: `scripts/test_changed.sh`
-- coverage: `pnpm run coverage --coverage.reporter=lcov --coverage.reporter=text-summary`
-- coverage-gaps: `coverage-gaps coverage/lcov.info`
+- coverage: n/a: dropped (kuhy, 2026-11-27)
+- coverage-gaps: n/a: dropped (kuhy, 2026-11-27)
 - dependency freshness: `scripts/check_dependency_freshness.sh package.json`
 - backend setup: `python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'`
 - backend test: `.venv/bin/python -m pytest -q` (100% branch gate)

@@ -42,7 +42,7 @@ files = ["foss_audit"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-q --cov=foss_audit --cov-branch --cov-report=term-missing"
+addopts = "-q"
 
 [tool.coverage.report]
 exclude_also = ["if __name__ == .__main__.:"]

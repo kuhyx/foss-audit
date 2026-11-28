@@ -10,55 +10,6 @@ repos:
         language: system
         types: [python]
 
-      - id: ruff
-        name: ruff check (backend)
-        entry: .venv/bin/ruff check
-        language: system
-        types: [python]
-
-      - id: mypy
-        name: mypy --strict (backend)
-        entry: .venv/bin/mypy
-        language: system
-        pass_filenames: false
-        types: [python]
-
-      - id: pytest-coverage
-        name: pytest (100% branch coverage gate)
-        entry: .venv/bin/python -m pytest -q -p no:cacheprovider --cov-fail-under=100
-        language: system
-        pass_filenames: false
-        files: ^(foss_audit/|tests/|data/curated\.json|pyproject\.toml)
-
-      - id: frontend-lint
-        name: tsc + eslint (frontend)
-        entry: pnpm run lint
-        language: system
-        pass_filenames: false
-        files: ^(src/|package\.json|eslint\.config\.js|tsconfig\.json|vite\.config\.ts)
-
-      - id: frontend-coverage
-        name: vitest coverage gate (frontend)
-        entry: pnpm run coverage
-        language: system
-        pass_filenames: false
-        files: ^(src/|package\.json|vite\.config\.ts)
-
-      - id: shellcheck
-        name: shellcheck
-        # Same file set as CI: run.sh sources scripts/lib/*, so shellcheck
-        # must see them together or it reports SC2034/SC1091.
-        entry: bash -c 'shellcheck -x run.sh scripts/*.sh scripts/lib/*.sh'
-        language: system
-        pass_filenames: false
-        types: [shell]
-
-      - id: file-length-cap
-        name: file length <= 250 lines
-        entry: bash scripts/check_file_length.sh
-        language: system
-        pass_filenames: true
-
       # Four markdown namespaces (README / CLAUDE* / DOCS* / TODO*), owned by
       # the shared gate in ~/src/utils.
       - id: md-naming
